@@ -2,8 +2,8 @@
 //!
 //! The version lives in `[workspace.package] version` in the root `Cargo.toml`; every crate
 //! inherits it with `version.workspace = true`. It is not the kit's version: the kit package's
-//! version is `version` in `kit.json`, which Kition's `scripts/publish-kit.sh` reads for the
-//! package's tag and file name. This command does not change `kit.json`.
+//! version is `version` in `kit.json`, which the Package workflow (Kition's `scripts/package-kit.sh`)
+//! reads for the package's tag and file name. This command does not change `kit.json`.
 
 use std::path::Path;
 
