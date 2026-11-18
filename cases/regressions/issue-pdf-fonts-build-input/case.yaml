@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-pdf-fonts-build-input
+feature: pdf.content
+intent: >-
+  A build given a kition-fonts checkout (KITION_FONTS_DIR) builds in only its Japanese, Arabic and
+  Telugu faces, never its Chinese, Latin or emoji ones, which hosts add at run time (E9). Before,
+  it built in every face of the public kition-fonts: Arimo then drew every Helvetica text item as
+  Type 3 outlines (16 of 24 address_full tests failed) and Droid Sans Fallback drew Chinese before
+  any font was added (document_fonts failed).
+layer: unit
+tags: [guard]
+source:
+  kind: probe
+  from: "card pdf-fonts, KITION_FONTS_DIR set to the public kition-fonts"
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: "kition-pdf-fonts", filter: "built_in" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

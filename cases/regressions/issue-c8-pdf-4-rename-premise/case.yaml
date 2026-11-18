@@ -1,0 +1,12 @@
+format: 1
+id: regressions/issue-c8-pdf-4-rename-premise
+feature: pdf.agent.premises
+intent: A nested rename holds the resulting fully-qualified name. A colleague taking that name refuses changed before the command, while taking the same leaf in another namespace preserves both saved edits.
+layer: gate
+source: { kind: synthetic, from: "C8-pdf-4 items 1-2", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf, test: address_matrix, filter: nested_rename_holds_the_resulting_name }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-pdf-4-stream-premise
+feature: pdf.agent.premises
+intent: Content updates and deletions refuse changes to their actual drawing stream even when another writer preserves stale private editing metadata. Changes on other pages merge, including the saved bitmap bytes.
+layer: gate
+source: { kind: synthetic, from: "C8-pdf-4 drawing stream supplement", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf, test: address_full, filter: drawing_stream_edits_without_private_metadata }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"
+timeout_s: 60

@@ -1,0 +1,32 @@
+[package]
+name = "kition-pdf"
+description = "The PDF kit for Kition's agent: the Kition SDK document served headless over the Kit Protocol."
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+kition-pdf-kit = { path = "../wasm" }
+kition-headless = { workspace = true }
+
+[dev-dependencies]
+# workspace_only.rs makes a PDF with an added picture with the engine, outside the kit.
+kition-pdf-engine = { workspace = true }
+# outside.rs writes a file anew with its objects renumbered, as another program does.
+kition-pdf-cos = { workspace = true }
+kition-pdf-organize = { workspace = true }
+# outside.rs: fields without stored ids, as another program makes them.
+kition-pdf-forms = { workspace = true }
+# outside.rs: a writer that is not this kit's engine (the vendored lopdf) rewrites the file in
+# full and appends an incremental update.
+lopdf = { workspace = true }
+kition-kit = { workspace = true, features = ["session"] }
+kition-kit-server = { workspace = true }
+serde_json = { workspace = true }
+# outside.rs, premises.rs, ids.rs: the kits' MCP server's tools drive the executable as an agent.
+kition-kits = { workspace = true }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

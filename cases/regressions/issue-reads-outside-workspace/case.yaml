@@ -1,0 +1,27 @@
+format: 1
+id: regressions/issue-reads-outside-workspace
+feature: pdf.security
+intent: >-
+  The headless kit reads, writes and lists nothing outside its workspace, starts no program and
+  connects to nothing (KHP A28, A29, A37, A45, section 10.6): whatever an agent runs, directly or
+  as a model.batch command with any origin, and whatever a PDF asks for (a launch action, a link
+  into another PDF, form data to import, a stream whose data is in another file, a file
+  specification, JavaScript that opens or submits to a server, a link to a server), nothing
+  outside is opened (named pipes planted there show any attempt), changed or fetched, no fake
+  program on PATH runs, no answer tells whether a file outside exists or where the kit is
+  installed, and the check reports each reference to another file as pdf.external-reference.
+  An audit found by reading code that content_update's `image` read any file by path into the
+  page, and that ocr_status answered folders of the machine.
+layer: gate
+tags: [headless, security]
+source:
+  kind: probe
+  from: workspace-escape audit (pdf)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: "kition-pdf", test: "workspace_only" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

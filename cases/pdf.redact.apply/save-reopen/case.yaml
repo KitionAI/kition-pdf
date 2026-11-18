@@ -1,0 +1,19 @@
+format: 1
+id: pdf.redact.apply/save-reopen
+feature: pdf.redact.apply
+intent: >-
+  Applied redactions remove the text from the page and the saved file, and survive the full rewrite and reopening: a new PDF edited only with engine commands is saved, reopened from the saved bytes and
+  compared whole (doc_inspect, comments, bookmarks, fields, links, text, page pixels), and a second
+  save reopens the same.
+layer: unit
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/round_trip.rs (applied_redactions_survive_a_full_rewrite_and_reopen)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, test: round_trip, filter: applied_redactions_survive_a_full_rewrite_and_reopen }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

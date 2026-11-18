@@ -1,0 +1,22 @@
+format: 1
+id: pdf.agent.premises/typed-objects
+feature: pdf.agent.premises
+intent: >-
+  The typed objects the replica holds (pages, comments, form fields, what receipts and `others`
+  are told from) are, object for object and field for field, what a reread of the saved file
+  projects, after every write family on every editable conformance file; the replicas' objects
+  converge after concurrent edits.
+layer: gate
+tags: [guard, model]
+source:
+  kind: probe
+  from: task card C8-pdf-2
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: "kition-pdf-kit", test: "saved" }
+  - cargo-test: { package: "kdm-model", test: "convergence" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

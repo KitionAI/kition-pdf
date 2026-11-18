@@ -1,0 +1,12 @@
+format: 1
+id: regressions/issue-c8-pdf-4-duplicate
+feature: pdf.pages.organize
+intent: Duplicating a page gives each copied annotation a fresh stored name, preserving independent original and copied comment threads after reopen.
+layer: gate
+source: { kind: synthetic, from: "C8-pdf-4 item 1", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, test: duplicate_regression }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"

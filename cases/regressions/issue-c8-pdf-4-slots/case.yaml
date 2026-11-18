@@ -1,0 +1,12 @@
+format: 1
+id: regressions/issue-c8-pdf-4-slots
+feature: pdf.agent.premises
+intent: Comment and link indexes count every annotation subtype. Independent insertion or removal of a pop-up or widget before the index refuses relocated; changes after it preserve both saved edits.
+layer: gate
+source: { kind: synthetic, from: "C8-pdf-4 item 1", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf, test: address_matrix, filter: annotation_slots_include_popups_and_widgets }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"

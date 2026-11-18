@@ -1,0 +1,364 @@
+format: 1
+kit: pdf
+updated: "2026-11-17"
+gate_budget_s: 600
+protected: []
+features:
+  - id: pdf.agent.observe
+    title: An agent reads the pages and marks the right one
+    dimension: [ai]
+    priority: P0
+    status: has
+    requirements: [AX13]
+    cases: [pdf.agent.observe/budget-page]
+    since: "2026-11-17"
+  - id: pdf.document-text
+    title: "Hosts read a PDF's words page by page through document.text, for search"
+    dimension: [function, ai]
+    priority: P1
+    status: has
+    paths: [bindings/wasm/src/lib.rs, bindings/headless/tests/document_text.rs, kit.json]
+    cases: [pdf.document-text/pages-in-reading-order]
+    since: "2026-11-17"
+  - id: pdf.agent.premises
+    title: "An agent's write lands only on what it observed: what each write rests on is held against other writers"
+    dimension: [function, ai]
+    priority: P0
+    status: partial
+    gap: "Six named-field reason cells wait for the pinned SDK's observed-name targeting; required deleted/relocated currently report changed. Both matrices have zero wrong writes and false refusals under the same-field rule; 48 default OCR executions remain blocked by missing models."
+    paths: [bindings/wasm/src/premises.rs, bindings/wasm/src/premises/**, crates/kdm/kdm-model/src/projection.rs, crates/kdm/kdm-model/model/schema.json, bindings/headless/tests/outside.rs, bindings/headless/tests/reread.rs, bindings/headless/tests/premises.rs, bindings/headless/tests/address_matrix.rs, bindings/headless/tests/address_full.rs, bindings/headless/tests/derived_matrix.rs, bindings/headless/tests/matrix/**, bindings/wasm/tests/declarations.rs, bindings/wasm/tests/declarations_independent.rs, bindings/wasm/tests/saved.rs, bindings/wasm/tests/reread.rs, crates/engine/engine/src/kdm_bridge.rs]
+    cases:
+      - pdf.agent.premises/outside-writer
+      - pdf.agent.premises/declarations
+      - pdf.agent.premises/typed-objects
+      - pdf.agent.premises/independent-reading
+      - regressions/issue-c8-pdf-4-slots
+      - regressions/issue-c8-pdf-4-rename-premise
+      - regressions/issue-pdf-pin-reread
+      - regressions/issue-c8-pdf-reread
+      - regressions/issue-c8-pdf-4-image-premise
+      - regressions/issue-c8-pdf-4-figure-premise
+      - regressions/issue-c8-pdf-4-created-premise
+      - regressions/issue-c8-pdf-4-derived-forms
+      - regressions/issue-c8-pdf-4-derived-content
+      - regressions/issue-c8-pdf-4-stream-premise
+      - regressions/issue-c8-pdf-5-assignments
+      - regressions/issue-c8-pdf-5-displacement
+      - regressions/issue-c8-pdf-5-figure
+      - regressions/issue-c8-pdf-5-fill
+      - regressions/issue-c8-pdf-5-radio-tabs
+      - regressions/issue-c8-pdf-5-flatten
+      - regressions/issue-c8-pdf-5-ocr
+      - regressions/issue-c8-pdf-5-page-scans
+      - regressions/issue-c8-pdf-5-sdk-names
+      - regressions/issue-c8-same-field
+    since: "2026-11-17"
+  - id: pdf.agent.act
+    title: An agent inserts and orders pages
+    dimension: [ai]
+    priority: P0
+    status: has
+    requirements: [AX13]
+    cases: [pdf.agent.act/blank-page]
+    since: "2026-11-17"
+  - id: pdf.agent.recover
+    title: An agent fixes what the check reports
+    dimension: [ai]
+    priority: P0
+    status: has
+    requirements: [AX13]
+    cases: [pdf.agent.recover/broken-link, regressions/issue-doc-param, regressions/issue-unknown-params]
+    since: "2026-11-17"
+  - id: pdf.agent.draft
+    title: An agent works in a draft over a conversation
+    dimension: [ai]
+    priority: P1
+    status: has
+    requirements: [AX13]
+    cases: [pdf.agent.draft/fill-name, regressions/issue-draft-replica-open]
+    since: "2026-11-17"
+  - id: pdf.comments
+    title: "Comments: add, reply, edit, set status, mark, lock, hide, delete"
+    dimension: [function, data-safety]
+    priority: P0
+    status: has
+    commands: [comment_list, comment_add, comment_reply, comment_set_status, comment_mark, comment_lock, comment_edit, comment_image_preview, comment_delete, comments_hide]
+    paths: [bindings/wasm/src/collab.rs]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    cases: [pdf.comments/incremental-save-reopen, pdf.comments/save-reopen, regressions/issue-2, regressions/issue-4]
+    since: "2026-11-17"
+  - id: pdf.pages.organize
+    title: "Inserted, duplicated, rotated and moved pages, crop boxes and page labels survive saving and reopening"
+    dimension: [function, conversion, data-safety]
+    priority: P0
+    status: has
+    commands: [page_insert_blank, page_duplicate, page_rotate, page_move, page_set_box, page_number]
+    paths: [bindings/wasm/tests/round_trip.rs, bindings/wasm/tests/duplicate_regression.rs]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    cases: [pdf.pages.organize/save-reopen, regressions/issue-c8-pdf-4-duplicate]
+    since: "2026-11-17"
+  - id: pdf.bookmarks.edit
+    title: "Nested bookmarks with CJK titles survive saving and reopening"
+    dimension: [function, conversion, data-safety]
+    priority: P0
+    status: has
+    commands: [bookmark_add, bookmark_list]
+    paths: [bindings/wasm/tests/round_trip.rs]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    cases: [pdf.bookmarks.edit/save-reopen]
+    since: "2026-11-17"
+  - id: pdf.forms.fill
+    title: "Text, check box and combo box fields and their filled values survive saving and reopening"
+    dimension: [function, conversion, data-safety]
+    priority: P0
+    status: has
+    commands: [form_add_field, form_fill, form_fields]
+    paths: [bindings/wasm/tests/round_trip.rs]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    cases: [pdf.forms.fill/save-reopen]
+    since: "2026-11-17"
+  - id: pdf.links.edit
+    title: "Web and page links survive saving and reopening"
+    dimension: [function, conversion, data-safety]
+    priority: P0
+    status: has
+    commands: [link_add, link_list]
+    paths: [bindings/wasm/tests/round_trip.rs]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    cases: [pdf.links.edit/save-reopen]
+    since: "2026-11-17"
+  - id: pdf.text.edit
+    title: "Added and edited page text survives saving and reopening"
+    dimension: [function, conversion, data-safety]
+    priority: P0
+    status: has
+    commands: [page_add_text, text_edit, text_extract]
+    paths: [bindings/wasm/tests/round_trip.rs]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    cases: [pdf.text.edit/save-reopen]
+    since: "2026-11-17"
+  - id: pdf.redact.apply
+    title: "Applied redactions remove the text from the page and the saved file, and survive the full rewrite and reopening"
+    dimension: [function, conversion, data-safety]
+    priority: P0
+    status: has
+    commands: [redact_mark, redact_apply]
+    paths: [bindings/wasm/tests/round_trip.rs]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    cases: [pdf.redact.apply/save-reopen]
+    since: "2026-11-17"
+  - id: pdf.bookmarks
+    title: "Bookmarks: list, add, build from the structure"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [bookmark_from_structure]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    cases: [pdf.bookmarks/save-reopen]
+    since: "2026-11-17"
+  - id: pdf.document
+    title: "Document properties, initial view, revisions, hidden information, flattening and actions"
+    dimension: [function, data-safety]
+    priority: P1
+    status: partial
+    commands: [doc_info, doc_inspect, doc_create, doc_initial_view, doc_audit_space, doc_revisions, doc_hidden_info, doc_remove_hidden, doc_flatten, doc_remove_marks, action_list]
+    cases: [regressions/issue-c8-pdf-4-marks]
+    paths: [bindings/wasm/src/lib.rs, bindings/wasm/tests/marks_regression.rs]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: pdf.editor.display-modes
+    title: The editor in Menus, Single line, Classic and Focus; Focus names the tool, hides the find bar, and Escape clears a selection first
+    dimension: [function]
+    priority: P1
+    status: has
+    paths: [web/src/App.tsx, web/src/ribbon/HomeTab.tsx, web/tests/modes.mjs, web/tests/focus.mjs]
+    cases: [pdf.editor.display-modes/mode-smoke, regressions/issue-focus-tool-find-bar]
+    since: "2026-11-17"
+  - id: pdf.editor.page-scroll
+    title: Page scrollbars show where the view is and drag through the pages; scrolling stops at the first and last page
+    dimension: [function]
+    priority: P1
+    status: has
+    paths: [web/src/App.tsx, web/src/pdf.ts, web/src/pdf.test.mjs, web/src/app.css, web/tests/flow.mjs]
+    cases: [pdf.editor.page-scroll/scrollbars-and-bounds]
+    since: "2026-11-17"
+  - id: pdf.view
+    title: "Render pages and previews; list and move page objects"
+    dimension: [function, fidelity]
+    priority: P1
+    status: partial
+    commands: [page_render, render_preview, object_list, object_move]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: pdf.text
+    title: "Text: extract, find, select, lines, paragraphs, edit"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [text_find, text_select, text_lines, text_paragraphs]
+    paths: [crates/engine/automation/src/text_selection.rs]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: pdf.pages
+    title: "Pages: rotate, delete, move, insert blank, duplicate, page boxes and numbering"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [page_delete]
+    paths: [bindings/wasm/src/collab.rs]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: pdf.images
+    title: "Images on a page: list and edit"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [page_images, image_edit]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: pdf.content
+    title: "Page content: add text, list, update and delete content"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [content_list, content_update, content_delete]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    cases: [regressions/issue-1, regressions/issue-pdf-fonts-build-input, regressions/issue-japanese-faces-for-japanese-text, regressions/issue-control-characters-from-faces]
+    since: "2026-11-17"
+  - id: pdf.forms
+    title: "Forms: fields, fill, reset, add, properties, tab order, detection, actions and scripts"
+    dimension: [function, data-safety]
+    priority: P1
+    status: partial
+    commands: [form_reset, form_set_props, form_tab_order, form_delete_field, form_set_script, form_detect_fields, form_actions, form_set_actions]
+    paths: [bindings/wasm/src/collab.rs, crates/engine/automation/src/signing.rs, crates/engine/forms/src/author.rs, bindings/wasm/tests/engine_regressions.rs]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    cases: [regressions/issue-3, regressions/issue-c8-pdf-4-rename, regressions/issue-c8-pdf-4-order]
+    since: "2026-11-17"
+  - id: pdf.redact
+    title: "Redaction: mark, apply, clear"
+    dimension: [function, security]
+    priority: P1
+    status: partial
+    commands: [redact_clear]
+    paths: [web/src/commandIcons.ts, bindings/wasm/src/lib.rs]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: pdf.links
+    title: "Links: list, add, edit, delete, make from URLs, remove"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [link_edit, link_delete, links_from_urls, links_remove]
+    paths: [bindings/wasm/src/check.rs]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: pdf.measure
+    title: "Measuring: distance, perimeter, area, scale and snapping"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [measure_distance, measure_perimeter, measure_area, measure_info, measure_list, measure_scale, measure_snap]
+    paths: [web/src/commandIcons.ts]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: pdf.security
+    title: "Password protection and signatures"
+    dimension: [security, function]
+    priority: P1
+    status: partial
+    commands: [doc_protect, doc_unprotect, sign_list]
+    paths: [bindings/wasm/src/lib.rs, bindings/wasm/examples/checks.rs, bindings/wasm/src/hosting.rs, bindings/wasm/src/check.rs, crates/engine/automation/src/lib.rs]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    cases: [regressions/issue-reads-outside-workspace]
+    since: "2026-11-17"
+  - id: pdf.page-marks
+    title: "Headers and footers, watermarks, backgrounds and removing them"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [doc_header_footer, doc_watermark, doc_background, doc_remove_marks]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: pdf.accessibility
+    title: "Accessibility: check, fix, figures and alternative text"
+    dimension: [function, compat]
+    priority: P1
+    status: partial
+    commands: [accessibility_check, accessibility_fix, accessibility_figures, accessibility_set_alt]
+    paths: [web/src/commandIcons.ts]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: pdf.javascript
+    title: "Document JavaScript: run, list, set, enable"
+    dimension: [function, security]
+    priority: P2
+    status: partial
+    commands: [js_run, js_document_scripts, js_set_document_script, js_enabled]
+    paths: [web/src/commandIcons.ts]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: pdf.pdfa
+    title: "PDF/A: verify and convert"
+    dimension: [conversion, compat]
+    priority: P1
+    status: partial
+    commands: [pdfa_verify, pdfa_convert]
+    paths: [bindings/wasm/src/lib.rs]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: pdf.compare
+    title: "Compare two documents and mark the differences"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [doc_compare, doc_compare_mark]
+    paths: [web/src/commandIcons.ts]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: pdf.ocr
+    title: "Recognise text in scanned pages"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [ocr_recognize, ocr_status]
+    paths: [web/src/commandIcons.ts]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: pdf.fill-sign
+    title: "Fill and sign: add text and dates"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [fill_sign_add, fill_sign_date_format]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"
+  - id: pdf.history
+    title: "Undo and redo"
+    dimension: [function]
+    priority: P1
+    status: partial
+    commands: [edit.undo, edit.redo]
+    paths: [crates/engine/engine/src/commands.rs, bindings/wasm/src/lib.rs, bindings/wasm/src/collab.rs]
+    target: "Adobe Acrobat Pro 26.002.21931"
+    gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
+    since: "2026-11-17"

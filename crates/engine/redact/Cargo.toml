@@ -1,0 +1,21 @@
+[package]
+name = "kition-pdf-redact"
+description = "Redaction (architecture §11.2): marks, apply (glyphs, images, vectors, XObjects, annotations, fields), verification"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+kition-pdf-cos = { workspace = true }
+kition-pdf-content = { workspace = true }
+kition-pdf-fonts = { workspace = true }
+kition-pdf-model = { workspace = true }
+kition-pdf-forms = { workspace = true }
+kition-pdf-edit = { workspace = true }
+kition-pdf-annot = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]

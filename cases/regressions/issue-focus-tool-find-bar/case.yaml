@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-focus-tool-find-bar
+feature: pdf.editor.display-modes
+intent: Focus shows only the page and the Focus bar, which names the tool (Select text); the find bar is hidden in Focus and back after it (it stayed over the page, and the bar named no tool); Escape with text selected clears it and stays in Focus, and the next Escape leaves.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/focus.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/focus.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+timeout_s: 60
+since: "2026-11-17"

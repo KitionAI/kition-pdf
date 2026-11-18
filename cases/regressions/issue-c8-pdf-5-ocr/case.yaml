@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-pdf-5-ocr
+feature: pdf.agent.premises
+intent: Default OCR holds whether text is present; edits leaving the page textual do not affect the skip decision. Explicit recognition retains raster inputs. Both serializers exercise real observe/rewrite/write calls and saved merges.
+layer: gate
+source: { kind: synthetic, from: "C8-pdf-5 necessity regression", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf, test: derived_matrix, filter: regression_c8_ocr_skip }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"
+timeout_s: 60

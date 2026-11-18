@@ -1,0 +1,86 @@
+{
+ "page_render": {
+  "params": {
+   "page": 1,
+   "dpi": 36
+  }
+ },
+ "object_list": {
+  "params": {
+   "page": 1
+  }
+ },
+ "text_find": {
+  "params": {
+   "query": "a"
+  }
+ },
+ "text_select": {
+  "params": {
+   "page": 1,
+   "anchor": [
+    72,
+    72
+   ],
+   "focus": [
+    300,
+    120
+   ]
+  }
+ },
+ "measure_info": {
+  "params": {
+   "page": 1,
+   "type": "distance",
+   "points": [
+    [
+     72,
+     72
+    ],
+    [
+     144,
+     72
+    ]
+   ]
+  }
+ },
+ "measure_snap": {
+  "params": {
+   "page": 1,
+   "at": [
+    72,
+    72
+   ]
+  }
+ },
+ "comment_image_preview": {
+  "skip": "needs a comment with an image appearance"
+ },
+ "action_list": {
+  "params": {}
+ },
+ "doc_compare": {
+  "skip": "needs a second open PDF to compare against"
+ },
+ "form_actions": {
+  "skip": "needs a form field"
+ },
+ "ocr_status": {
+  "params": {}
+ },
+ "text_lines": {
+  "params": {
+   "page": 1
+  }
+ },
+ "page_images": {
+  "params": {
+   "page": 1
+  }
+ },
+ "text_paragraphs": {
+  "params": {
+   "page": 1
+  }
+ }
+}

@@ -1,0 +1,80 @@
+[
+  {
+    "code": "pdf.missing-content",
+    "severity": "error",
+    "summary": "A page's content stream is not in the file, so the page shows blank.",
+    "fixture": "check-missing-content.pdf"
+  },
+  {
+    "code": "pdf.broken-link",
+    "severity": "error",
+    "summary": "A link goes to a page or named destination the file does not have.",
+    "fixture": "check-broken-link.pdf"
+  },
+  {
+    "code": "pdf.page-count-mismatch",
+    "severity": "warning",
+    "summary": "The page tree's /Count disagrees with the pages it holds.",
+    "fixture": "check-page-count-mismatch.pdf"
+  },
+  {
+    "code": "pdf.damaged-content",
+    "severity": "warning",
+    "summary": "A page's content stream cannot be decoded, so part of the page may not draw.",
+    "fixture": "check-damaged-content.pdf"
+  },
+  {
+    "code": "pdf.font-not-embedded",
+    "severity": "warning",
+    "summary": "A font's program is not in the file, so viewers without it draw its text with another font (info for the standard 14).",
+    "fixture": "check-font-not-embedded.pdf"
+  },
+  {
+    "code": "pdf.annotation-off-page",
+    "severity": "warning",
+    "summary": "An annotation lies outside its page's media box, where no viewer shows it.",
+    "fixture": "check-annotation-off-page.pdf"
+  },
+  {
+    "code": "pdf.required-field-empty",
+    "severity": "warning",
+    "summary": "A form field marked required has no value.",
+    "fixture": "check-required-field-empty.pdf"
+  },
+  {
+    "code": "pdf.invalid-choice",
+    "severity": "warning",
+    "summary": "A list or combo box field's value is not one of its options.",
+    "fixture": "check-invalid-choice.pdf"
+  },
+  {
+    "code": "pdf.text-too-long",
+    "severity": "warning",
+    "summary": "A text field's value is longer than its maximum length.",
+    "fixture": "check-text-too-long.pdf"
+  },
+  {
+    "code": "pdf.external-reference",
+    "severity": "warning",
+    "summary": "An action or stream names another file (a program to launch, another PDF, form data to import, stream data kept elsewhere); Kition PDF never opens, runs or reads it.",
+    "fixture": "check-external-reference.pdf"
+  },
+  {
+    "code": "pdf.missing-alt-text",
+    "severity": "info",
+    "summary": "A tagged figure has no alternative text for screen readers.",
+    "fixture": "check-missing-alt-text.pdf"
+  },
+  {
+    "code": "pdf.restricted",
+    "severity": "info",
+    "summary": "The file is encrypted and its permissions deny printing, editing, copying or other actions.",
+    "fixture": "check-restricted.pdf"
+  },
+  {
+    "code": "pdf.truncated",
+    "severity": "info",
+    "summary": "A code was found more than 100 times; the rest are counted, not listed.",
+    "fixture": "check-truncated.pdf"
+  }
+]

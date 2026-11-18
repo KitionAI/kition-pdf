@@ -1,0 +1,36 @@
+%PDF-1.7
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /StructTreeRoot 5 0 R /MarkInfo << /Marked true >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Contents 4 0 R /StructParents 0 >>
+endobj
+4 0 obj
+<< /Length 64 >>
+stream
+/Figure << /MCID 0 >> BDC 0.2 0.4 0.8 rg 72 500 200 120 re f EMC
+endstream
+endobj
+5 0 obj
+<< /Type /StructTreeRoot /K [6 0 R] >>
+endobj
+6 0 obj
+<< /Type /StructElem /S /Figure /P 5 0 R /Pg 3 0 R /K 0 >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000109 00000 n 
+0000000190 00000 n 
+0000000270 00000 n 
+0000000384 00000 n 
+0000000438 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+512
+%%EOF

@@ -1,0 +1,25 @@
+[package]
+name = "kition-pdf-automation"
+description = "Agent control for Kition PDF: a headless tool set over the engine and an MCP server"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+kition-pdf-engine = { workspace = true }
+kition-pdf-fonts = { workspace = true }
+kition-pdf-render = { workspace = true }
+kition-pdf-organize = { workspace = true }
+kition-pdf-platform = { workspace = true }
+serde_json = { workspace = true }
+png = "0.18"
+
+[dev-dependencies]
+kition-pdf-cos = { workspace = true }
+kition-pdf-forms = { workspace = true }
+kition-pdf-model = { workspace = true }
+kition-pdf-xfa = { workspace = true }
+image = { version = "0.25", default-features = false, features = ["jpeg"] }

@@ -1,0 +1,12 @@
+format: 1
+id: regressions/issue-c8-pdf-4-rename
+feature: pdf.forms
+intent: Renaming a nested field checks its resulting fully-qualified name and refuses a sibling collision without changing the saved form.
+layer: gate
+source: { kind: synthetic, from: "C8-pdf-4 item 1", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, test: engine_regressions, filter: rename_rejects_a_fully_qualified_sibling_collision }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"

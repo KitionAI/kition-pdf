@@ -1,0 +1,119 @@
+{
+  "kdm": 1,
+  "kit": "kit.pdf",
+  "schemaVersion": 4,
+  "root": "Pdf",
+  "types": {
+    "Pdf": {
+      "derived": {
+        "state": {
+          "description": "the SHA-256 of the document as it saves now: facts no object carries (a page's content and text, the whole document) are compared between the state an agent observed and now (kition-pdf-kit premises)"
+        }
+      },
+      "fields": {
+        "base": { "kind": "blob", "sample": false },
+        "baseMax": { "kind": "integer", "sample": false },
+        "epoch": { "kind": "string", "sample": false },
+        "overlay": { "kind": "map", "sample": false },
+        "pages": { "kind": "list", "of": "Page", "label": "pages" },
+        "fields": { "kind": "list", "of": "Field", "label": "form fields" },
+        "bookmarks": { "kind": "list", "of": "Bookmark", "label": "bookmarks" }
+      }
+    },
+    "Page": {
+      "readOnly": true,
+      "toolId": { "field": "id", "prefix": "page:" },
+      "label": "label",
+      "fields": {
+        "id": { "kind": "string", "readOnly": true },
+        "label": { "kind": "string", "optional": true, "label": "page label" },
+        "width": { "kind": "number", "label": "width in points", "minimum": 0 },
+        "height": { "kind": "number", "label": "height in points", "minimum": 0 },
+        "rotation": { "kind": "integer", "label": "rotation in degrees", "minimum": 0, "maximum": 270, "multipleOf": 90 },
+        "boxes": { "kind": "json", "label": "page boxes", "sample": false },
+        "comments": { "kind": "list", "of": "Comment", "label": "comments" },
+        "links": { "kind": "list", "of": "Link", "label": "links" }
+      }
+    },
+    "Link": {
+      "readOnly": true,
+      "toolId": { "field": "id" },
+      "fields": {
+        "id": { "kind": "string", "readOnly": true },
+        "index": { "kind": "integer", "position": true, "label": "place among the page's annotations", "minimum": 1, "sample": false },
+        "rect": { "kind": "json", "label": "rectangle in page space", "optional": true },
+        "url": { "kind": "string", "optional": true, "label": "web address" },
+        "toPage": { "kind": "string", "optional": true, "label": "the page it goes to" },
+        "other": { "kind": "string", "optional": true, "label": "another action", "sample": false },
+        "visible": { "kind": "boolean", "label": "visible rectangle" },
+        "color": { "kind": "string", "optional": true, "label": "colour" },
+        "width": { "kind": "number", "optional": true, "label": "border width", "minimum": 0 },
+        "highlight": { "kind": "string", "label": "highlight", "sample": false }
+      }
+    },
+    "Bookmark": {
+      "readOnly": true,
+      "toolId": { "field": "id", "prefix": "bookmark:" },
+      "label": "title",
+      "fields": {
+        "id": { "kind": "string", "readOnly": true },
+        "title": { "kind": "string", "label": "title" },
+        "page": { "kind": "string", "optional": true, "label": "the page it goes to" },
+        "open": { "kind": "boolean", "label": "shown expanded", "sample": false },
+        "children": { "kind": "list", "of": "Bookmark", "label": "children" }
+      }
+    },
+    "Comment": {
+      "readOnly": true,
+      "toolId": { "field": "id" },
+      "text": "contents",
+      "fields": {
+        "id": { "kind": "string", "readOnly": true },
+        "type": { "kind": "string", "optional": true, "label": "comment type", "sample": false },
+        "index": { "kind": "integer", "position": true, "label": "place among the page's annotations", "minimum": 1, "sample": false },
+        "contents": { "kind": "string", "optional": true, "label": "text" },
+        "author": { "kind": "string", "optional": true, "label": "author" },
+        "modified": { "kind": "string", "optional": true, "label": "modification date", "sample": false },
+        "rect": { "kind": "json", "label": "rectangle in page space", "optional": true },
+        "color": { "kind": "string", "optional": true, "label": "colour" },
+        "fill": { "kind": "string", "optional": true, "label": "fill colour" },
+        "opacity": { "kind": "number", "optional": true, "label": "opacity", "minimum": 0, "maximum": 1 },
+        "width": { "kind": "number", "optional": true, "label": "border width", "minimum": 0 },
+        "locked": { "kind": "boolean", "label": "locked" },
+        "replyTo": { "kind": "string", "optional": true, "label": "the comment it replies to", "sample": false },
+        "state": { "kind": "string", "optional": true, "label": "the state a status reply sets", "sample": false },
+        "status": { "kind": "string", "optional": true, "label": "review status" },
+        "marked": { "kind": "boolean", "label": "checked" }
+      }
+    },
+    "Field": {
+      "readOnly": true,
+      "toolId": { "field": "id", "prefix": "field:" },
+      "label": "name",
+      "fields": {
+        "id": { "kind": "string", "readOnly": true },
+        "name": { "kind": "string", "readOnly": true },
+        "type": { "kind": "string", "label": "field type", "sample": false },
+        "value": { "kind": "json", "label": "value" },
+        "default": { "kind": "json", "label": "default value" },
+        "flags": { "kind": "integer", "label": "field flags", "minimum": 0, "sample": false },
+        "maxLength": { "kind": "integer", "optional": true, "label": "maximum length", "minimum": 0 },
+        "options": { "kind": "json", "label": "choices" },
+        "tooltip": { "kind": "string", "optional": true, "label": "tooltip" },
+        "appearance": { "kind": "string", "label": "default appearance", "sample": false },
+        "align": { "kind": "integer", "label": "alignment", "minimum": 0, "maximum": 2 },
+        "actions": { "kind": "string", "label": "actions", "sample": false },
+        "widgets": { "kind": "json", "label": "widgets", "sample": false }
+      }
+    },
+    "Conflict": {
+      "fields": {
+        "kind": { "kind": "string" },
+        "summary": { "kind": "string" },
+        "objects": { "kind": "json" },
+        "kept": { "kind": "json", "optional": true },
+        "by": { "kind": "string", "optional": true }
+      }
+    }
+  }
+}

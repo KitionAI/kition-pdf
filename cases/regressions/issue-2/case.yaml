@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-2
+feature: pdf.comments
+intent: >-
+  A document built by the same commands saves the same bytes when SOURCE_DATE_EPOCH is set (as a
+  showcase sample or a gate case builds it): comments are dated at the epoch (/M, /CreationDate,
+  a dynamic stamp's by-line, the document's ModDate, in UTC) and their /NM names follow from it
+  instead of the clock's sub-second time. Before, every save wrote wall-clock dates and other
+  random-looking names.
+layer: gate
+source:
+  kind: issue
+  from: Kition PDF regression suite
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, test: deterministic_save }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

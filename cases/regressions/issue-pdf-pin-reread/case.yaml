@@ -1,0 +1,24 @@
+format: 1
+id: regressions/issue-pdf-pin-reread
+feature: pdf.agent.premises
+intent: >-
+  A clean session whose file another program changed with an incremental update reads it again
+  without dropping its undo histories (kition-sdk KitDocument::reconcile_reread): the update is
+  written onto the replica as one import outside both histories, a later undo takes back only
+  the session's own edit and keeps the other program's, and the next save appends to the file as
+  reread. A file written anew is not reconciled and leaves the session unchanged. The headless
+  outside-writer tables apply and refuse as before on kition-sdk 2ce294a1.
+layer: unit
+tags: [headless, guard]
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/reread.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: "kition-pdf-kit", test: "reread" }
+  - cargo-test: { package: "kition-pdf", test: "outside" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

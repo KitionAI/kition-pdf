@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-pdf-5-figure
+feature: pdf.agent.premises
+intent: Figure Alt assignment refuses changed Alt while merging page association or geometry edits and retaining figure eligibility; both outside serializers check refusals and saved merges.
+layer: gate
+source: { kind: synthetic, from: "C8-pdf-5 figure assignment", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf, test: address_full, filter: regression_figure_assignment }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"
+timeout_s: 60

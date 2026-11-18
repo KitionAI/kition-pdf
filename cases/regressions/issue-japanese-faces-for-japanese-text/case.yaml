@@ -1,0 +1,25 @@
+format: 1
+id: regressions/issue-japanese-faces-for-japanese-text
+feature: pdf.content
+intent: >-
+  The Japanese faces a build has built in (kition-fonts, KITION_FONTS_DIR) draw only Japanese
+  text, that is text with kana. Han characters of other text, such as "Café 中", are refused until
+  the host adds a font for them (add_font, E9) and then come from that font, so Chinese is never
+  drawn in Japanese glyph forms; Japanese text still draws with the built-in face. Before, a build
+  given the public kition-fonts drew any Han character with BIZ UDPGothic, and retyping page text
+  to "Café 中" succeeded where it must be refused.
+layer: unit
+tags: [guard]
+source:
+  kind: probe
+  from: "card fonts-two, KITION_FONTS_DIR set to the public kition-fonts, 2026-11-17"
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: "kition-pdf-fonts", filter: "built_in_japanese_faces_are_candidates_only_for_japanese_text" }
+  - cargo-test: { package: "kition-pdf-kit", test: "japanese_faces" }
+  - cargo-test: { package: "kition-pdf-edit", filter: "page_text_the_standard_fonts_cant_draw_is_refused" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

@@ -1,0 +1,19 @@
+format: 1
+id: pdf.comments/incremental-save-reopen
+feature: pdf.comments
+intent: >-
+  Three notes added with comment_add, each followed by a save, append to the original bytes; every
+  reopened copy lists all the notes so far with the same document id and version, and undo and redo
+  still work after the saves.
+layer: unit
+source:
+  kind: synthetic
+  from: bindings/wasm/src/save_tests.rs (a note per save on the save fixture)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, filter: "save_tests::repeated_incremental_saves_rebase_bytes_and_keep_kdm_identity_version_and_undo" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

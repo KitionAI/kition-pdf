@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-4
+feature: pdf.comments
+intent: >-
+  A callout's leader stays outside its text box and lands square on the side facing its knee
+  (the side the knee is further beyond), no nearer a corner than a quarter of that side; without a
+  knee, or with one inside the box, the knee is placed out from the side facing the point. A
+  measurement reads areas in square units (m², not m^2) and its caption draws its label with the
+  reading ("Frontage: 20.00 m"). Before, a leader without a knee ran through the text, one with a
+  knee could join the box near a corner, and measurement labels were never drawn.
+layer: gate
+source:
+  kind: issue
+  from: Kition PDF regression suite
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, test: callouts_and_measurements }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

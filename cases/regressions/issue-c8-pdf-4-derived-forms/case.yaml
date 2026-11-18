@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-pdf-4-derived-forms
+feature: pdf.agent.premises
+intent: Form fills hold calculation sources, definitions and formats; row tab sorting holds widget geometry and order. Neighbour-sized insertion, labels, total-page headers, default names and radio groups retain their independently declared input guards and saved merges.
+layer: gate
+source: { kind: synthetic, from: "C8-pdf-4 derived matrix", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf, test: derived_matrix, filter: regression_forms }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"
+timeout_s: 60

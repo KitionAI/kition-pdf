@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-control-characters-from-faces
+feature: pdf.content
+intent: >-
+  A control character in text added to a page, such as the carriage return of "A\r\nB", is
+  refused, never drawn from a document face. Arimo, Lora and Noto Sans Arabic map U+000D to a
+  blank glyph, so before, the page took the text without an error once the host added Arimo (the
+  item's own face for Helvetica) or the build had Noto Sans Arabic built in (the fallback face).
+layer: unit
+tags: [guard]
+source:
+  kind: probe
+  from: "card fonts-two, KITION_FONTS_DIR set to the public kition-fonts, 2026-11-17"
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: "kition-pdf-kit", test: "control_characters" }
+  - cargo-test: { package: "kition-pdf-edit", filter: "page_text_the_standard_fonts_cant_draw_is_refused" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

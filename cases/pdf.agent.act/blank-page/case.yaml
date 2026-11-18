@@ -1,0 +1,37 @@
+format: 1
+id: pdf.agent.act/blank-page
+feature: pdf.agent.act
+intent: >-
+  The agent inserts a blank page between the first and second pages, numbering pages from 1 as the kit does; every page keeps its text and order.
+layer: eval
+source:
+  kind: synthetic
+  from: bindings/wasm/examples/ai_inputs.rs
+  license: Apache-2.0
+  note: "report.pdf written by bindings/wasm/examples/ai_inputs.rs: three pages headed Overview, Budget for 2026 and Appendix."
+input: [input/report.pdf]
+steps:
+  - task:
+      prompt: >-
+        Insert one blank page into report.pdf between the Overview page and the Budget page.
+        Keep every other page as it is.
+      max_turns: 20
+  - run: { path: report.pdf, args: { save: false }, steps: [{ command: text_extract }], as: text }
+expected:
+  - actual: out:text
+    compare: values
+    value:
+      completed.0.result.pages: { count: 4 }
+      completed.0.result.pages.1.text: ""
+  - actual: out:text
+    compare: values
+    collateral: true
+    value:
+      completed.0.result.pages.0.text: "Overview\nSales rose in every region."
+      completed.0.result.pages.2.text: "Budget for 2026\nSpending stays within the plan."
+      completed.0.result.pages.3.text: "Appendix\nFigures are in thousands."
+solution:
+  - tool: pdf_run
+    args: { path: report.pdf, steps: [{ command: page_insert_blank, params: { at: 2 } }] }
+since: "2026-11-17"
+timeout_s: 600

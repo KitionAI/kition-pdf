@@ -1,0 +1,19 @@
+format: 1
+id: regressions/issue-c8-pdf-reread
+feature: pdf.agent.premises
+intent: >-
+  Through the headless host: when another program saves the file while the agent's session is
+  clean, the session reads it again into itself (KitDocument::reconcile_reread): the other
+  program's appended edit is imported outside both undo histories, so the agent's edit.undo and
+  edit.redo take back only its own writes and keep the other edit, also across two outside saves
+  in a row. A file written anew (not appended to) cannot carry the history and is refused
+  (file-conflict), never silently dropped. Before, kition-headless refused every reread of a
+  session with history ("this kit cannot reconcile retained session history").
+layer: gate
+source: { kind: synthetic, from: "bindings/headless/tests/reread.rs", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf, test: reread }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"

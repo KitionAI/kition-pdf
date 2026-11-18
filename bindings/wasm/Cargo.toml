@@ -1,0 +1,38 @@
+[package]
+name = "kition-pdf-kit"
+description = "The PDF engine for Kition's in-page editor: open, edit, and save PDF documents from JavaScript (WebAssembly), on the Kition SDK."
+version.workspace = true
+edition.workspace = true
+license = "Apache-2.0"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[features]
+# Local measurement builds only; no diagnostic storage or export in ordinary builds.
+cache-diagnostics = []
+
+[dependencies]
+kition-kit = { workspace = true, features = ["session"] }
+kdm-model = { workspace = true }
+kition-pdf-cos = { workspace = true }
+kition-pdf-engine = { workspace = true }
+kition-pdf-model = { workspace = true }
+kition-pdf-fonts = { workspace = true }
+kition-pdf-render = { workspace = true }
+kition-pdf-automation = { workspace = true }
+kition-pdf-organize = { workspace = true }
+kition-pdf-forms = { workspace = true }
+kition-pdf-redact = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+# The showcase sample builder (examples/showcase.rs) saves its thumbnails.
+image = { version = "0.25", default-features = false, features = ["png"] }
+# The conformance fixture writer (examples/checks.rs) saves its previews.
+png = "0.18"

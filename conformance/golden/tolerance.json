@@ -1,0 +1,5 @@
+{
+  "maxChannelDelta": 2,
+  "maxDifferentPixels": 600,
+  "note": "The engine's own renderer draws the preview of basic.pdf (filled rectangles, no text); anti-aliased edges may differ by a step between platforms and SIMD paths."
+}

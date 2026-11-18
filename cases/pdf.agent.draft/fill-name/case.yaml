@@ -1,0 +1,39 @@
+format: 1
+id: pdf.agent.draft/fill-name
+feature: pdf.agent.draft
+intent: >-
+  Over two messages the agent fills a form field in a draft for the person to review and then corrects it; the draft has the corrected value and the file itself is still unfilled (KHP Recover, A12–A14).
+layer: eval
+source:
+  kind: synthetic
+  from: repo:conformance/check-required-field-empty.pdf
+  license: Apache-2.0
+  note: "A copy of the conformance fixture for pdf.required-field-empty (the required text field \"name\" is empty), written by bindings/wasm/examples/checks.rs."
+input: [input/form.pdf]
+steps:
+  - task:
+      turns:
+        - >-
+          As a draft for me to review (leave form.pdf itself unchanged), fill the form's name
+          field with "Ada Lovelace".
+        - Sorry, in the same draft the name should be "Ada King".
+      max_turns: 20
+  - run: { path: form.pdf, args: { draft: true, save: false }, steps: [{ command: form_fields }], as: draft }
+  - run: { path: form.pdf, args: { save: false }, steps: [{ command: form_fields }], as: after }
+expected:
+  - actual: out:draft
+    compare: values
+    value:
+      completed.0.result.fields: { any: { name: name, value: Ada King } }
+  - actual: out:after
+    compare: values
+    collateral: true
+    value:
+      completed.0.result.fields: { any: { name: name, value: null } }
+solution:
+  - tool: pdf_run
+    args: { path: form.pdf, draft: true, steps: [{ command: form_fill, params: { values: { name: Ada Lovelace } } }] }
+  - tool: pdf_run
+    args: { path: form.pdf, draft: true, steps: [{ command: form_fill, params: { values: { name: Ada King } } }] }
+since: "2026-11-17"
+timeout_s: 600

@@ -1,0 +1,19 @@
+format: 1
+id: pdf.pages.organize/save-reopen
+feature: pdf.pages.organize
+intent: >-
+  Inserted, duplicated, rotated and moved pages, crop boxes and page labels survive saving and reopening: a new PDF edited only with engine commands is saved, reopened from the saved bytes and
+  compared whole (doc_inspect, comments, bookmarks, fields, links, text, page pixels), and a second
+  save reopens the same.
+layer: unit
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/round_trip.rs (pages_survive_save_and_reopen)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, test: round_trip, filter: pages_survive_save_and_reopen }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

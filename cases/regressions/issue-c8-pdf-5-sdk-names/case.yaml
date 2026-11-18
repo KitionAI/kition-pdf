@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-pdf-5-sdk-names
+feature: pdf.agent.premises
+intent: Preserve the required deleted or relocated reasons for names whose stored identities no longer resolve in the current file. Explicit waiting_for_sdk tests pin today's changed refusal and byte preservation; they do not claim SDK name targeting works.
+layer: gate
+source: { kind: synthetic, from: "C8-pdf-5 pinned SDK name limitations", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf, test: address_full, filter: waiting_for_sdk }
+  - cargo-test: { package: kition-pdf, test: derived_matrix, filter: waiting_for_sdk }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"
+timeout_s: 60

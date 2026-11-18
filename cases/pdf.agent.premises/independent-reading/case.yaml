@@ -1,0 +1,21 @@
+format: 1
+id: pdf.agent.premises/independent-reading
+feature: pdf.agent.premises
+intent: >-
+  Every one of the kit's write commands has a reading of what its automation body and the engine
+  edit behind it resolve and read, written down from the code, and every declaration of what the
+  write rests on agrees with it (objects, their fields, the windows of their lists, the facts no
+  object carries).
+layer: gate
+tags: [guard]
+source:
+  kind: probe
+  from: task card C8-pdf-3
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: "kition-pdf-kit", test: "declarations_independent" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

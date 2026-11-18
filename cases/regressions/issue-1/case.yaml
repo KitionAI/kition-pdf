@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-1
+feature: pdf.content
+intent: >-
+  Text added to a page uses the fonts the host adds (add_font, Kition platform E9): Chinese and
+  other characters the standard fonts can't draw come from a document font that has them, font
+  names any document font by family (Lora), and a standard family is drawn from its
+  metric-compatible document font when the host added it (Arimo, Tinos, Cousine), all as Type 3
+  outlines with ToUnicode, so copy and search work, the item stays editable with its face, and the
+  page the kit writes embeds every font it uses (no pdf.font-not-embedded). Before, page_add_text
+  refused Chinese and offered only the unembedded standard fonts.
+layer: gate
+source:
+  kind: issue
+  from: Kition PDF regression suite
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, test: document_fonts }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

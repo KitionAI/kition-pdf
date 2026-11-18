@@ -1,0 +1,22 @@
+format: 1
+id: pdf.document-text/pages-in-reading-order
+feature: pdf.document-text
+intent: >-
+  document.text answers a PDF's words page by page in reading order, one part per page labelled
+  "Page N", so a host indexes words the object model does not hold: the three-page report's exact
+  text and parts, a cut at the limit with truncated set, pages without words left without a part,
+  edits read from the working file, a scanned page without a text layer answering no words, and
+  the headless kit listing the capability document-text and changing nothing (kition-sdk
+  KitText 1.0, check_text).
+layer: unit
+source:
+  kind: synthetic
+  from: bindings/headless/tests/document_text.rs; report.pdf from cases/pdf.agent.observe/budget-page
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-pdf, test: document_text }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

@@ -1,0 +1,26 @@
+format: 1
+id: regressions/issue-draft-replica-open
+feature: pdf.agent.draft
+intent: >-
+  `kition-pdf` opens a PDF from its replica: what `model.export` answers for a PDF opened from its
+  file, its changes and the blobs they reference (the base PDF), opens again with `model.open` as
+  the same document, an annotation included, with no file. An agent's headless draft is such a
+  replica; the export carried no blobs, so `model.open` failed with "the base PDF … is missing"
+  and the draft became a copy of the file without the object difference a person reviews.
+layer: gate
+source:
+  kind: probe
+  from: 'card S0-1/C1 (kition-sdk tests/drafts.rs, pdf draft opened in file mode, "the base PDF is missing")'
+  license: owned
+input: []
+steps:
+  - cargo-test:
+      package: kition-pdf
+      test: replica
+      filter: a_pdf_opens_from_its_exported_replica_with_its_base
+expected:
+  - actual: out:exit
+    compare: exit
+    value: 0
+since: "2026-11-17"
+timeout_s: 60

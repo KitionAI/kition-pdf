@@ -1,0 +1,23 @@
+format: 1
+id: pdf.agent.premises/declarations
+feature: pdf.agent.premises
+intent: >-
+  Every parameter that names what a write acts on changes what the write holds or is allowed with
+  a reason, every integer id parameter is marked, the kit keeps no editor state, a seeded sample of
+  writes holds every object it changes, a seeded independent check of 30 declarations agrees with
+  the handlers, and every representative write on every fixture file is what its saved file opens
+  as.
+layer: gate
+tags: [guard]
+source:
+  kind: probe
+  from: task card C8-land-14-pdf
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: "kition-pdf-kit", test: "declarations" }
+  - cargo-test: { package: "kition-pdf-kit", test: "saved" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

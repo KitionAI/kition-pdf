@@ -1,0 +1,27 @@
+format: 1
+id: pdf.agent.premises/outside-writer
+feature: pdf.agent.premises
+intent: >-
+  An agent's write with `basis` lands only where what it rests on is still as the agent observed
+  it: another program (this kit's engine in its own instance, or lopdf) rewrites the PDF between
+  the agent's observation and its write. A change elsewhere applies (50 unrelated rounds: premise
+  refuses 0, epoch 50) and `others` names the changed comment; a change of what the write rests on
+  refuses it with nothing written, saying why: `deleted` (the comment is gone), `relocated` (a
+  page number or index names another object now), `changed` (a field the write sets or reads); a
+  file written anew refuses `unknown` for pages and comments named by object number and keeps
+  stored ids. The seeded mixed table (50 rounds) and the full table (every form x kind once, 60
+  cells) have no wrong write and no false refusal.
+layer: gate
+tags: [headless, guard]
+source:
+  kind: probe
+  from: task card C8-land-14-pdf
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: "kition-pdf", test: "outside" }
+  - cargo-test: { package: "kition-pdf", test: "premises" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

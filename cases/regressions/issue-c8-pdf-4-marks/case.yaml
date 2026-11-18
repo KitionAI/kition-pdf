@@ -1,0 +1,12 @@
+format: 1
+id: regressions/issue-c8-pdf-4-marks
+feature: pdf.document
+intent: Removing marks from selected pages preserves marks of that kind on every unselected page through saving and reopening.
+layer: gate
+source: { kind: synthetic, from: "C8-pdf-4 item 1", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, test: marks_regression }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"

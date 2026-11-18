@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-pdf-5-page-scans
+feature: pdf.agent.premises
+intent: Appending a blank page alters neither existing numbered targets and restored labels nor unlinked URL candidates. Changed labels and URL candidates still refuse. Both serializers exercise real observe/rewrite/write calls and saved merges.
+layer: gate
+source: { kind: synthetic, from: "C8-pdf-5 necessity regression", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf, test: derived_matrix, filter: regression_c8_appended_blank }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"
+timeout_s: 60

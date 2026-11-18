@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-pdf-5-fill
+feature: pdf.agent.premises
+intent: Plain fills hold replaced values while omitting text-irrelevant options, Required flags and unused page associations. Calculation sources assigned before recalculation are held as written values; actual types and unwritten calculation inputs still refuse. Both serializers exercise real observe/rewrite/write calls and saved merges.
+layer: gate
+source: { kind: synthetic, from: "C8-pdf-5 necessity regression", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf, test: address_full, filter: regression_c8_fill_inputs }
+  - cargo-test: { package: kition-pdf, test: derived_matrix, filter: regression_c8_fill_inputs }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"
+timeout_s: 60

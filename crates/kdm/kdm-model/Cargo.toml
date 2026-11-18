@@ -1,0 +1,24 @@
+[package]
+name = "kdm-model"
+description = "Bridges Kition PDF's COS document to a kit.pdf KDM replica (kition-sdk session)."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+kition-kit = { workspace = true, features = ["session"] }
+kition-pdf-cos = { workspace = true }
+kition-pdf-annot = { workspace = true }
+kition-pdf-forms = { workspace = true }
+kition-pdf-organize = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = "0.10"
+
+[dev-dependencies]
+kition-pdf-create = { workspace = true }

@@ -1,0 +1,99 @@
+[workspace]
+resolver = "3"
+members = ["crates/*/*", "bindings/*", "tools/xtask"]
+exclude = ["vendor"]
+default-members = ["crates/*/*", "bindings/headless", "tools/xtask"]
+
+[workspace.package]
+version = "0.6.0"
+edition = "2024"
+license = "Apache-2.0"
+rust-version = "1.90"
+repository = "https://github.com/KitionAI/kition-pdf"
+
+[workspace.dependencies]
+# kition-sdk, pinned by commit (one revision for every crate of it)
+kition-headless = { git = "https://github.com/KitionAI/kition-sdk", rev = "f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57" }
+kition-kit-server = { git = "https://github.com/KitionAI/kition-sdk", rev = "f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57" }
+kition-kit = { git = "https://github.com/KitionAI/kition-sdk", rev = "f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57" }
+# The kits' MCP server's tools (kition-kits-mcp), for the headless kit's end-to-end guard tests.
+kition-kits = { git = "https://github.com/KitionAI/kition-sdk", rev = "f5ea478430d1e85069b6c6c9fac1de6b8e5c5d57" }
+# internal
+kition-pdf-filters = { path = "crates/formats/filters", version = "0.6.0" }
+kition-pdf-cos = { path = "crates/engine/cos", version = "0.6.0" }
+kition-pdf-crypt = { path = "crates/formats/crypt", version = "0.6.0" }
+kition-pdf-organize = { path = "crates/engine/organize", version = "0.6.0" }
+kition-pdf-measure = { path = "crates/engine/measure", version = "0.6.0" }
+kition-pdf-annot = { path = "crates/engine/annot", version = "0.6.0" }
+kition-pdf-fonts = { path = "crates/support/fonts", version = "0.6.0" }
+kition-pdf-model = { path = "crates/engine/model", version = "0.6.0" }
+kition-pdf-content = { path = "crates/engine/content", version = "0.6.0" }
+kition-pdf-redact = { path = "crates/engine/redact", version = "0.6.0" }
+kition-pdf-print = { path = "crates/render/print", version = "0.6.0" }
+kition-pdf-xfdf = { path = "crates/formats/xfdf", version = "0.6.0" }
+kition-pdf-sign = { path = "crates/engine/sign", version = "0.6.0" }
+kition-pdf-optimize = { path = "crates/engine/optimize", version = "0.6.0" }
+kition-pdf-a11y = { path = "crates/engine/a11y", version = "0.6.0" }
+kition-pdf-ocr = { path = "crates/engine/ocr", version = "0.6.0" }
+kition-pdf-js = { path = "crates/engine/js", version = "0.6.0" }
+kition-pdf-compare = { path = "crates/engine/compare", version = "0.6.0" }
+kition-pdf-preflight = { path = "crates/engine/preflight", version = "0.6.0" }
+kition-pdf-export = { path = "crates/formats/export", version = "0.6.0" }
+kition-pdf-edit = { path = "crates/engine/edit", version = "0.6.0" }
+kition-pdf-create = { path = "crates/engine/create", version = "0.6.0" }
+kition-pdf-forms = { path = "crates/engine/forms", version = "0.6.0" }
+kition-pdf-xfa = { path = "crates/engine/xfa", version = "0.6.0" }
+kition-pdf-render = { path = "crates/render/render", version = "0.6.0" }
+kition-pdf-engine = { path = "crates/engine/engine", version = "0.6.0" }
+# The `kit.pdf` KDM bridge (Kition's own, not published).
+kdm-model = { path = "crates/kdm/kdm-model" }
+kition-pdf-platform = { path = "crates/support/platform", version = "0.6.0" }
+kition-pdf-automation = { path = "crates/engine/automation", version = "0.6.0", default-features = false }
+
+# pdf
+hayro = "0.7.1"
+hayro-syntax = "0.7.2"
+lopdf = "0.45"
+flate2 = { version = "1.1", default-features = false, features = ["rust_backend"] }
+weezl = "0.2"
+
+# foundation
+thiserror = "2"
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = "1"
+log = "0.4"
+kurbo = "0.13"
+
+# testing
+proptest = "1"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+dbg_macro = "warn"
+todo = "warn"
+
+# `"*"` matches every non-workspace package: crates.io dependencies and the
+# vendored crates under `vendor/` (excluded from the workspace). Our own crates
+# keep full debug info. Dependencies keep only line tables, so backtraces still
+# show file and line, but debug info for the whole dependency graph stays out of
+# every test binary (each UI test binary had a 500-600 MB PDB on Windows).
+[profile.dev.package."*"]
+opt-level = 2
+debug = "line-tables-only"
+
+[profile.dev]
+opt-level = 1
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+
+# Vendored, patched third-party crates (see vendor/README.md). Each patch is meant to go upstream.
+[patch.crates-io]
+hayro-interpret = { path = "vendor/hayro-interpret" }
+hayro = { path = "vendor/hayro" }
+hayro-syntax = { path = "vendor/hayro-syntax" }
+hayro-jbig2 = { path = "vendor/hayro-jbig2" }
+lopdf = { path = "vendor/lopdf" }

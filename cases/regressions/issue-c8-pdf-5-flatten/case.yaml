@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-pdf-5-flatten
+feature: pdf.agent.premises
+intent: Flattening consumes appearances and placement, not values beneath retained appearances or note contents unused by its icon. Placement and actual drawing inputs still refuse. Both serializers exercise real observe/rewrite/write calls and saved merges.
+layer: gate
+source: { kind: synthetic, from: "C8-pdf-5 necessity regression", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf, test: derived_matrix, filter: regression_c8_flatten_inputs }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"
+timeout_s: 60

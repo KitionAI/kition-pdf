@@ -1,0 +1,19 @@
+format: 1
+id: regressions/issue-unknown-params
+feature: pdf.agent.recover
+intent: >-
+  Every command with a parameter schema refuses a key the schema does not name and says which
+  (platform rule E7a), so an agent that misspells a parameter is told instead of the command
+  running without it. This case keeps PDF refusing every unknown key.
+layer: gate
+source:
+  kind: probe
+  from: "unknown-parameter sweep"
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: "kition-pdf-kit", test: "unknown_params" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-17"

@@ -1,0 +1,25 @@
+format: 1
+id: pdf.editor.page-scroll/scrollbars-and-bounds
+feature: pdf.editor.page-scroll
+intent: Wheel scrolling far before the first page or past the last stops with the pages still in view (pan bounds are every page plus the margin the editor opens with), and the vertical page scrollbar shows where the view is and drags through the pages, in Chromium and WebKit; the unit test pins the bounds.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/flow.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, --test, src/pdf.test.mjs]
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/flow.mjs, chromium]
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/flow.mjs, webkit]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium, webkit]
+tags: [browser]
+timeout_s: 60
+since: "2026-11-17"

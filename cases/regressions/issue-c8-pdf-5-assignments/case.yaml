@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-pdf-5-assignments
+feature: pdf.agent.premises
+intent: Assigning note contents or a link URL holds the replaced value against lost updates; both outside serializers refuse changed through the real observe/rewrite/write protocol.
+layer: gate
+source: { kind: synthetic, from: "C8-pdf-5 absolute assignments", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf, test: address_full, filter: regression_absolute_assignments }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"
+timeout_s: 60

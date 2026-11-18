@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-pdf-4-derived-content
+feature: pdf.agent.premises
+intent: Computed content writes hold the data used by redactions, URL links, tagged-heading bookmarks, overlapping-text replacement and flattening, and merge unrelated changes. OCR's content guard is checked even when hosted execution explicitly reports missing recognition models; no OCR result is claimed in that environment.
+layer: gate
+source: { kind: synthetic, from: "C8-pdf-4 derived matrix", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf, test: derived_matrix, filter: regression_content }
+  - cargo-test: { package: kition-pdf, test: derived_matrix, filter: regression_local_text }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"
+timeout_s: 60

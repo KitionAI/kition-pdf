@@ -1,0 +1,14 @@
+format: 1
+id: regressions/issue-c8-same-field
+feature: pdf.agent.premises
+intent: A write refuses changed when another writer changed the field it replaces after observation, including absolute assignments. Both serializers exercise note contents, link actions, field values, figure alt text and tab mode; different-field controls remain in the full matrices.
+layer: gate
+source: { kind: synthetic, from: "C8-same-field decision", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf, test: address_full, filter: regression_same_field }
+  - cargo-test: { package: kition-pdf, test: derived_matrix, filter: regression_same_field }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"
+timeout_s: 60

@@ -1,0 +1,13 @@
+format: 1
+id: regressions/issue-c8-pdf-4-figure-premise
+feature: pdf.agent.premises
+intent: A figure's object number continues to name that figure when its page moves or preceding pages are inserted or removed. Its listed data and an unproven number after a rewrite remain guarded.
+layer: gate
+source: { kind: synthetic, from: "C8-pdf-4 address matrix", license: owned }
+input: []
+steps:
+  - cargo-test: { package: kition-pdf, test: address_full, filter: figure_number }
+expected:
+  - { actual: "out:exit", compare: exit }
+since: "2026-11-17"
+timeout_s: 60
