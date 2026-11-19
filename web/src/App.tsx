@@ -22,6 +22,7 @@ import {
   type RasterView,
 } from '@kition/kit-editor'
 import { engineManifest } from './engine'
+import { useEngineBackdrop } from './backdrop'
 import { CATALOGS } from './strings'
 import { TABS, commandDefaults, describe, pageWidthArea, pagesPanBounds, wholePageArea } from './pdf'
 import { HomeTab, SelectTool } from './ribbon/HomeTab'
@@ -69,6 +70,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   // The one tool, text selection, named in the Focus bar (the editor has no engine tools).
   const selectTool = useMemo(() => ({ label: phrase('Select text'), icon: SelectTool }), [phrase])
   const canvas = useRef<KitCanvasHandle>(null)
+  useEngineBackdrop(doc, canvas)
   const viewMemory = useRef<RasterView | null>(null)
   const region = useRef<HTMLDivElement>(null)
   const searchOpener = useRef<HTMLElement | null>(null)
