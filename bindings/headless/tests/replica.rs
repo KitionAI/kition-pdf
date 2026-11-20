@@ -8,7 +8,7 @@ use kition_pdf_kit::PdfDocument;
 use serde_json::{Value, json};
 
 fn kit() -> Headless<PdfDocument> {
-    Headless::with_replica_port(KitInfo::from_manifest(include_str!("../../../kit.json"), &[], &[]).unwrap())
+    Headless::with_replica_port(KitInfo::from_manifest(include_str!("../../../kit.json"), &[], kition_pdf_kit::EDITOR_STATE).unwrap())
 }
 
 const BASE64: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";

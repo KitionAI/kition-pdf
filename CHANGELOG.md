@@ -3,6 +3,11 @@
 Changes to Kition PDF, newest first. A version is the kit package version in `kit.json`;
 each package is published with a `package-v<version>` tag.
 
+## 0.1.3
+
+- A host asks what document a PDF file is (`document.identity`) and copies one as a new document (`document.fork`), Kit Process Protocol section 5.6 (kition-sdk 6b4d471). A `.pdf` embeds no replica (the kit makes one under a new id each time it opens a file), so a PDF carries no document id and its fork is the same bytes.
+- The headless program speaks Kit Process Protocol version 1 (`headless.protocol` is `kition-kit/1`), as hosts on kition-sdk from bb1b07b require.
+
 ## 0.1.2
 
 - `kit.json` declares the engine's editor state as `engine.editorState`, the same list as the engine's `EDITOR_STATE`, so a host that does not run the engine reads `inspect()` without it.

@@ -46,7 +46,7 @@ Kition PDF is a clean-room, open-source, Rust-native PDF kit targeting Adobe Acr
 
 ## Running and looking at the app
 - Kition shows this kit's editor (`web/`) in the page, over the Kit UI protocol; its agent drives
-  the engine through the headless kit executable, `bindings/headless` (`kition-kit/2`, on kition-sdk's
+  the engine through the headless kit executable, `bindings/headless` (`kition-kit/1`, on kition-sdk's
   `kition-headless`). There is no native desktop app, CLI or MCP server in this repository; the
   engine's tool table lives in `crates/engine/automation`, used by `kition-pdf-kit` and `kition-pdf`.
 - `cargo xtask parity [--partial]` reports Acrobat-parity progress from `tools/parity/acrobat-features.toml`. Update the entry when a feature ships.

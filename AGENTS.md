@@ -145,7 +145,7 @@ If you find an asset that breaks these rules, stop and remove it from the reposi
 - **Everything is reachable headlessly.** Every user-facing feature must be callable without a
   GUI: an engine API, then a tool in `crates/engine/automation`, which `kition-pdf-kit` (the in-page
   WebAssembly engine) and `bindings/headless` (the headless executable Kition's agent drives over
-  the `kition-kit/2` protocol) both reach through the same table. A feature is not done until
+  the `kition-kit/1` protocol) both reach through the same table. A feature is not done until
   its tool exists and has an end-to-end test (`crates/engine/automation/README.md`, "Adding a tool").
 - **Safe by default.** Tools must never discard unsaved work silently, must write atomically, must honour `--root`, and must return errors an agent can act on (say what was wrong and what is allowed).
 - **Track parity honestly.** Every user-facing feature has an entry in `tools/parity/acrobat-features.toml`. Mark it `shipped` only when it works end to end and the entry cites a passing test (`evidence`); `cargo xtask parity` (part of `xtask ci`) rejects claims whose commands, tools or tests don't exist.

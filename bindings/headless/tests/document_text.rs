@@ -17,7 +17,7 @@ use serde_json::{Value, json};
 const REPORT: &[u8] = include_bytes!("../../../cases/pdf.agent.observe/budget-page/input/report.pdf");
 
 fn kit() -> Headless<PdfDocument> {
-    Headless::with_replica_port(KitInfo::from_manifest(include_str!("../../../kit.json"), &[], &[]).unwrap())
+    Headless::with_replica_port(KitInfo::from_manifest(include_str!("../../../kit.json"), &[], kition_pdf_kit::EDITOR_STATE).unwrap())
 }
 
 fn workspace(name: &str) -> PathBuf {
