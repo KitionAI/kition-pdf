@@ -18,7 +18,7 @@ const alone = window.setTimeout(() => {
 // The upstream editor's translations of its English labels and command titles, and this editor's own.
 const UPSTREAM = import.meta.glob('./i18n/upstream/*.tsv', { query: '?raw', import: 'default' })
 
-void connectHost({ id: 'kit.pdf', version: '0.1.1', capabilities: ['ai', 'replica'], brand: manifest.ui.brand, display: manifest.ui.display }).then(async (host) => {
+void connectHost({ id: 'kit.pdf', version: '0.1.2', capabilities: ['ai', 'replica'], brand: manifest.ui.brand, display: manifest.ui.display }).then(async (host) => {
   window.clearTimeout(alone)
   const phrase = withPhrases(await loadPhrases(UPSTREAM, host.init.locale), PHRASES, host.init.locale)
   // No StrictMode: its doubled effects would open the document twice, in two engine workers.

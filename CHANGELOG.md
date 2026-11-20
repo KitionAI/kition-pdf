@@ -3,6 +3,12 @@
 Changes to Kition PDF, newest first. A version is the kit package version in `kit.json`;
 each package is published with a `package-v<version>` tag.
 
+## 0.1.2
+
+- `kit.json` declares the engine's editor state as `engine.editorState`, the same list as the engine's `EDITOR_STATE`, so a host that does not run the engine reads `inspect()` without it.
+- Lint fix in the visual compare (clippy 1.100), no change in behaviour.
+- The README connects an agent with `npm install -g @kition/cli` and `kition agent add`.
+
 ## 0.1.1
 
 - The pasteboard around the pages follows the host's theme, live: in a dark host it is dark, and it repaints when the host's theme changes (before, it kept its built-in light grey).
