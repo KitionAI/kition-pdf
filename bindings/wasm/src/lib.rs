@@ -39,6 +39,9 @@ pub const MARGIN: f64 = 40.0;
 /// Space between two pages, in points.
 pub const GAP: f64 = 24.0;
 const PASTEBOARD: [u8; 4] = [238, 238, 242, 255];
+/// The editor state `inspect()` reports: none (`editor_state` is `null`). kition-headless takes it
+/// as its volatile keys, and `kit.json` declares the same list as `engine.editorState`.
+pub const EDITOR_STATE: &[&str] = &[];
 
 /// Automation tools a document in the page cannot use: they open, list, close, save, combine, or
 /// split files, which the host does; reach the system's printers, keychains, or trust store; or run any registry command,

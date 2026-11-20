@@ -6,7 +6,7 @@
 
 const SANDBOXED: &[&str] = &[];
 /// `inspect()` keys about the editing session rather than the file.
-const VOLATILE: &[&str] = &[];
+const VOLATILE: &[&str] = kition_pdf_kit::EDITOR_STATE;
 
 fn main() -> std::process::ExitCode {
     kition_headless::run_manifest_model::<kition_pdf_kit::PdfDocument>(include_str!("../../../kit.json"), SANDBOXED, VOLATILE)

@@ -168,7 +168,7 @@ fn every_address_parameter_changes_what_its_write_holds() {
 fn the_kit_keeps_no_editor_state_and_no_command_reads_one() {
     let mut doc = fixture();
     assert_eq!(doc.editor_state(), Value::Null);
-    kition_kit::testing::check_context(&mut doc, &kition_kit::CallContext::default(), &[]).unwrap();
+    kition_kit::testing::check_context(&mut doc, &kition_kit::CallContext::default(), kition_pdf_kit::EDITOR_STATE).unwrap();
     let reading: Vec<String> = doc.commands().into_iter().filter(|command| !command.reads.is_empty()).map(|command| command.id).collect();
     assert!(reading.is_empty(), "{reading:?}");
 }
