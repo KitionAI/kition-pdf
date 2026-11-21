@@ -9,9 +9,6 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// Playwright's WebKit derives navigator.platform "MacIntel" from its Mac user agent on every host,
-// so on Linux the editor would expect Cmd where ControlOrMeta presses Ctrl: keep the host's own.
-process.env.PLAYWRIGHT_NO_UA_PLATFORM = '1'
 const web = fileURLToPath(new URL('..', import.meta.url))
 const repo = resolve(web, '..')
 const engine = resolve(web, 'public/engine')

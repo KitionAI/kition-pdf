@@ -2,10 +2,6 @@
 import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'
 import { runModeSmoke } from '@kition/kit-dev-host/mode-smoke'
-// Playwright's WebKit reports a Mac user agent and, from it, navigator.platform "MacIntel" on every
-// host, so on Linux the editor expects Cmd while ControlOrMeta presses Ctrl. Keep the host's own
-// platform, which is what ControlOrMeta follows.
-process.env.PLAYWRIGHT_NO_UA_PLATFORM = '1'
 
 await runModeSmoke({
   kit: 'kit.pdf',
