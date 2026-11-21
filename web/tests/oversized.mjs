@@ -69,7 +69,7 @@ try {
         host.on('pageerror', error => result.pageErrors.push(error.message))
         try {
           await host.route('**/sample/Sample.pdf', route => route.fulfill({ status: 404, body: '' }))
-          await host.goto(`${origin}/dev.html?locale=en-US`)
+          await host.goto(`${origin}/dev.html?locale=en-US&modes=classic`)
           await host.waitForFunction(() => document.getElementById('status')?.textContent === 'choose a file')
           await host.locator('#file').setInputFiles({ name: `${shape}.pdf`, mimeType: 'application/pdf', buffer: pdf([fixture]) })
           const editor = host.frameLocator('#kit')
@@ -128,7 +128,7 @@ try {
       page.setDefaultTimeout(180000)
       page.on('pageerror', error => result.pageErrors.push(error.message))
       await page.route('**/sample/Sample.pdf', route => route.fulfill({ status: 404, body: '' }))
-      await page.goto(`${origin}/dev.html?locale=en-US`)
+      await page.goto(`${origin}/dev.html?locale=en-US&modes=classic`)
       await page.waitForFunction(() => document.getElementById('status')?.textContent === 'choose a file')
       await page.locator('#file').setInputFiles({ name: 'ExcessiveSourceWork.pdf', mimeType: 'application/pdf', buffer: excessive })
       const kit = page.frameLocator('#kit')

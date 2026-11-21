@@ -59,7 +59,7 @@ try {
       if (item.sha256 && result.sha256 !== item.sha256) throw new Error('PDF sha256 mismatch')
       // Suppress automatic sample open, then use the host file picker; engine file access stays in the host protocol.
       await page.route('**/sample/Sample.pdf', (route) => route.fulfill({ status: 404, body: '' }))
-      await page.goto(`${origin}/dev.html?locale=en-US`)
+      await page.goto(`${origin}/dev.html?locale=en-US&modes=classic`)
       await page.waitForFunction(() => document.getElementById('status')?.textContent === 'choose a file')
       const started = performance.now()
       await page.locator('#file').setInputFiles(item.path)

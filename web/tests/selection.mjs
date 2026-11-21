@@ -69,7 +69,7 @@ try {
       const page = await context.newPage(); page.setDefaultTimeout(options.timeoutMs)
       page.on('pageerror', error => result.pageErrors.push(safe(error)))
       await page.route('**/sample/Sample.pdf', route => route.fulfill({ status: 404, body: '' }))
-      await page.goto(`${origin}/dev.html?locale=en-US`)
+      await page.goto(`${origin}/dev.html?locale=en-US&modes=classic`)
       await page.waitForFunction(() => document.getElementById('status')?.textContent === 'choose a file')
       const upload = name => page.locator('#file').setInputFiles({ name, mimeType: 'application/pdf', buffer: bytes })
       await upload('selection-geometry.pdf')

@@ -92,7 +92,7 @@ try {
       page.setDefaultTimeout(options.timeoutMs)
       page.on('pageerror', error => result.pageErrors.push(portableError(error)))
       await page.route('**/sample/Sample.pdf', route => route.fulfill({ status: 404, body: '' }))
-      await page.goto(`${origin}/dev.html?locale=en-US`)
+      await page.goto(`${origin}/dev.html?locale=en-US&modes=classic`)
       await page.waitForFunction(() => document.getElementById('status')?.textContent === 'choose a file')
       activeSample = result.samples[0]
       await page.locator('#file').setInputFiles(item.path)

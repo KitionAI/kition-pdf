@@ -73,7 +73,7 @@ try {
   page.setDefaultTimeout(options.timeoutMs)
   page.on('pageerror', error => report.pageErrors.push(safeError(error)))
   await page.route('**/sample/Sample.pdf', route => route.fulfill({ status: 404, body: '' }))
-  await page.goto(`${origin}/dev.html?locale=en-US`)
+  await page.goto(`${origin}/dev.html?locale=en-US&modes=classic`)
   await page.waitForFunction(() => document.getElementById('status')?.textContent === 'choose a file')
   activeStep = report.steps[0]
   await page.locator('#file').setInputFiles({ name: 'CachePressure.pdf', mimeType: 'application/pdf', buffer: fixture })
