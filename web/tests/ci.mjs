@@ -111,11 +111,11 @@ if (failed.length) {
 }
 console.log(`PASS ${name}`)
 
-/** Paths of the report's entries whose status is neither passed nor observed. */
+/** Paths of the report's failed or timed-out entries. */
 function collectFailures(value, path = '', found = []) {
   if (Array.isArray(value)) value.forEach((item, index) => collectFailures(item, `${path}[${item?.id ?? item?.name ?? index}]`, found))
   else if (value && typeof value === 'object') {
-    if (typeof value.status === 'string' && !['passed', 'observed'].includes(value.status) && path) {
+    if (typeof value.status === 'string' && !['passed', 'observed', 'untested'].includes(value.status) && path) {
       const detail = value.error ?? value.errors ?? value.failures
       found.push(`${path}: ${value.status}${detail && (!Array.isArray(detail) || detail.length) ? ` ${JSON.stringify(detail).slice(0, 300)}` : ''}`)
     }

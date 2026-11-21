@@ -173,6 +173,10 @@ pub fn cases() -> Vec<Case> {
     cases
 }
 
+/// The clean second page's authored regions (green square, red corner, white field), each holding
+/// one of the pixels `type3_recursion` checks after every case.
+const RESET_REGIONS: &str = r#"{"rect":[11,11,4,4],"rgb":[0,255,0],"tolerance":8},{"rect":[1,1,2,2],"rgb":[255,0,0],"tolerance":8},{"rect":[32,32,4,4],"rgb":[255,255,255],"tolerance":8}"#;
+
 pub fn export(cases: &[Case]) {
     let Some(requested) = std::env::var_os("KITION_PDF_TYPE3_OUT") else { return };
     let target = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../target").canonicalize().unwrap();
@@ -201,5 +205,5 @@ pub fn export(cases: &[Case]) {
             case.id, case.id, case.expected_truncation, case.expected_truncation, case.glyph_kind
         ));
     }
-    write("manifest.raw.json",format!(r#"{{"schema":1,"origin":"Contributor-original Type3 controls, Apache-2.0","coordinateSpace":"pdf-user-space-y-up","pageWidth":40,"pageHeight":40,"scales":[1,2],"cases":[{}]}}"#,rows.join(",")).as_bytes());
+    write("manifest.raw.json",format!(r#"{{"schema":1,"origin":"Contributor-original Type3 controls, Apache-2.0","coordinateSpace":"pdf-user-space-y-up","pageWidth":40,"pageHeight":40,"scales":[1,2],"pageCount":2,"resetPage":{{"index":1,"regions":[{RESET_REGIONS}]}},"cases":[{}]}}"#,rows.join(",")).as_bytes());
 }
