@@ -19,7 +19,7 @@ node tests/mesh.mjs \
   --out <report.json> --browser chromium --timeout-ms 60000
 ```
 
-The frozen shared directory and isolated engine are mandatory. The harness
+The isolated engine is mandatory; with `--shared-dir`, the harness
 reuses the exact six-package alias/request guard described in
 [the hairline harness](hairline.md), including actual Worker module requests,
 source SHA checks and before/after snapshots. Ordinary engine packages and live

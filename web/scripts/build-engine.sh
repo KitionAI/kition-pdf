@@ -1,6 +1,8 @@
 #!/bin/sh
 # Builds the PDF engine (bindings/wasm) to WebAssembly into public/engine, where the
 # editor loads it from its own package. Needs wasm-pack.
+# A test engine (tests/ci.mjs cache) sets KITION_PDF_ENGINE_OUT to build elsewhere, with the
+# bindings' KITION_PDF_ENGINE_FEATURES (for example cache-diagnostics); it gets no fonts.
 set -eu
 web="$(cd "$(dirname "$0")/.." && pwd)"
 repo="$(cd "$web/.." && pwd)"
@@ -19,9 +21,18 @@ if [ -z "${CC_wasm32_unknown_unknown:-}" ] && command -v brew >/dev/null 2>&1; t
     fi
   done
 fi
+# On Linux, the newest installed LLVM (/usr/lib/llvm-*).
+if [ -z "${CC_wasm32_unknown_unknown:-}" ]; then
+  llvm="$(ls -d /usr/lib/llvm-*/bin 2>/dev/null | sort -V | tail -n 1)"
+  if [ -n "$llvm" ] && [ -x "$llvm/clang" ]; then
+    export CC_wasm32_unknown_unknown="$llvm/clang" AR_wasm32_unknown_unknown="$llvm/llvm-ar"
+  fi
+fi
 cd "$repo"
-wasm-pack build bindings/wasm --target web --release --no-typescript --out-dir "$web/public/engine"
-rm -f "$web/public/engine/.gitignore" "$web/public/engine/package.json"
+out="${KITION_PDF_ENGINE_OUT:-$web/public/engine}"
+wasm-pack build bindings/wasm --target web --release --no-typescript --out-dir "$out" ${KITION_PDF_ENGINE_FEATURES:+-- --features "$KITION_PDF_ENGINE_FEATURES"}
+rm -f "$out/.gitignore" "$out/package.json"
+[ -z "${KITION_PDF_ENGINE_OUT:-}" ] || exit 0
 # PDFs often name Chinese fonts they do not embed; the editor gives the engine this face for them
 # (from the kition-fonts checkout next to the repository, or KITION_FONTS_DIR) before it opens.
 # Not Noto CJK, which AGENTS.md rules out.

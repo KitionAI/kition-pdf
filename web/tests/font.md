@@ -33,6 +33,10 @@ node tests/font.mjs \
   --out <report.json> --browser chromium --timeout-ms 20000
 ```
 
+`--shared-dir` is optional, as for [the hairline harness](hairline.md): without it the
+harness runs on the shared packages the editor resolves (what `pnpm test:font` does through
+`tests/ci.mjs`, which also exports and pins the fixtures and runs both browsers).
+
 Repeat with `--browser webkit` and a separate output file. The ordinary engine
 and live shared sources remain untouched. Frozen alias/request guards come
 from [the hairline harness](hairline.md). Fresh contexts, initially null host

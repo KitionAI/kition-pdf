@@ -2,7 +2,8 @@
 
 This PDF-only harness consumes the native contributor-original two-page Type3
 fixtures. It uses the existing editor Worker, an isolated engine package and
-the mandatory frozen six-package source guard from the hairline/mesh harnesses.
+the frozen six-package source guard from the hairline/mesh harnesses when
+`--shared-dir` is given.
 The coordinator schedules execution; preparation never builds an engine or
 opens a browser.
 

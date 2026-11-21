@@ -22,6 +22,10 @@ node tests/dash.mjs \
   --browser chromium
 ```
 
+`--shared-dir` is optional, as for [the hairline harness](hairline.md): without it the
+harness runs on the shared packages the editor resolves (what `pnpm test:dash` does through
+`tests/ci.mjs`, which also exports and pins the fixtures and runs both browsers).
+
 Repeat with `--browser webkit` and a separate report. Use a dedicated engine
 package and frozen shared SDK checkout; ordinary packages are not replaced.
 Record source and engine fingerprints with the reports. The browser uses a fresh

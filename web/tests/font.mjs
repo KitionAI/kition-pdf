@@ -15,7 +15,7 @@ const options = { browser: 'chromium', 'timeout-ms': 20000 }, seen = new Set()
 for (let index = 2; index < process.argv.length; index++) {
   const name = process.argv[index]
   if (name === '--help') {
-    console.log('node tests/font.mjs --manifest <pinned-manifest.json> --engine-dir <isolated-engine> --out <report.json> --shared-dir <frozen-sdk> [--browser chromium|webkit] [--timeout-ms 20000]')
+    console.log('node tests/font.mjs --manifest <pinned-manifest.json> --engine-dir <isolated-engine> --out <report.json> [--shared-dir <frozen-sdk>] [--browser chromium|webkit] [--timeout-ms 20000]')
     process.exit(0)
   }
   if (!['--manifest', '--engine-dir', '--shared-dir', '--out', '--browser', '--timeout-ms'].includes(name) || seen.has(name)) throw new Error('Unknown or duplicate option')
@@ -24,13 +24,13 @@ for (let index = 2; index < process.argv.length; index++) {
   if (!value || value.startsWith('--')) throw new Error('Missing option value')
   options[name.slice(2)] = name === '--timeout-ms' ? Number(value) : value
 }
-if (!options.manifest || !options.out || !options['engine-dir'] || !options['shared-dir'] || !['chromium', 'webkit'].includes(options.browser) || !Number.isSafeInteger(options['timeout-ms']) || options['timeout-ms'] <= 0) throw new Error('Pinned manifest, isolated engine, frozen shared source, output, browser, and positive timeout are required')
+if (!options.manifest || !options.out || !options['engine-dir'] || !['chromium', 'webkit'].includes(options.browser) || !Number.isSafeInteger(options['timeout-ms']) || options['timeout-ms'] <= 0) throw new Error('Pinned manifest, isolated engine, output, browser, and positive timeout are required')
 const root = fileURLToPath(new URL('..', import.meta.url))
 const hash = bytes => createHash('sha256').update(bytes).digest('hex')
 const safe = error => String(error?.message ?? error).replace(/\/Users\/[^\s:)'"<>]+|\/home\/[^\s:)'"<>]+/g, '<local-path>')
 const report = {
   schema: 1, started: new Date().toISOString(), status: 'running', browser: options.browser,
-  scope: 'Original embedded-font mapping controls through the real editor Worker on frozen shared source',
+  scope: 'Original embedded-font mapping controls through the real editor Worker',
   configuration: { scales: [1, 2], viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, timeoutMs: options['timeout-ms'], cleanupTimeoutMs: 60000 },
   expected: null,
   engine: { source: safe(process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unspecified; binary fingerprints alone do not establish source'), profile: safe(process.env.KITION_GOLDEN_ENGINE_PROFILE ?? 'unspecified') },
@@ -49,15 +49,16 @@ async function sourceFingerprints() {
   const fingerprints = {}
   async function walk(directory, label) {
     for (const entry of (await readdir(directory, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
-      if (entry.isSymbolicLink()) throw new Error(`Source snapshot contains a symlink: ${label}/${entry.name}`)
+      if (shared && entry.isSymbolicLink()) throw new Error(`Source snapshot contains a symlink: ${label}/${entry.name}`)
       if (entry.isDirectory()) await walk(resolve(directory, entry.name), `${label}/${entry.name}`)
       else if (entry.isFile()) fingerprints[`${label}/${entry.name}`] = hash(await readFile(resolve(directory, entry.name)))
     }
   }
   await walk(resolve(root, 'src'), 'web/src')
-  for (const name of sharedPackageNames) {
-    await walk(resolve(shared.root, 'packages', name, 'src'), `kition-sdk/packages/${name}/src`)
-    fingerprints[`kition-sdk/packages/${name}/package.json`] = hash(await readFile(resolve(shared.root, 'packages', name, 'package.json')))
+  const sharedRoot = shared?.root ?? resolve(root, '../../kition-sdk')
+  for (const name of shared ? sharedPackageNames : ['kit-editor', 'kit-host', 'kit-ui-protocol', 'kit-dev-host']) {
+    await walk(resolve(sharedRoot, 'packages', name, 'src'), `kition-sdk/packages/${name}/src`)
+    if (shared) fingerprints[`kition-sdk/packages/${name}/package.json`] = hash(await readFile(resolve(sharedRoot, 'packages', name, 'package.json')))
   }
   for (const name of ['package.json', 'vite.config.ts']) fingerprints[`web/${name}`] = hash(await readFile(resolve(root, name)))
   return fingerprints
@@ -92,15 +93,15 @@ try {
   override = await engineOverride(resolve(options['engine-dir']), resolve(root, 'public/engine'))
   report.engine.hashes = override.hashes
   report.engine.served = override.served
-  shared = await frozenSharedSource(resolve(options['shared-dir']), resolve(root, '../../kition-sdk'))
-  report.sharedSource = shared.report
+  if (options['shared-dir']) shared = await frozenSharedSource(resolve(options['shared-dir']), resolve(root, '../../kition-sdk'))
+  report.sharedSource = shared?.report ?? { mode: 'live' }
   report.sourceFiles = { before: await sourceFingerprints(), after: null, changed: [] }
-  shared.setExpectedFingerprints(report.sourceFiles.before)
+  shared?.setExpectedFingerprints(report.sourceFiles.before)
   summarize(); await save()
   server = await createServer({
-    root, configFile: resolve(root, 'vite.config.ts'), plugins: [override.plugin, shared.plugin],
-    resolve: { alias: shared.aliases }, optimizeDeps: { exclude: shared.packages }, worker: { plugins: shared.workerPlugins },
-    server: { host: '127.0.0.1', port: 0, fs: { allow: [resolve(root, '..'), shared.root] } }, logLevel: 'error',
+    root, configFile: resolve(root, 'vite.config.ts'), plugins: [override.plugin, ...(shared ? [shared.plugin] : [])],
+    ...(shared ? { resolve: { alias: shared.aliases }, optimizeDeps: { exclude: shared.packages }, worker: { plugins: shared.workerPlugins } } : {}),
+    server: { host: '127.0.0.1', port: 0, ...(shared ? { fs: { allow: [resolve(root, '..'), shared.root] } } : {}) }, logLevel: 'error',
   })
   await server.listen()
   const origin = `http://127.0.0.1:${server.httpServer.address().port}`
