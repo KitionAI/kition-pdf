@@ -41,6 +41,17 @@ editor in a development host; `web/package.json` lists the other browser tests (
 The check every change passes is `cargo xtask ci` ([quality.md](quality.md)); `cargo xtask --help`
 lists the other tasks.
 
+Kition's kit CI runs on GitHub on every push to `ci/**`: the Rust checks, `cargo xtask ci`, and
+each `test:*` script of `web/` as its own job, except the scripts `.github/kit-ci.json` excludes.
+`test:performance` is excluded because it needs a private corpus: a manifest of local PDFs that
+are never committed or uploaded ([web/tests/performance.md](../web/tests/performance.md)). Run
+it on a machine that has the corpus, one benchmark at a time after the other tests:
+
+```sh
+cd web && pnpm engine
+node tests/performance.mjs --manifest <corpus-manifest.json> --out <report.json> --browser chromium
+```
+
 Two files under `docs/` are read by `cargo xtask assets`: [attribution.toml](attribution.toml), the
 list of every asset with its source, license and SHA-256, and [attribution.md](attribution.md),
 generated from it by `cargo xtask assets --write`.
