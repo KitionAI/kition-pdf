@@ -1,4 +1,4 @@
-import type { RasterRect, RasterView } from '@kition/kit-editor'
+import type { RasterRect, RasterView } from '@kition/sdk/editor'
 import { searchScreenRects } from './searchGeometry'
 
 /** Transient UI over the live canvas; never part of PDF pixels or saved content. */

@@ -7,10 +7,15 @@ export default defineConfig({
   base: './',
   plugins: [react()],
   resolve: {
-    // One React for the page, also when KITION_LINK=1 links a kition-sdk checkout.
+    // One React for the page, also when KITION_LINK=1 links the kition-sdk and Tessera checkouts.
     dedupe: ['react', 'react-dom'],
   },
-  optimizeDeps: { exclude: ['@kition/kit-editor', '@kition/kit-host', '@kition/kit-ui-protocol', '@kition/kit-dev-host'] },
+  optimizeDeps: {
+    exclude: ['@kition/sdk'],
+    // Tessera's UI library reaches a CommonJS shim (use-sync-external-store, through radix-ui);
+    // prebundled here, it is converted for the browser and the excluded @kition/sdk shares it.
+    include: ['@kition/tessera/ui'],
+  },
   worker: { format: 'es' },
   server: {
     port: 5183,

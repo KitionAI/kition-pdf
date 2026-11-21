@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState, type Ref } from 'react'
-import { TesseraIcons } from '@kition/kit-editor'
-import { IconButton, useKitEditor } from '@kition/kit-editor'
+import { TesseraIcons } from '@kition/sdk/editor'
+import { IconButton, useKitEditor } from '@kition/sdk/editor'
 import { SearchSession, type Match } from './searchSession'
 
 

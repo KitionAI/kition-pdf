@@ -9,7 +9,7 @@ kit's package. To use PDF, start with the [README](../README.md).
 | --- | --- |
 | `crates/` | The engine (Rust), in groups: `kdm`, `engine`, `formats`, `render`, `support`; compiled to WebAssembly for the editor |
 | `bindings/` | The engine's two outlets: `wasm` (the in-page editor's engine, behind Kition's `KitDocument` contract) and `headless` (the `kition-pdf` program for Kition's agent and `kition-kits-mcp`) |
-| `web/` | The kit's editor (React, on kition-sdk's `@kition/kit-editor`) |
+| `web/` | The kit's editor (React, on kition-sdk's `@kition/sdk/editor`) |
 | `agent/` | The agent guide and checks (KHP) |
 | `conformance/` | The sample PDFs the conformance checks open (KHP) |
 | `kit.json` | The kit manifest (KHP) |
@@ -73,14 +73,18 @@ kition-kits-mcp --workspace <folder> --kit target/release/kition-pdf
 
 ### The editor's dependencies
 
-By default `pnpm install` in `web/` installs the published `@kition/*` packages from npm, at the
-versions the committed `web/pnpm-lock.yaml` pins, so the editor needs no other checkout. To
-develop against local checkouts instead, run `KITION_LINK=1 pnpm install` in `web/`:
-`web/.pnpmfile.cjs` then links kition-sdk's `@kition/kit-dev-host`, `@kition/kit-editor`,
-`@kition/kit-host` and `@kition/kit-ui-protocol`, and Kition Tessera's `@kition/tessera-ui`, from
-the kition-sdk and kition-tessera checkouts next to this repository (or the ones `KITION_SDK` and
-`KITION_TESSERA` name). The linked install rewrites `web/pnpm-lock.yaml`; do not commit a lockfile
-changed that way.
+The editor uses two packages: kition-sdk's `@kition/sdk` (its subpaths `/editor`, `/host`,
+`/protocol` and `/dev-host`) and Kition Tessera's `@kition/tessera` (`/ui`). By default
+`pnpm install` in `web/` installs them from npm, at the versions the committed
+`web/pnpm-lock.yaml` pins, so the editor needs no other checkout. Until their first release they
+come from the rehearsal copies, `@kitionstage/sdk` and `@kitionstage/tessera`, which
+`web/package.json` installs under the final names by npm alias. To develop against local
+checkouts instead, run `KITION_LINK=1 pnpm install` in `web/`: `web/.pnpmfile.cjs` then links
+kition-sdk's `packages/sdk` and kition-tessera's `packages/tessera` from the checkouts next to this
+repository (or the ones `KITION_SDK` and `KITION_TESSERA` name). Both packages' exports point at
+their built `dist/`, so build them first (`pnpm --filter @kition/sdk build` in kition-sdk,
+`pnpm build` in kition-tessera's `packages/tessera`). The linked install rewrites
+`web/pnpm-lock.yaml`; do not commit a lockfile changed that way.
 
 ## Take the README pictures
 

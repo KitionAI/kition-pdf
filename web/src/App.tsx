@@ -1,5 +1,5 @@
 import { useCallback, useId, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from 'react'
-import { Scrollbar } from '@kition/tessera-ui'
+import { Scrollbar } from '@kition/tessera/ui'
 import {
   CommandTab,
   KitDocumentCanvas,
@@ -20,7 +20,7 @@ import {
   type Phrases,
   type RasterRect,
   type RasterView,
-} from '@kition/kit-editor'
+} from '@kition/sdk/editor'
 import { engineManifest } from './engine'
 import { useEngineBackdrop } from './backdrop'
 import { CATALOGS } from './strings'

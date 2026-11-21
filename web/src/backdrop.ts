@@ -6,7 +6,7 @@
  * on-screen editor does this; previews, export and print never call `setBackdrop`.
  */
 import { useEffect, type RefObject } from 'react'
-import type { KitCanvasHandle, KitEngine } from '@kition/kit-editor'
+import type { KitCanvasHandle, KitEngine } from '@kition/sdk/editor'
 
 const HEX = /^#[0-9a-f]{6}$/i
 
@@ -41,7 +41,7 @@ export function useEngineBackdrop(doc: KitEngine | null, canvas: RefObject<KitCa
         .catch(() => undefined)
     }
     follow()
-    // kit-editor's `applyTheme` writes the tokens on the root's style and marks its data-color-scheme.
+    // @kition/sdk/editor's `applyTheme` writes the tokens on the root's style and marks its data-color-scheme.
     const observer = typeof MutationObserver === 'undefined' ? null : new MutationObserver(follow)
     observer?.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'data-color-scheme', 'class'] })
     return () => {

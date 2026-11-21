@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { TesseraIcons } from '@kition/kit-editor'
-import { IconButton, useEngineQuery, useKitEditor } from '@kition/kit-editor'
+import { TesseraIcons } from '@kition/sdk/editor'
+import { IconButton, useEngineQuery, useKitEditor } from '@kition/sdk/editor'
 import type { PdfInfo } from './pdf'
 import { Thumbnails } from './Thumbnails'
 

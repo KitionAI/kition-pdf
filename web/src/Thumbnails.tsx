@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button, useKitEditor } from '@kition/kit-editor'
+import { Button, useKitEditor } from '@kition/sdk/editor'
 import type { PdfInfo } from './pdf'
 import { ThumbnailQueue, THUMB_ROW_HEIGHT, thumbnailWindow, type Thumbnail } from './thumbnailQueue'
 

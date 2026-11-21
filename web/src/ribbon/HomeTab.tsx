@@ -1,5 +1,5 @@
-import { TesseraIcons } from '@kition/kit-editor'
-import { RibbonButton, RibbonGroup, RibbonItem, RibbonRow, RibbonStack, toast, useKitEditor } from '@kition/kit-editor'
+import { TesseraIcons } from '@kition/sdk/editor'
+import { RibbonButton, RibbonGroup, RibbonItem, RibbonRow, RibbonStack, toast, useKitEditor } from '@kition/sdk/editor'
 import type { PdfInfo } from '../pdf'
 
 

@@ -1,4 +1,4 @@
-import type { KitModuleManifest } from '@kition/kit-editor'
+import type { KitModuleManifest } from '@kition/sdk/editor'
 import { canvasColor } from './backdrop'
 
 /** The engine, from this package's own folder, on the host's canvas color. Called after the theme is applied. */

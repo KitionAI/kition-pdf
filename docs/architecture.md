@@ -10,7 +10,7 @@ crate's `README.md` has the detail.
 
 One Cargo workspace (`Cargo.toml`, edition 2024, Rust ≥ 1.90, `MIT OR Apache-2.0`), 29 library
 crates in `crates/`, the kit's two bindings in `bindings/`, its editor in `web/` (React on
-kition-sdk's `@kition/kit-editor`), build tooling in `tools/xtask/`, and patched third-party crates in
+kition-sdk's `@kition/sdk/editor`), build tooling in `tools/xtask/`, and patched third-party crates in
 `vendor/`.
 
 | Binary | What it is |

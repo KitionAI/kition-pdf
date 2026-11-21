@@ -1,4 +1,4 @@
-import type { KitLeases } from '@kition/kit-editor'
+import type { KitLeases } from '@kition/sdk/editor'
 
 /**
  * An edit that rewrites the whole file (applying redactions, sanitizing, adding or removing

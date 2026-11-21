@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent } from 'react'
-import { toast, type KitTool } from '@kition/kit-editor'
+import { toast, type KitTool } from '@kition/sdk/editor'
 import type { PdfInfo } from './pdf'
 import { isTextControl, selectionPoint, SelectionSession, type SelectionRequest, type SelectionResult } from './textSelection'
 

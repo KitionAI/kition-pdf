@@ -7,11 +7,11 @@ own. Command ids, document contents and file names never change with the languag
 ## Where the strings come from
 
 - **The editor's own strings** are in `web/src/strings.ts`: one catalog per locale (`en-US`,
-  `zh-CN`), read through `@kition/kit-editor`'s `createKitStrings`. A key missing from a catalog
+  `zh-CN`), read through `@kition/sdk/editor`'s `createKitStrings`. A key missing from a catalog
   falls back to English.
 - **Menu labels and command titles** come from the engine's command registry in English and are
   translated through the catalogs in `web/src/i18n/upstream/<code>.tsv`, which
-  `@kition/kit-editor`'s `loadPhrases` reads for the host's locale (`web/src/main.tsx`). Each line
+  `@kition/sdk/editor`'s `loadPhrases` reads for the host's locale (`web/src/main.tsx`). Each line
   is `context<TAB>English<TAB>translation`; an empty context is a plain label and `@id` keys an
   entry by command id. The header of `ja.tsv` documents the format and escapes.
 - **Labels a catalog lacks** for a locale are in `PHRASES` in `web/src/strings.ts`

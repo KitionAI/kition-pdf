@@ -1,4 +1,4 @@
-import type { RasterView } from '@kition/kit-editor'
+import type { RasterView } from '@kition/sdk/editor'
 import type { PdfInfo } from './pdf'
 import type { SelectionResult } from './textSelection'
 import { searchScreenRects } from './searchGeometry'

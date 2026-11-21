@@ -30,9 +30,9 @@
 This repository is Kition's `kit.pdf` kit. These rules come first; the upstream rules below
 still apply to the engine.
 
-- The kit draws **its own editor**: `web/` is a React app on `@kition/kit-editor` (kition-sdk's
-  shared kit UI library) with Kition PDF's tool tabs, the page canvas, page thumbnails, bookmarks, comments, and form fields; a host (Kition, or `web/dev.html` for development) shows it
-  in an iframe and talks to it over the Kit UI protocol (`kition-kit-ui/1`, kition-sdk `docs/platform/reference/ui-protocol.md`). Style it only with the host's theme tokens and kit-editor components;
+- The kit draws **its own editor**: `web/` is a React app on `@kition/sdk/editor` (the kit UI library
+  of kition-sdk's `@kition/sdk` package) with Kition PDF's tool tabs, the page canvas, page thumbnails, bookmarks, comments, and form fields; a host (Kition, or `web/dev.html` for development) shows it
+  in an iframe and talks to it over the Kit UI protocol (`kition-kit-ui/1`, kition-sdk `docs/platform/reference/ui-protocol.md`). Style it only with the host's theme tokens and `@kition/sdk/editor` components;
   ribbon labels and command titles are the upstream editor's English text, translated by its
   `web/src/i18n/upstream` catalogs and, where those lack a label, by `PHRASES` in
   `web/src/strings.ts` (with the editor's own `en-US` and `zh-CN` strings). Files go only
