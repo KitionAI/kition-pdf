@@ -32,6 +32,9 @@ allow-wildcard-paths = true
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
+# The Kition platform crates (kition-kit, kition-kdm, kition-headless, ...) and the loro fork the
+# KDM (kition-kdm) builds on, each pinned to a commit.
+allow-git = ["https://github.com/KitionAI/kition-sdk", "https://github.com/KitionPkg/loro"]
 
 [advisories]
 yanked = "warn"
@@ -41,6 +44,9 @@ ignore = [
     # private-key operations use aws-lc-rs on native targets and are refused in the browser
     # (ADR-0009). Revisit when a fixed `rsa` ships.
     { id = "RUSTSEC-2023-0071", reason = "rsa is used for verification only (ADR-0009)" },
+    # chrono is unmaintained (no vulnerability, no fixed release); kition-pdf-engine uses it only for
+    # the local UTC offset. Moving to jiff or time is its own change.
+    { id = "RUSTSEC-2026-0543", reason = "chrono unmaintained, no vulnerability; replacing it is a separate change" },
 ]
 
 # egui's default UI fonts (Ubuntu-Light, Hack, emoji-icon-font): font licences on the AGENTS.md

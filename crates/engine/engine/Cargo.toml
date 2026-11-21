@@ -4,6 +4,8 @@ description = "Kition PDF engine façade: session, documents, command/tool catal
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+# Builds on kdm-model, Kition's unpublished KDM bridge, so it cannot go to crates.io either.
+publish = false
 
 [lints]
 workspace = true

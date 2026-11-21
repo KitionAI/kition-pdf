@@ -111,7 +111,9 @@ fn extract(source: &Path, group: &str, cache: &Path, entries: &mut Vec<Entry>, t
     let mut names = BTreeSet::new();
     for index in 0..archive.len() {
         let mut file = archive.by_index(index)?;
-        let name = safe_name(file.name_raw(), file.name())?;
+        // The decoded name is only the fallback for raw names that are not UTF-8.
+        let decoded = file.name().map(|name| name.into_owned()).unwrap_or_default();
+        let name = safe_name(file.name_raw(), &decoded)?;
         if ignored(&name) || file.is_dir() || !extension(&name, "pdf") {
             continue;
         }

@@ -14,4 +14,4 @@ serde = { version = "1", features = ["derive"] }
 sha2 = "0.11"
 toml = "1"
 kition-pdf-render = { workspace = true }
-zip = { version = "4.6.1", default-features = false, features = ["deflate-flate2"] }
+zip = { version = "9.8.1", default-features = false, features = ["deflate-flate2"] }

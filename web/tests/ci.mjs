@@ -42,7 +42,8 @@ if (!suite || process.argv.length !== 3) throw new Error(`Usage: node tests/ci.m
 function run(command, args, options = {}) {
   console.log(`$ ${command} ${args.join(' ')}`)
   const result = spawnSync(command, args, { stdio: 'inherit', ...options, env: { ...process.env, ...options.env } })
-  if (result.error) throw result.error
+  // A missing command fails like a failing one (wasm-pack --version on a fresh runner).
+  if (result.error && result.error.code !== 'ENOENT') throw result.error
   return result.status === 0
 }
 function must(command, args, options) {
