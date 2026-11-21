@@ -20,7 +20,7 @@ const report = { schema: 1, status: 'running', scope: 'Direct actual WASM SDK sa
 const documents = new Set()
 try {
   const engineDir = resolve(options['engine-dir'])
-  for (const name of ['kition_pdf_kit.js', 'kition_pdf_sdk_bg.wasm']) report.engine[name] = hash(await readFile(resolve(engineDir, name)))
+  for (const name of ['kition_pdf_kit.js', 'kition_pdf_kit_bg.wasm']) report.engine[name] = hash(await readFile(resolve(engineDir, name)))
   report.harnessSha256 = hash(await readFile(new URL(import.meta.url)))
   const manifestBytes = await readFile(options.manifest), manifest = JSON.parse(manifestBytes)
   const source = await readFile(resolve(dirname(resolve(options.manifest)), manifest.file))
@@ -28,7 +28,7 @@ try {
   report.fixtureSha256 = hash(source)
   report.manifestSha256 = hash(manifestBytes)
   const sdk = await import(pathToFileURL(resolve(engineDir, 'kition_pdf_kit.js')).href)
-  await sdk.default({ module_or_path: await readFile(resolve(engineDir, 'kition_pdf_sdk_bg.wasm')) })
+  await sdk.default({ module_or_path: await readFile(resolve(engineDir, 'kition_pdf_kit_bg.wasm')) })
   const keep = doc => { documents.add(doc); return doc }
   const open = (bytes = source) => keep(sdk.PdfDocument.open('Save.pdf', bytes))
   const execute = (doc, name, params = {}) => JSON.parse(doc.execute(name, JSON.stringify(params)))

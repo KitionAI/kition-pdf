@@ -35,7 +35,7 @@ try {
   }
   report.harnessSha256 = hash(await readFile(fileURLToPath(import.meta.url)))
   report.manifestSha256 = hash(await readFile(manifestPath))
-  for (const name of ['kition_pdf_kit.js', 'kition_pdf_sdk_bg.wasm']) {
+  for (const name of ['kition_pdf_kit.js', 'kition_pdf_kit_bg.wasm']) {
     report.engine[name] = hash(await readFile(resolve(root, 'public/engine', name)))
   }
   report.engine.provenance = process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unknown: binary fingerprints do not prove source revision'

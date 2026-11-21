@@ -63,7 +63,7 @@ try {
   }
   report.harness = {}
   for (const name of ['raster-geometry.mjs', 'raster-geometry-support.mjs', 'performance-probe.mjs', 'cache-probe.mjs']) report.harness[name] = hash(await readFile(resolve(root, 'tests', name)))
-  for (const name of ['kition_pdf_kit.js', 'kition_pdf_sdk_bg.wasm']) report.engine[name] = hash(await readFile(resolve(root, 'public/engine', name)))
+  for (const name of ['kition_pdf_kit.js', 'kition_pdf_kit_bg.wasm']) report.engine[name] = hash(await readFile(resolve(root, 'public/engine', name)))
   server = await createServer({ root, configFile: resolve(root, 'vite.config.ts'), server: { host: '127.0.0.1', port: 0 }, logLevel: 'error' })
   await server.listen()
   const origin = `http://127.0.0.1:${server.httpServer.address().port}`

@@ -33,7 +33,7 @@ const long = resolve(temporary, 'long.pdf')
 const short = resolve(temporary, 'short.pdf')
 await writeFile(long, syntheticPdf(300))
 await writeFile(short, syntheticPdf(2))
-report.engineSha256 = createHash('sha256').update(await readFile(resolve(root, 'public/engine/kition_pdf_sdk_bg.wasm'))).digest('hex')
+report.engineSha256 = createHash('sha256').update(await readFile(resolve(root, 'public/engine/kition_pdf_kit_bg.wasm'))).digest('hex')
 const server = await createServer({ root, configFile: resolve(root, 'vite.config.ts'), server: { port: 0, host: '127.0.0.1' }, logLevel: 'error' })
 try {
   await server.listen()

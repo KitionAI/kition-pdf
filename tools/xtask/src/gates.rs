@@ -107,15 +107,16 @@ pub fn ci(_: &[String]) -> anyhow::Result<()> {
 }
 
 /// Dependency licences, bans, sources and advisories (`deny.toml`). Skipped with a hint when
-/// cargo-deny is not installed, except under CI (`CI` set), where it is required.
+/// cargo-deny is not installed, except under CI (`CI` set), where it is required and installed
+/// when the runner lacks it.
 pub fn deny(_: &[String]) -> anyhow::Result<()> {
     let installed = Command::new("cargo-deny").arg("--version").output().is_ok_and(|o| o.status.success());
     if !installed {
-        if std::env::var_os("CI").is_some() {
-            bail!("cargo-deny is required in CI: cargo install cargo-deny --locked");
+        if std::env::var_os("CI").is_none() {
+            eprintln!("deny: SKIPPED, cargo-deny is not installed (cargo install cargo-deny --locked)");
+            return Ok(());
         }
-        eprintln!("deny: SKIPPED, cargo-deny is not installed (cargo install cargo-deny --locked)");
-        return Ok(());
+        run_args(&["install", "cargo-deny", "--locked"])?;
     }
     run_args(&["deny", "--log-level", "error", "check"])
 }

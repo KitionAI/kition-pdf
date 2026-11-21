@@ -42,7 +42,7 @@ try {
   report.harness = {}
   for (const name of ['cache.mjs', 'cache-support.mjs', 'cache-probe.mjs', 'performance-probe.mjs']) report.harness[name] = hash(await readFile(resolve(root, 'tests', name)))
   const engineAssets = new Map()
-  for (const name of ['kition_pdf_kit.js', 'kition_pdf_sdk_bg.wasm']) {
+  for (const name of ['kition_pdf_kit.js', 'kition_pdf_kit_bg.wasm']) {
     const bytes = await readFile(resolve(engineDirectory, name))
     report.engine[name] = hash(bytes)
     engineAssets.set(`/engine/${name}`, bytes)

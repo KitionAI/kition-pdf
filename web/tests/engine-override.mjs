@@ -5,7 +5,7 @@ import { resolve } from 'node:path'
 /** Serve a test engine before Vite's static middleware, including requests made by Workers. */
 export async function engineOverride(directory, ordinaryDirectory) {
   const assets = new Map(), hashes = {}, served = {}
-  for (const name of ['kition_pdf_kit.js', 'kition_pdf_sdk_bg.wasm']) {
+  for (const name of ['kition_pdf_kit.js', 'kition_pdf_kit_bg.wasm']) {
     const data = await readFile(resolve(directory ?? ordinaryDirectory, name))
     assets.set(`/engine/${name}`, data)
     hashes[name] = createHash('sha256').update(data).digest('hex')

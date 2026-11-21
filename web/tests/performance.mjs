@@ -68,7 +68,7 @@ try {
   report.harness = {}
   for (const name of ['performance.mjs', 'performance-probe.mjs', 'performance-support.mjs', 'performance-process.mjs']) report.harness[name] = hash(await readFile(resolve(root, 'tests', name)))
   report.engine = { provenance: process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unknown: hashes alone do not establish source revision' }
-  for (const name of ['kition_pdf_kit.js', 'kition_pdf_sdk_bg.wasm']) report.engine[name] = hash(await readFile(resolve(root, 'public/engine', name)))
+  for (const name of ['kition_pdf_kit.js', 'kition_pdf_kit_bg.wasm']) report.engine[name] = hash(await readFile(resolve(root, 'public/engine', name)))
   report.fontAssets = {}
   for (const name of await readdir(resolve(root, 'public/fonts'))) if (/\.(?:ttf|otf|woff2?)$/i.test(name)) report.fontAssets[name] = hash(await readFile(resolve(root, 'public/fonts', name)))
   server = await createServer({ root, configFile: resolve(root, 'vite.config.ts'), server: { host: '127.0.0.1', port: 0 }, logLevel: 'error' })
