@@ -1108,7 +1108,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1935,7 +1935,7 @@ dependencies = [
 [[package]]
 name = "kition-headless"
 version = "0.1.0"
-source = "git+https://github.com/KitionAI/kition-sdk?rev=6b4d471603aebdde1ee23c1a1cc522f8bbd97883#6b4d471603aebdde1ee23c1a1cc522f8bbd97883"
+source = "git+https://github.com/KitionAI/kition-sdk?rev=6672663ab40248752234a69369fde2136fd73b37#6672663ab40248752234a69369fde2136fd73b37"
 dependencies = [
  "kition-kit",
  "kition-kit-host",
@@ -1948,7 +1948,7 @@ dependencies = [
 [[package]]
 name = "kition-kdm"
 version = "0.1.0"
-source = "git+https://github.com/KitionAI/kition-sdk?rev=6b4d471603aebdde1ee23c1a1cc522f8bbd97883#6b4d471603aebdde1ee23c1a1cc522f8bbd97883"
+source = "git+https://github.com/KitionAI/kition-sdk?rev=6672663ab40248752234a69369fde2136fd73b37#6672663ab40248752234a69369fde2136fd73b37"
 dependencies = [
  "loro",
  "serde",
@@ -1961,7 +1961,7 @@ dependencies = [
 [[package]]
 name = "kition-kit"
 version = "0.1.0"
-source = "git+https://github.com/KitionAI/kition-sdk?rev=6b4d471603aebdde1ee23c1a1cc522f8bbd97883#6b4d471603aebdde1ee23c1a1cc522f8bbd97883"
+source = "git+https://github.com/KitionAI/kition-sdk?rev=6672663ab40248752234a69369fde2136fd73b37#6672663ab40248752234a69369fde2136fd73b37"
 dependencies = [
  "kition-kdm",
  "serde",
@@ -1974,7 +1974,7 @@ dependencies = [
 [[package]]
 name = "kition-kit-host"
 version = "0.1.0"
-source = "git+https://github.com/KitionAI/kition-sdk?rev=6b4d471603aebdde1ee23c1a1cc522f8bbd97883#6b4d471603aebdde1ee23c1a1cc522f8bbd97883"
+source = "git+https://github.com/KitionAI/kition-sdk?rev=6672663ab40248752234a69369fde2136fd73b37#6672663ab40248752234a69369fde2136fd73b37"
 dependencies = [
  "hex",
  "kition-kit-process-protocol",
@@ -1991,7 +1991,7 @@ dependencies = [
 [[package]]
 name = "kition-kit-process-protocol"
 version = "0.1.0"
-source = "git+https://github.com/KitionAI/kition-sdk?rev=6b4d471603aebdde1ee23c1a1cc522f8bbd97883#6b4d471603aebdde1ee23c1a1cc522f8bbd97883"
+source = "git+https://github.com/KitionAI/kition-sdk?rev=6672663ab40248752234a69369fde2136fd73b37#6672663ab40248752234a69369fde2136fd73b37"
 dependencies = [
  "serde",
  "serde_json",
@@ -2002,7 +2002,7 @@ dependencies = [
 [[package]]
 name = "kition-kit-server"
 version = "0.1.0"
-source = "git+https://github.com/KitionAI/kition-sdk?rev=6b4d471603aebdde1ee23c1a1cc522f8bbd97883#6b4d471603aebdde1ee23c1a1cc522f8bbd97883"
+source = "git+https://github.com/KitionAI/kition-sdk?rev=6672663ab40248752234a69369fde2136fd73b37#6672663ab40248752234a69369fde2136fd73b37"
 dependencies = [
  "kition-kdm",
  "kition-kit-process-protocol",
@@ -2015,7 +2015,7 @@ dependencies = [
 [[package]]
 name = "kition-kits"
 version = "0.1.0"
-source = "git+https://github.com/KitionAI/kition-sdk?rev=6b4d471603aebdde1ee23c1a1cc522f8bbd97883#6b4d471603aebdde1ee23c1a1cc522f8bbd97883"
+source = "git+https://github.com/KitionAI/kition-sdk?rev=6672663ab40248752234a69369fde2136fd73b37#6672663ab40248752234a69369fde2136fd73b37"
 dependencies = [
  "base64",
  "hex",
@@ -3834,7 +3834,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -4377,7 +4377,7 @@ dependencies = [
  "getrandom 0.4.3",
  "once_cell",
  "rustix",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
