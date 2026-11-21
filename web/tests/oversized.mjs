@@ -79,8 +79,7 @@ try {
           const live = host.frames().find(item => item !== host.mainFrame())
           // Observe actual engine calls without changing their arguments or results.
           await live.evaluate(async () => {
-            const url = performance.getEntriesByType('resource').map(item => item.name).find(name => /\/engine\/kitEngine\.ts(?:\?|$)/.test(name))
-            const { KitEngine } = await import(url)
+            const { KitEngine } = await import('/tests/sdk-editor.mjs')
             window.fitRenders = []
             for (const method of ['render', 'renderArea']) {
               const previous = KitEngine.prototype[method]
@@ -141,11 +140,8 @@ try {
       result.checks.push('real excessive-source-work failure is visible with actionable guidance')
       const frame = page.frames().find(item => item !== page.mainFrame())
       await frame.evaluate(async () => {
-        const url = performance.getEntriesByType('resource').map(item => item.name).find(name => /\/engine\/kitEngine\.ts(?:\?|$)/.test(name))
-        if (!url) throw new Error('Live worker engine module is unavailable')
-        window.oversizedEngineModule = url
         window.realRenderFailures = 0
-        const { KitEngine } = await import(url)
+        const { KitEngine } = await import('/tests/sdk-editor.mjs')
         for (const method of ['render', 'renderArea']) {
           const previous = KitEngine.prototype[method]
           KitEngine.prototype[method] = async function (...args) {
@@ -164,7 +160,7 @@ try {
         let timeout
         let finished = false
         const run = async () => {
-          const { KitEngine } = await import(window.oversizedEngineModule)
+          const { KitEngine } = await import('/tests/sdk-editor.mjs')
           engine = await KitEngine.open({ kitId: 'kit.pdf', base: new URL('./engine/', document.baseURI).href, module: 'kition_pdf_kit', documentClass: 'PdfDocument' }, 'OversizedGeometry.pdf', new Uint8Array(fixture).buffer)
           if (finished) {
             engine.dispose()

@@ -16,34 +16,39 @@ KITION_GOLDEN_ENGINE_PROFILE=<verified-build-profile> \
 node tests/hairline.mjs \
   --manifest <fixture-directory>/manifest-pinned.json \
   --engine-dir <isolated-engine-package> \
-  --shared-dir <frozen-shared-sdk> \
+  --shared-dir <frozen-sdk-package> \
   --out <report.json> --browser chromium
 ```
 
-`--shared-dir` is optional; omitting it retains the live sibling SDK behavior.
-For an isolated run, prepare a frozen directory containing `package.json` and
-`src/` for each of `packages/kit-editor`, `kit-host`, `kit-ui-protocol`, `kit-dev-host`,
-`kit-engine`, and `kdm`. Existing external dependencies may be linked through
-`node_modules`; package source exports must point into the frozen source trees.
-No installation, download, source mutation, or snapshot creation is performed
-by the harness.
+`--shared-dir` is optional; omitting it runs on the `@kition/sdk` package the
+editor has installed (`web/node_modules/@kition/sdk`). For an isolated run,
+prepare a frozen copy of that package: a directory with its `package.json` and
+`dist/` (for example `cp -R web/node_modules/@kition/sdk/. <frozen-sdk>`). Its
+external dependencies (React, `@kition/tessera`) may be linked through a
+`node_modules` symlink beside them; package exports must point into the frozen
+`dist/lib`. No installation, download, source mutation, or snapshot creation is
+performed by the harness.
 
-Exact Vite aliases are derived from all six package manifests' string exports.
-All six packages are excluded from dependency prebundling, with resolution
-guards in the server and Worker plugins. Unknown shared exports and any
-resolution or file request into the live SDK's packages fail the run. The
-snapshot is added to Vite's filesystem allowlist. Each actual frozen source
-request records a portable relative module path, request count and SHA256 of
-the raw source bytes, which must match the initial snapshot fingerprint.
-The report requires observed requests for kit-editor's engine and worker plus
-kit-host, kit-ui-protocol and kit-dev-host. These request records demonstrate
-which snapshot was served; they do not claim hashes of Vite-transformed output.
+Exact Vite aliases (`@kition/sdk/editor`, `/host`, `/protocol`, `/dev-host`, ...)
+are derived from the frozen manifest's browser exports. The package is excluded
+from dependency prebundling, with resolution guards in the server and Worker
+plugins. Unknown subpaths and any resolution or file request into the installed
+package fail the run. The snapshot is added to Vite's filesystem allowlist. Each
+actual frozen module request records a portable relative module path, request
+count and SHA256 of the raw bytes, which must match the initial snapshot
+fingerprint. The report requires observed requests for the editor
+(`dist/lib/kit-editor/index.js`), its engine Worker asset, and the host side
+(`kit-host`, `kit-ui-protocol`, `kit-dev-host`). These request records
+demonstrate which snapshot was served; they do not claim hashes of
+Vite-transformed output.
 
 The engine override is mandatory. Its JS and WASM bytes are hash-recorded and
 served before Vite's static middleware, including Worker requests. Each file
 gets a fresh browser context, initially null host connection, and unique name.
 The test waits for that filename's completed host open before capturing the
-existing editor `KitEngine` using a read-only `bookmark_list` command. It checks
+existing editor `KitEngine` using a read-only `bookmark_list` command (the class
+comes from `@kition/sdk/editor` through `tests/sdk-editor.mjs`, which the page
+imports through Vite, so it is the class the editor runs). It checks
 one clean 128-by-128 page and DPR 1. Raster calls use the inspected page origin,
 not the surrounding editor's pasteboard origin. A request probe confirms that
 the real Worker receives each render. No second engine or page-thread WASM
@@ -77,10 +82,10 @@ remaining scales to run. Reports preserve separate population counts, harness,
 manifest, PDF and engine hashes, runtime/cleanup errors, asset requests, browser
 version and source provenance. Missing provenance is explicitly unspecified.
 The report is checkpointed after every document and finalized even on failure.
-The editor source and shared source trees are fingerprinted before and after
-execution, including drawing and editor primitives. In live mode the four
-original shared UI/host/protocol trees are checked. In snapshot mode all six
-frozen package source trees and manifests are checked instead of live sources.
+The editor source and the SDK package are fingerprinted before and after
+execution: `web/src`, and the package's `package.json` and browser code
+(`dist/lib`), from the installed package in live mode or the frozen copy in
+snapshot mode.
 Changes during the run fail the report and list their
 portable source paths, preventing unnoticed concurrent edits from being treated
 as stable evidence.

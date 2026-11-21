@@ -1,8 +1,6 @@
 /** Observe and fault-inject the existing development host; do not replace its storage handler. */
 export async function installSaveHostProbe() {
-  const url = performance.getEntriesByType('resource').map(item => item.name).find(name => /\/kit-ui-protocol\/src\/index\.ts(?:\?|$)/.test(name))
-  if (!url) throw new Error('Live protocol module is unavailable')
-  const { KitPeer } = await import(url)
+  const { KitPeer } = await import('/tests/sdk-protocol.mjs')
   const probe = window.__pdfSaveHost = {
     events: [], writes: [], failNext: false, holdNext: false, held: null, pending: null,
     event(type, detail = {}) { const entry = { sequence: this.events.length, type, ...detail }; this.events.push(entry); return entry },
@@ -29,9 +27,7 @@ export async function installSaveHostProbe() {
 
 /** Observe actual Worker serialization and markSaved calls without changing their output. */
 export async function installSaveEngineProbe() {
-  const url = performance.getEntriesByType('resource').map(item => item.name).find(name => /\/engine\/kitEngine\.ts(?:\?|$)/.test(name))
-  if (!url) throw new Error('Live engine module is unavailable')
-  const { KitEngine } = await import(url)
+  const { KitEngine } = await import('/tests/sdk-editor.mjs')
   const host = window.parent.__pdfSaveHost
   const probe = window.__pdfSaveEngine = { engine: null, serializations: [], marks: [] }
   const execute = KitEngine.prototype.execute

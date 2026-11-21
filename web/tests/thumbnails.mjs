@@ -54,9 +54,7 @@ try {
       await kit.getByTestId('pdf-thumb-0').locator('canvas').waitFor()
       const frame = page.frames().find(item => item !== page.mainFrame())
       await frame.evaluate(async () => {
-        const entry = performance.getEntriesByType('resource').map(item => item.name).find(name => /\/engine\/kitEngine\.ts(?:\?|$)/.test(name))
-        if (!entry) throw new Error('The live engine module was not loaded')
-        const { KitEngine } = await import(entry)
+        const { KitEngine } = await import('/tests/sdk-editor.mjs')
         const previous = KitEngine.prototype.render
         window.thumbnailProbe = { calls: [], fail: false, active: 0, maxActive: 0 }
         KitEngine.prototype.render = async function (...args) {

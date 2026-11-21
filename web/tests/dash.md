@@ -17,17 +17,17 @@ node --test tests/dash-support.test.mjs
 node tests/dash.mjs \
   --manifest <fixture-dir>/manifest-pinned.json \
   --engine-dir <isolated-engine-package> \
-  --shared-dir <frozen-sdk-source> \
+  --shared-dir <frozen-sdk-package> \
   --out <report-directory>/dash-chromium.json \
   --browser chromium
 ```
 
 `--shared-dir` is optional, as for [the hairline harness](hairline.md): without it the
-harness runs on the shared packages the editor resolves (what `pnpm test:dash` does through
+harness runs on the installed `@kition/sdk` the editor resolves (what `pnpm test:dash` does through
 `tests/ci.mjs`, which also exports and pins the fixtures and runs both browsers).
 
 Repeat with `--browser webkit` and a separate report. Use a dedicated engine
-package and frozen shared SDK checkout; ordinary packages are not replaced.
+package and frozen SDK package copy; ordinary packages are not replaced.
 Record source and engine fingerprints with the reports. The browser uses a fresh
 context for each PDF, observes actual editor Worker requests, and renders scales
 1, 2 and 4. Operations have a 20-second bound and cleanup a separate 60-second

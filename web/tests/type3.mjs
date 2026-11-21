@@ -9,7 +9,7 @@ import { chromium, webkit } from 'playwright'
 import { engineOverride } from './engine-override.mjs'
 import { installCacheQuietProbe } from './cache-probe.mjs'
 import { validateType3Manifest, compareType3Rasters, type3Summary, plannedCases, expectedRejection } from './type3-support.mjs'
-import { frozenSharedSource, sharedPackageNames } from './hairline-shared.mjs'
+import { frozenSharedSource, installedSdk, sdkFingerprints } from './hairline-shared.mjs'
 
 const options = { browser: 'chromium', 'timeout-ms': 20000 }, seen = new Set()
 for (let index = 2; index < process.argv.length; index++) {
@@ -63,11 +63,8 @@ async function sourceFingerprints() {
     }
   }
   await walk(resolve(root, 'src'), 'web/src')
-  const sharedRoot = shared?.root ?? resolve(root, '../../kition-sdk')
-  for (const name of shared ? sharedPackageNames : ['kit-editor', 'kit-host', 'kit-ui-protocol', 'kit-dev-host']) {
-    await walk(resolve(sharedRoot, 'packages', name, 'src'), `kition-sdk/packages/${name}/src`)
-    if (shared) fingerprints[`kition-sdk/packages/${name}/package.json`] = hash(await readFile(resolve(sharedRoot, 'packages', name, 'package.json')))
-  }
+  // The SDK package the editor runs on: the frozen copy (--shared-dir), else the installed one.
+  Object.assign(fingerprints, await sdkFingerprints(shared?.root ?? await installedSdk(root), { rejectSymlinks: Boolean(shared) }))
   for (const name of ['package.json', 'vite.config.ts']) fingerprints[`web/${name}`] = hash(await readFile(resolve(root, name)))
   return fingerprints
 }
@@ -89,9 +86,7 @@ async function captureEngine(page, filename) {
   const frame = await page.locator('#kit').elementHandle().then(handle => handle.contentFrame())
   assert.ok(frame, 'Real editor frame must exist')
   await bounded(frame.evaluate(async () => {
-    const url = performance.getEntriesByType('resource').map(item => item.name).find(name => /\/engine\/kitEngine\.ts(?:\?|$)/.test(name))
-    if (!url) throw new Error('Live editor engine module is unavailable')
-    const { KitEngine } = await import(url)
+    const { KitEngine } = await import('/tests/sdk-editor.mjs')
     const execute = KitEngine.prototype.execute
     KitEngine.prototype.execute = function (...args) {
       window.__type3Engine = this
@@ -127,7 +122,7 @@ try {
   report.manifestSha256 = hash(manifestBytes)
   validateType3Manifest(manifest)
   report.harness = {}
-  for (const name of ['type3.mjs', 'type3-support.mjs', 'mesh-support.mjs', 'hairline-shared.mjs', 'engine-override.mjs', 'cache-probe.mjs']) report.harness[name] = hash(await readFile(resolve(root, 'tests', name)))
+  for (const name of ['type3.mjs', 'type3-support.mjs', 'mesh-support.mjs', 'hairline-shared.mjs', 'sdk-editor.mjs', 'engine-override.mjs', 'cache-probe.mjs']) report.harness[name] = hash(await readFile(resolve(root, 'tests', name)))
   report.cases = plannedCases(manifest)
   report.comparisons = manifest.cases.filter(fixture => fixture.expectedMatch && !fixture.expectedTruncation).flatMap(fixture => [1, 2].flatMap(pass => manifest.scales.map(scale => ({ case: fixture.id, control: fixture.expectedMatch, scale, pass, status: 'untested' }))))
   report.repeats = manifest.cases.filter(fixture => !fixture.expectedTruncation).flatMap(fixture => manifest.scales.map(scale => ({ case: fixture.id, scale, status: 'untested' })))
@@ -142,7 +137,7 @@ try {
   override = await engineOverride(resolve(options['engine-dir']), resolve(root, 'public/engine'))
   report.engine.hashes = override.hashes
   report.engine.served = override.served
-  if (options['shared-dir']) shared = await frozenSharedSource(resolve(options['shared-dir']), resolve(root, '../../kition-sdk'))
+  if (options['shared-dir']) shared = await frozenSharedSource(resolve(options['shared-dir']), await installedSdk(root))
   report.sharedSource = shared?.report ?? { mode: 'live' }
   report.sourceFiles = { before: await sourceFingerprints(), after: null, changed: [] }
   shared?.setExpectedFingerprints(report.sourceFiles.before)

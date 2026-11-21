@@ -29,12 +29,12 @@ KITION_GOLDEN_ENGINE_PROFILE=<verified-build-profile> \
 node tests/font.mjs \
   --manifest <fixture-directory>/manifest-pinned.json \
   --engine-dir <isolated-engine-package> \
-  --shared-dir <frozen-shared-sdk> \
+  --shared-dir <frozen-sdk-package> \
   --out <report.json> --browser chromium --timeout-ms 20000
 ```
 
 `--shared-dir` is optional, as for [the hairline harness](hairline.md): without it the
-harness runs on the shared packages the editor resolves (what `pnpm test:font` does through
+harness runs on the installed `@kition/sdk` the editor resolves (what `pnpm test:font` does through
 `tests/ci.mjs`, which also exports and pins the fixtures and runs both browsers).
 
 Repeat with `--browser webkit` and a separate output file. The ordinary engine

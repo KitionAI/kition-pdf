@@ -15,12 +15,12 @@ KITION_GOLDEN_ENGINE_PROFILE=<verified-build-profile> \
 node tests/mesh.mjs \
   --manifest <fixture-directory>/manifest-pinned.json \
   --engine-dir <isolated-engine-package> \
-  --shared-dir <frozen-shared-sdk> \
+  --shared-dir <frozen-sdk-package> \
   --out <report.json> --browser chromium --timeout-ms 60000
 ```
 
 The isolated engine is mandatory; with `--shared-dir`, the harness
-reuses the exact six-package alias/request guard described in
+reuses the exact `@kition/sdk` alias/request guard described in
 [the hairline harness](hairline.md), including actual Worker module requests,
 source SHA checks and before/after snapshots. Ordinary engine packages and live
 shared source remain untouched. Each fixture gets a fresh browser context,

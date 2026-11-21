@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import { createServer } from 'vite'
 import { chromium, webkit } from 'playwright'
 import { engineOverride } from './engine-override.mjs'
+import { installedSdk, sdkFingerprints } from './hairline-shared.mjs'
 import { installSaveHostProbe } from './save-probe.mjs'
 import { saveCheckNames, saveScenarios } from './save-scenarios.mjs'
 
@@ -48,8 +49,9 @@ try {
   const bytes = await readFile(resolve(dirname(resolve(options.manifest)), manifest.file))
   assert.equal(hash(bytes), manifest.sha256)
   Object.assign(report, { manifestSha256: hash(manifestBytes), fixtureSha256: hash(bytes), harness: {}, sharedSources: {} })
-  for (const name of ['save.mjs', 'save-probe.mjs', 'save-scenarios.mjs', 'engine-override.mjs']) report.harness[name] = hash(await readFile(resolve(root, 'tests', name)))
-  for (const name of ['kit-dev-host/src/index.ts', 'kit-host/src/index.ts', 'kit-ui-protocol/src/index.ts', 'kit-editor/src/host.ts', 'kit-editor/src/useKitSession.ts', 'kit-editor/src/engine/useKitDocument.ts', 'kit-editor/src/engine/kitEngine.ts', 'kit-editor/src/engine/kitEngine.worker.ts']) report.sharedSources[name] = hash(await readFile(resolve(root, '../../kition-sdk/packages', name)))
+  for (const name of ['save.mjs', 'save-probe.mjs', 'save-scenarios.mjs', 'engine-override.mjs', 'hairline-shared.mjs', 'sdk-editor.mjs', 'sdk-protocol.mjs']) report.harness[name] = hash(await readFile(resolve(root, 'tests', name)))
+  // The installed @kition/sdk the host and editor run on (its manifest and browser code).
+  Object.assign(report.sharedSources, await sdkFingerprints(await installedSdk(root)))
   await mkdir(resolve(options['artifact-dir']), { recursive: true })
   await writeFile(resolve(options['artifact-dir'], 'original.pdf'), bytes, { flag: 'wx' })
   const document = { id: `original-save-${options.browser}`, original: 'original.pdf', sha256: hash(bytes), outputs: [] }

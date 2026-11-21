@@ -2,7 +2,7 @@
 
 This PDF-only harness consumes the native contributor-original two-page Type3
 fixtures. It uses the existing editor Worker, an isolated engine package and
-the frozen six-package source guard from the hairline/mesh harnesses when
+the frozen `@kition/sdk` package guard from the hairline/mesh harnesses when
 `--shared-dir` is given.
 The coordinator schedules execution; preparation never builds an engine or
 opens a browser.
@@ -13,7 +13,7 @@ KITION_GOLDEN_ENGINE_PROFILE=<verified-build-profile> \
 node tests/type3.mjs \
   --manifest <fixture-directory>/manifest.json \
   --engine-dir <isolated-engine-package> \
-  --shared-dir <frozen-shared-sdk> \
+  --shared-dir <frozen-sdk-package> \
   --out <report.json> --browser chromium --timeout-ms 20000
 ```
 

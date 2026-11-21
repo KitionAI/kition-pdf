@@ -52,6 +52,13 @@ cd web && pnpm engine
 node tests/performance.mjs --manifest <corpus-manifest.json> --out <report.json> --browser chromium
 ```
 
+`test:search` and `test:selection` are excluded because their probe (`web/tests/search-probe.mjs`)
+patches the editor's `RasterViewport` to read the view it shows, and `@kition/sdk/editor` does not
+export that class (only its types), so they cannot find it in the package, installed or linked,
+until it does. The other browser harnesses observe the live editor
+through `KitEngine` (`@kition/sdk/editor`) and `KitPeer` (`@kition/sdk/protocol`), which
+`web/tests/sdk-editor.mjs` and `web/tests/sdk-protocol.mjs` import through Vite.
+
 Two files under `docs/` are read by `cargo xtask assets`: [attribution.toml](attribution.toml), the
 list of every asset with its source, license and SHA-256, and [attribution.md](attribution.md),
 generated from it by `cargo xtask assets --write`.
