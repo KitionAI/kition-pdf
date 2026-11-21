@@ -8,7 +8,7 @@ import { createServer } from 'vite'
 import { chromium, webkit } from 'playwright'
 import { installPerformanceProbe } from './performance-probe.mjs'
 import { installCacheQuietProbe } from './cache-probe.mjs'
-import { PAGE_COUNT, PAGE_SIDE, PAGE_BYTES, CACHE_BUDGET, cacheFixture, pageColor, cachePlan, validateSnapshot, counterDelta, assertLookup, summarizeCache, parseCacheOptions } from './cache-support.mjs'
+import { PAGE_COUNT, PAGE_SIDE, PAGE_BYTES, CACHE_BUDGET, cacheFixture, pageColor, cachePlan, validateSnapshot, counterDelta, pagesReached, cacheModel, modelResidents, replayLookups, assertLookup, summarizeCache, parseCacheOptions } from './cache-support.mjs'
 
 const options = parseCacheOptions(process.argv.slice(2))
 if (options.help) {
@@ -108,12 +108,14 @@ try {
     assert.ok(pixel.every((value, channel) => Math.abs(value - expected[channel]) <= 1), 'Visible page-center color does not match the requested original fixture page')
     step.pixel = { actual: pixel, expected, tolerance: 1 }
   }
+  // The editor renders ahead of the view, so one 1:1 request may reach the neighbouring page too;
+  // returns every page it reaches, which the LRU replay checks lookup by lookup.
   const confirmOneToOne = async step => {
     const request = step.render.request
     assert.equal(request.method, 'render'); assert.equal(request.scale, 1)
     assert.equal(await frame.evaluate(() => window.devicePixelRatio), 1)
-    const intersections = await frame.evaluate(area => window.__kitionPerf.pages.flatMap((page, index) => area.x1 > page.area.x && area.x0 < page.area.x + page.area.width && area.y1 > page.area.y && area.y0 < page.area.y + page.area.height ? [index + 1] : []), request.area)
-    assert.deepEqual(intersections, [step.page], 'Cache deltas require an isolated single-page request')
+    step.pagesReached = pagesReached(request.area, await frame.evaluate(() => window.__kitionPerf.pages))
+    return step.pagesReached
   }
   await finish(activeStep)
   assert.equal(await frame.evaluate(() => window.__kitionPerf.pages.length), PAGE_COUNT)
@@ -122,6 +124,7 @@ try {
   activeStep.after = await snapshot()
   activeStep.status = 'passed'
   report.assertions.push('Opt-in diagnostics are available on the same real editor WASM instance with one live cache')
+  let model = cacheModel(activeStep.after.residentEntries)
   let pressureBefore
   for (const step of report.steps.slice(1)) {
     activeStep = step
@@ -141,10 +144,15 @@ try {
     step.quietAfter = await quiet()
     step.after = await snapshot()
     step.delta = counterDelta(step.before, step.after)
-    await confirmOneToOne(step)
+    const reached = await confirmOneToOne(step)
     await centerPixel(step)
     assert.equal(step.quietAfter.dispatched - step.quietBefore.dispatched, 1, 'Background or duplicate render requests contaminated the counter interval')
-    assertLookup(step.expectation, step.delta)
+    assert.equal(modelResidents(model), step.before.residentEntries, 'The cache changed outside the measured intervals')
+    // An edit replaces the renderer, whose new cache starts empty.
+    if (step.expectation === 'invalidate') model = cacheModel(0)
+    const replay = replayLookups(model, reached, step.delta.hits)
+    assertLookup(step, step.delta, replay)
+    assert.equal(modelResidents(model), step.after.residentEntries, 'Resident pages differ from the LRU replay')
     if (step.phase === 'pressure') {
       pressureBefore ??= step.before
       if (step.page === PAGE_COUNT) {
@@ -168,10 +176,10 @@ try {
     }
     step.status = 'passed'
     await save()
-    console.log(JSON.stringify({ phase: step.phase, page: step.page, status: step.status, hits: step.delta.hits, misses: step.delta.misses, evictions: step.delta.evictions, residentBytes: step.after.residentBytes }))
+    console.log(JSON.stringify({ phase: step.phase, page: step.page, reached: step.pagesReached, status: step.status, hits: step.delta.hits, misses: step.delta.misses, evictions: step.delta.evictions, residentBytes: step.after.residentBytes }))
   }
   assert.deepEqual(report.pageErrors, [])
-  report.assertions.push('Warm and reconstructed pages use exact hit deltas with unchanged synthetic center pixels; evicted pages require a new full render', 'After edit invalidation the second page misses, then the edited first page hits in its new revision')
+  report.assertions.push('Every measured render looks up exactly the pages it reaches (the editor renders ahead of the view), with hit, miss, admission and eviction deltas equal to an LRU replay', 'Warm and reconstructed pages use exact hit deltas with unchanged synthetic center pixels; evicted pages require a new full render', 'After edit invalidation the second page misses, then the edited first page hits in its new revision')
 } catch (error) {
   const message = safeError(error)
   report.errors.push(message)

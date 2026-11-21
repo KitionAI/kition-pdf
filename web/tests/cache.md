@@ -30,9 +30,20 @@ rectangle with a deterministic per-page color. Each whole-page image requires
 After opening the real development host, the test switches from thumbnails to
 bookmarks and waits for zero pending render requests plus 250 ms without render
 activity. It clicks Actual Size at DPR 1. Every measured view must then use
-`render` with scale exactly 1 and intersect only the requested PDF page. A
-second observer confirms exactly one real render request in each isolated
-counter interval; extra/background requests fail rather than contaminate data.
+`render` with scale exactly 1 and reach the requested PDF page. A second
+observer confirms exactly one real render request in each isolated counter
+interval; extra/background requests fail rather than contaminate data.
+
+The editor renders ahead of the view: kit-editor's raster viewport extends each
+frame past the view along the scrolled axis, so a request for page N at 1:1 can
+also reach the end of page N-1. The engine looks up every page a request
+reaches, in page order. The test therefore replays each request's pages against
+a model of the engine's LRU (16 whole pages in 64 MiB) and requires the exact
+hit, miss, admission, eviction and full-render deltas the replay predicts, and
+the same resident count as the snapshot before and after each step. Residents
+admitted before the measured steps (the cold open) are of unknown identity until
+an observation resolves them; a hit, miss or invalidation step requires its
+requested page to be known resident or known absent first.
 
 The sequence primes pages 1 and 2, then revisits both to prove exact hits. It
 visits pages 3 through 48 to exceed capacity, proves bounded occupancy and actual

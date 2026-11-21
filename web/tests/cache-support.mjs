@@ -63,19 +63,82 @@ export function counterDelta(before, after) {
   }))
 }
 
-export function assertLookup(expectation, delta) {
+/** The pages (1-based, ascending) a render area reaches, in the order the engine looks them up. */
+export function pagesReached(area, pages) {
+  return pages.flatMap((page, index) => area.x1 > page.area.x && area.x0 < page.area.x + page.area.width && area.y1 > page.area.y && area.y0 < page.area.y + page.area.height ? [index + 1] : [])
+}
+
+/**
+ * The engine's whole-page LRU as the harness knows it. The editor renders ahead: a 1:1 frame
+ * reaches past the view along the scrolled axis (kit-editor's raster viewport), so one render
+ * request looks up every page its area reaches, in page order, and admits each page it misses.
+ * `known` lists identified residents, least recently used first; `unknown` counts residents
+ * admitted before the model started, which are older than every known one.
+ */
+export function cacheModel(residentEntries, capacity = CACHE_BUDGET / PAGE_BYTES) {
+  assert.ok(Number.isSafeInteger(residentEntries) && residentEntries >= 0 && residentEntries <= capacity, 'Invalid starting resident count')
+  return { capacity, known: [], unknown: residentEntries }
+}
+
+export const modelResidents = model => model.known.length + model.unknown
+
+/**
+ * Replays one render's lookups (`pages` from pagesReached) against the model and returns the
+ * exact deltas it predicts, with each page's outcome. A page that is neither known resident
+ * nor known absent (residents of unknown identity remain) is uncertain: the observed hit count
+ * says how many uncertain pages hit. When only some did, which ones is unknown, so the replay
+ * accepts it only where no eviction can occur (then every count and the resulting LRU order are
+ * the same whichever hit) and marks those pages 'uncertain'. `certain` is false whenever the
+ * observation, not the model, decided an outcome.
+ */
+export function replayLookups(model, pages, observedHits) {
+  const known = new Set(model.known)
+  const uncertain = model.unknown > 0 ? pages.filter(page => !known.has(page)) : []
+  const uncertainHits = observedHits - pages.filter(page => known.has(page)).length
+  const absent = model.unknown > 0 ? 0 : pages.filter(page => !known.has(page)).length
+  const partial = uncertainHits > 0 && uncertainHits < uncertain.length
+  assert.ok(uncertainHits >= 0 && uncertainHits <= uncertain.length, `${observedHits} hits observed cannot come from pages ${pages.join(', ')}`)
+  assert.ok(!partial || modelResidents(model) + absent + uncertain.length - uncertainHits <= model.capacity, `Cache state is ambiguous for pages ${uncertain.join(', ')}: ${observedHits} hits observed at capacity`)
+  const delta = { hits: 0, misses: 0, admissions: 0, evictions: 0, fullRenderRequests: 0 }
+  const outcomes = new Map()
+  let unresolvedHits = uncertainHits
+  for (const page of pages) {
+    const position = model.known.indexOf(page)
+    const uncertainHit = position < 0 && uncertain.includes(page) && unresolvedHits > 0
+    if (position >= 0 || uncertainHit) {
+      if (position >= 0) model.known.splice(position, 1)
+      else { model.unknown -= 1; unresolvedHits -= 1 }
+      model.known.push(page)
+      delta.hits += 1; outcomes.set(page, partial && uncertainHit ? 'uncertain' : 'hit')
+      continue
+    }
+    delta.misses += 1; delta.fullRenderRequests += 1; delta.admissions += 1; outcomes.set(page, partial && uncertain.includes(page) ? 'uncertain' : 'miss')
+    if (modelResidents(model) >= model.capacity) {
+      if (model.unknown > 0) model.unknown -= 1
+      else model.known.shift()
+      delta.evictions += 1
+    }
+    model.known.push(page)
+  }
+  return { pages, delta, outcomes, certain: uncertain.length === 0 }
+}
+
+/**
+ * Exact counter deltas for one measured step: the LRU replay of every page the render reached,
+ * and the plan's expectation (hit, miss, invalidate) for the requested page itself.
+ */
+export function assertLookup(step, delta, replay) {
   assert.equal(delta.uncachedTileRequests, 0, 'The measured operation used a tile path')
   assert.equal(delta.largePageBypasses, 0, 'The measured operation bypassed the whole-page path')
   assert.equal(delta.retentionBypasses, 0, 'A small synthetic page unexpectedly bypassed cache retention')
   assert.equal(delta.replacements, 0, 'A lookup unexpectedly replaced a resident cache key')
-  if (expectation === 'hit') {
-    assert.equal(delta.hits, 1); assert.equal(delta.misses, 0)
-    assert.equal(delta.fullRenderRequests, 0); assert.equal(delta.admissions, 0); assert.equal(delta.evictions, 0)
-  } else if (expectation === 'miss' || expectation === 'invalidate') {
-    assert.equal(delta.hits, 0); assert.equal(delta.misses, 1)
-    assert.equal(delta.fullRenderRequests, 1); assert.equal(delta.admissions, 1)
-  } else assert.equal(delta.hits + delta.misses, 1, 'A single-page view must perform exactly one full-page lookup')
-  if (expectation === 'invalidate') { assert.equal(delta.displayInvalidations, 1); assert.equal(delta.rendererCreations, 1) }
+  assert.ok(replay.pages.includes(step.page), 'The measured render did not reach the requested page')
+  for (const key of Object.keys(replay.delta)) assert.equal(delta[key], replay.delta[key], `Counter ${key} differs from the LRU replay of pages ${replay.pages.join(', ')}`)
+  if (step.expectation !== 'any') {
+    assert.ok(replay.certain, `Page ${step.page} must be known resident or known absent before a ${step.expectation} step`)
+    assert.equal(replay.outcomes.get(step.page), step.expectation === 'hit' ? 'hit' : 'miss', `Page ${step.page} did not ${step.expectation === 'hit' ? 'hit' : 'miss'} the cache`)
+  }
+  if (step.expectation === 'invalidate') { assert.equal(delta.displayInvalidations, 1); assert.equal(delta.rendererCreations, 1) }
   else { assert.equal(delta.displayInvalidations, 0); assert.equal(delta.rendererCreations, 0) }
 }
 

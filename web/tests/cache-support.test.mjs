@@ -1,14 +1,52 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { CACHE_BUDGET, PAGE_BYTES, COUNTERS, cachePlan, cacheFixture, counterDelta, assertLookup, summarizeCache, parseCacheOptions } from './cache-support.mjs'
+import { CACHE_BUDGET, PAGE_BYTES, COUNTERS, cachePlan, cacheFixture, counterDelta, pagesReached, cacheModel, modelResidents, replayLookups, assertLookup, summarizeCache, parseCacheOptions } from './cache-support.mjs'
 
 const snapshot = extras => ({ schema: 1, scope: 'wasm-instance-thread-aggregate', counterLimit: Number.MAX_SAFE_INTEGER, saturated: false, ...Object.fromEntries(COUNTERS.map(key => [key, 0])), liveCaches: 1, residentBytes: PAGE_BYTES, residentEntries: 1, capacityBytes: CACHE_BUDGET, lastRendererGeneration: 1, lastDisplayRevision: 0, ...extras })
+const step = (page, expectation) => ({ page, expectation })
+const modelWith = (...pages) => { const model = cacheModel(0); for (const page of pages) replayLookups(model, [page], 0); return model }
 test('exact hit and miss deltas reject mixed or uncached work', () => {
   const before = snapshot()
-  assertLookup('hit', counterDelta(before, snapshot({ hits: 1 })))
-  assertLookup('miss', counterDelta(before, snapshot({ misses: 1, admissions: 1, fullRenderRequests: 1 })))
-  assert.throws(() => assertLookup('hit', counterDelta(before, snapshot({ hits: 1, misses: 1 }))))
-  assert.throws(() => assertLookup('hit', counterDelta(before, snapshot({ hits: 1, uncachedTileRequests: 1 }))))
+  assertLookup(step(1, 'hit'), counterDelta(before, snapshot({ hits: 1 })), replayLookups(modelWith(1), [1], 1))
+  assertLookup(step(1, 'miss'), counterDelta(before, snapshot({ misses: 1, admissions: 1, fullRenderRequests: 1 })), replayLookups(modelWith(), [1], 0))
+  assert.throws(() => assertLookup(step(1, 'hit'), counterDelta(before, snapshot({ hits: 1, misses: 1 })), replayLookups(modelWith(1), [1], 1)))
+  assert.throws(() => assertLookup(step(1, 'hit'), counterDelta(before, snapshot({ hits: 1, uncachedTileRequests: 1 })), replayLookups(modelWith(1), [1], 1)))
+  assert.throws(() => assertLookup(step(1, 'hit'), counterDelta(before, snapshot({ misses: 1, admissions: 1, fullRenderRequests: 1 })), replayLookups(modelWith(), [1], 0)))
+  assert.throws(() => assertLookup(step(2, 'hit'), counterDelta(before, snapshot({ hits: 1 })), replayLookups(modelWith(1), [1], 1)))
+})
+test('a render ahead of the view looks up each page it reaches in page order', () => {
+  const pages = [1, 2, 3].map(index => ({ area: { x: 0, y: (index - 1) * 1056, width: 1024, height: 1024 } }))
+  assert.deepEqual(pagesReached({ x0: 0, y0: 600, x1: 1440, y1: 1900 }, pages), [1, 2])
+  assert.deepEqual(pagesReached({ x0: 0, y0: 0, x1: 1440, y1: 1040 }, pages), [1])
+  const model = modelWith(1)
+  const replay = replayLookups(model, [1, 2], 1)
+  assert.deepEqual(replay.delta, { hits: 1, misses: 1, admissions: 1, evictions: 0, fullRenderRequests: 1 })
+  assertLookup(step(2, 'miss'), counterDelta(snapshot(), snapshot({ hits: 1, misses: 1, admissions: 1, fullRenderRequests: 1 })), replay)
+  assert.throws(() => assertLookup(step(2, 'miss'), counterDelta(snapshot(), snapshot({ misses: 1, admissions: 1, fullRenderRequests: 1 })), replayLookups(modelWith(1), [1, 2], 1)))
+  assert.deepEqual(model.known, [1, 2])
+})
+test('the LRU replay evicts the least recently used page at capacity', () => {
+  const capacity = CACHE_BUDGET / PAGE_BYTES
+  const model = modelWith(...Array.from({ length: capacity }, (_, index) => index + 1))
+  replayLookups(model, [1], 1)
+  const replay = replayLookups(model, [capacity, capacity + 1], 1)
+  assert.deepEqual(replay.delta, { hits: 1, misses: 1, admissions: 1, evictions: 1, fullRenderRequests: 1 })
+  assert.equal(modelResidents(model), capacity)
+  assert.ok(!model.known.includes(2) && model.known.includes(1))
+})
+test('residents of unknown identity resolve only from an unambiguous observation', () => {
+  const unresolved = cacheModel(1)
+  const replay = replayLookups(unresolved, [1], 1)
+  assert.equal(replay.certain, false)
+  assert.deepEqual(unresolved, { capacity: CACHE_BUDGET / PAGE_BYTES, known: [1], unknown: 0 })
+  assert.throws(() => assertLookup(step(1, 'hit'), counterDelta(snapshot(), snapshot({ hits: 1 })), replayLookups(cacheModel(1), [1], 1)))
+  const partial = cacheModel(1)
+  const mixed = replayLookups(partial, [1, 2], 1)
+  assert.deepEqual(mixed.delta, { hits: 1, misses: 1, admissions: 1, evictions: 0, fullRenderRequests: 1 })
+  assert.deepEqual([...mixed.outcomes.values()], ['uncertain', 'uncertain'])
+  assert.deepEqual(partial.known, [1, 2])
+  assert.throws(() => replayLookups(cacheModel(CACHE_BUDGET / PAGE_BYTES), [1, 2], 1))
+  assert.throws(() => replayLookups(cacheModel(1), [1], 2))
 })
 test('invalid gauges and counter resets cannot masquerade as bounded cache behavior', () => {
   assert.throws(() => counterDelta(snapshot({ hits: 2 }), snapshot({ hits: 1 })))
