@@ -86,9 +86,12 @@ export async function saveScenarios({ page, kit, bytes, manifest, result, snapsh
   }
   await run(0, async () => { await open(bytes); await bookmarks(0); assert.equal((await ask('comment_list')).result.comments.length, 0) })
   await run(1, async () => {
-    await add(1); assert.equal((await inspect()).canUndo, true)
+    // The bookmark is the agent's step (ai.run), so it is in the agent's undo scope (KitModel M12a,
+    // engine rule E14a): the person's history, which inspect's canUndo and canRedo describe, has
+    // no step, and the agent's own edit.undo and edit.redo take it back and bring it back.
+    await add(1); assert.equal((await inspect()).canUndo, false, "The agent's step must stay out of the person's undo history")
     assert.equal((await ask('edit.undo')).changed, true); await bookmarks(0)
-    assert.equal((await inspect()).canRedo, true)
+    assert.equal((await inspect()).canRedo, false, "The agent's undone step must stay out of the person's redo history")
     assert.equal((await ask('edit.redo')).changed, true); await bookmarks(1); await state(true)
   })
   await run(2, async () => {
