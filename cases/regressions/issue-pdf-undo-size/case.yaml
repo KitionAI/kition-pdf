@@ -1,0 +1,24 @@
+format: 1
+id: regressions/issue-pdf-undo-size
+feature: pdf.agent.premises
+intent: >-
+  An undo restores exactly the state before the edit, so a document saves as the same bytes,
+  and has the same ~state, whether or not an edit was made and undone: "A, B, undo B" saves as
+  "A"; "A, B, undo, redo" as "A, B"; "A, B, undo, C" as "A, C" (C numbers its objects as without
+  B); "A, B, save, undo" as "A". Before, the numbers the undone edit's objects took stayed
+  counted: the trailer /Size (one greater than the highest object number the file defines,
+  ISO 32000-1 7.5.5) still counted them and the next edit numbered its objects after them, so an
+  agent's ~state read after "A" no longer matched after "A, B, undo".
+layer: gate
+tags: [headless, guard]
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/undo_numbers.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: "kition-pdf-kit", test: "undo_numbers" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-22"
