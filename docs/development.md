@@ -38,8 +38,8 @@ cd web && pnpm install && pnpm engine && pnpm test:flow
 editor in a development host; `web/package.json` lists the other browser tests (`test:modes`,
 `test:search`, `test:selection`, `test:save`, …).
 
-The check every change passes is `cargo xtask ci` ([quality.md](quality.md)); `cargo xtask --help`
-lists the other tasks.
+The check every change passes is `cargo xtask ci` ([quality.md](quality.md)), which runs in the kit's
+CI run; `cargo xtask --help` lists the other tasks.
 
 Kition's kit CI runs on GitHub on every push to `ci/**`: the Rust checks, `cargo xtask ci`, and
 each `test:*` script of `web/` as its own job, except the scripts `.github/kit-ci.json` excludes.

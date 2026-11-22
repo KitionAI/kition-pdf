@@ -153,7 +153,7 @@ If you find an asset that breaks these rules, stop and remove it from the reposi
   its tool exists and has an end-to-end test (`crates/engine/automation/README.md`, "Adding a tool").
 - **Safe by default.** Tools must never discard unsaved work silently, must write atomically, must honour `--root`, and must return errors an agent can act on (say what was wrong and what is allowed).
 - **Track parity honestly.** Every user-facing feature has an entry in `tools/parity/acrobat-features.toml`. Mark it `shipped` only when it works end to end and the entry cites a passing test (`evidence`); `cargo xtask parity` (part of `xtask ci`) rejects claims whose commands, tools or tests don't exist.
-- **Use it to test.** Agents should drive the engine through the automation tools and look at `page_render` output to check their own changes. For UI changes, look at the real editor (`cd web && pnpm dev`, or `pnpm test:flow`).
+- **Use it to test.** Agents should drive the engine through the automation tools and look at `page_render` output to check their own changes. For UI changes, look at the real editor (`cd web && pnpm dev`); the automated flow tests (`pnpm test:flow`) run in the kit's CI run.
 
 ## 4. Never crash
 
@@ -171,4 +171,4 @@ Kition PDF opens files from strangers, and people trust it with their work. A ma
 ## 5. Everything else
 
 
-Follow `.claude/CLAUDE.md`. It covers quality gates, layering, commit rules and how to run and look at the app.
+Follow `.claude/CLAUDE.md`. It covers checks and CI, layering, commit rules and how to run and look at the app.

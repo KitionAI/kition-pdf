@@ -22,7 +22,7 @@ Kition PDF is a clean-room, open-source, Rust-native PDF kit targeting Adobe Acr
 - **Assets: read `AGENTS.md` §1 before adding or showing any icon, image, font or document.** No assets from Adobe products, ever. Only openly licensed or contributor-original assets are allowed, each with an entry in `docs/attribution.toml`. `cargo xtask assets` enforces this. `AGENTS.md` overrides this file.
 - **Fonts live in [KitionAI/kition-fonts](https://github.com/KitionAI/kition-fonts).** Never commit font files here (`AGENTS.md` §1.4).
   - Clone it next to this repository: `git clone https://github.com/KitionAI/kition-fonts ../kition-fonts`. Tests that add its fonts the way a host does (`kition-pdf-kit`'s `document_fonts` and its Chinese `add_font` test, `kition-pdf-render`'s Chinese CID substitute) read them from that checkout, or from the one `KITION_FONTS_DIR` names (an absolute path: build scripts and tests run in their own package's folder), and fail without one; `pnpm engine` copies Droid Sans Fallback from it.
-  - Run the tests and `cargo xtask ci` with `KITION_FONTS_DIR` unset. That build has no built-in faces, so the tests of built-in Japanese and Arabic faces skip and check the build without them.
+  - The tests and `cargo xtask ci` run with `KITION_FONTS_DIR` unset. That build has no built-in faces, so the tests of built-in Japanese and Arabic faces skip and check the build without them.
   - `KITION_FONTS_DIR=<checkout>` at build time also makes `crates/support/fonts/build.rs` build in the checkout's Japanese, Arabic and Telugu faces as `kition_pdf_fonts::KITION_FONTS`; Chinese, Latin and emoji faces are left to the host (`add_font`). The public kition-fonts holds BIZ UDPGothic, BIZ UDMincho, Shippori Mincho and Noto Sans Arabic, which a build with it embeds (Shippori Mincho's kanji derive from Source Han Serif: the one exception in §1.1 of AGENTS.md). A test that needs a face the checkout lacks fails, naming it and where it comes from. Code using `KITION_FONTS` must work when it is empty.
 - **Clean-room.**
   - Never read, disassemble or copy anything inside the Acrobat bundle (names and listings only). **Never open `Contents/Resources/JavaScripts/`.**
@@ -41,8 +41,8 @@ Kition PDF is a clean-room, open-source, Rust-native PDF kit targeting Adobe Acr
   - No `unsafe` (`unsafe_code = "forbid"`).
   - Every crash fix gets a synthetic regression test. See `AGENTS.md` §4.
 - **Rust only** in the product and build (`xtask`). No handwritten JS/TS.
-- **Quality gates** before every commit: `cargo fmt --check`, `cargo clippy --workspace -- -D warnings`, `cargo test --workspace`, and the wasm check (`cargo xtask ci` runs them all).
-- **Commits:** one task id per commit (e.g. `M1.4: xref stream reader`). Commit only green states. End messages with the attribution line required by the environment.
+- **Checks and CI:** the full checks run in the kit's CI run on GitHub, not on this machine. Locally, run only the fast checks: `cargo fmt --all -- --check`, `cargo check -p <touched crates> --all-targets`, the wasm `cargo check` (`cargo check --target wasm32-unknown-unknown -p kition-pdf-kit`) and `pnpm typecheck` in `web/`. The full checks (`cargo fmt --check`, `cargo clippy --workspace -- -D warnings`, `cargo test --workspace`, the wasm check — `cargo xtask ci` runs them all — and every `test:*` script of `web/`) run in the CI run that `.github/workflows/ci.yml` starts through Kition's reusable kit CI; add no other workflow, and never start the Package workflow (releasing is the owner's step). A task is done when the CI run of HEAD is green and HEAD is on `origin/main` (Kition's `scripts/kit-ci.sh push`, `wait`, `land`).
+- **Commits:** one task id per commit (e.g. `M1.4: xref stream reader`). Commit only states that pass the fast checks; a commit lands on `origin/main` only after its CI run is green. End messages with the attribution line required by the environment.
 
 ## Running and looking at the app
 - Kition shows this kit's editor (`web/`) in the page, over the Kit UI protocol; its agent drives
@@ -51,8 +51,8 @@ Kition PDF is a clean-room, open-source, Rust-native PDF kit targeting Adobe Acr
   engine's tool table lives in `crates/engine/automation`, used by `kition-pdf-kit` and `kition-pdf`.
 - `cargo xtask parity [--partial]` reports Acrobat-parity progress from `tools/parity/acrobat-features.toml`. Update the entry when a feature ships.
 - `cargo xtask demo-pdf` builds `dist/demo/kition-pdf-showcase.pdf` (needs Chrome) for visual checks.
-- For UI work, **look at the result** in the real editor: `cd web && pnpm install && pnpm engine && pnpm dev` (or `pnpm test:flow` for the automated flow tests, chromium and webkit).
-- Parallel agents: use a separate `CARGO_TARGET_DIR` per agent and separate git worktrees.
+- For UI work, **look at the result** in the real editor: `cd web && pnpm install && pnpm engine && pnpm dev` (the automated flow tests, `pnpm test:flow` in chromium and webkit, run in the kit's CI run).
+- Agents commit on `main` in this checkout; one agent per repository at a time.
 
 ## Current bootstrap debt (tracked in STATUS.md)
 - `kition-pdf-render` renders through the `hayro` crate directly and inspects documents through `lopdf`. Both get replaced by `cos` / `model` / the DisplayList device (M1–M2, ADR-0004).

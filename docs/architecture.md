@@ -97,15 +97,17 @@ Every user-facing feature is reachable headlessly (`AGENTS.md` §3):
 - `crates/formats/filters/fuzz` is a cargo-fuzz target for the stream decoders; every crash fix
   comes with a synthetic regression test (`AGENTS.md` §4).
 
-## Build and quality gates
+## Build and checks
 
 `cargo xtask ci` runs fmt, clippy (`-D warnings`), tests, the layering check, the WASM check,
 `xtask assets` (asset licences and hashes), `xtask parity` (checklist claims must cite real commands,
 tools and tests) and `xtask deny` (dependency licences). Other tasks: `xtask corpus` (private
 corpora rendered and compared with Poppler), `xtask demo-pdf`, `xtask models` (OCR models),
-`xtask version`, and `xtask eval` (real-model cases; only a maintainer starts it). This repository's only
-workflow is the Package workflow (`.github/workflows/package.yml`), which builds and publishes the
-kit's package on GitHub with Kition's reusable `kit-package.yml`.
+`xtask version`, and `xtask eval` (real-model cases; only a maintainer starts it). This repository has two
+workflows: `.github/workflows/ci.yml`, the kit's CI run (Kition's reusable kit CI: the Rust checks,
+`cargo xtask ci` and the browser tests of `web/`), and the Package workflow
+(`.github/workflows/package.yml`), which builds and publishes the kit's package on GitHub with
+Kition's reusable `kit-package.yml` and only the owner starts.
 
 ## Revision history
 

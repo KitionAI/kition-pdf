@@ -301,4 +301,4 @@ covers them).
 
 `tools/xtask/src/corpus/` is the source code of `cargo xtask corpus` (private corpora rendered and
 compared with Poppler) and `web/tests/corpus.mjs` the local corpus smoke through the real host;
-they are local corpus measurement, not expected results and not the gate case runner.
+they are local corpus measurement, not expected results and not the runner of the gating tests.

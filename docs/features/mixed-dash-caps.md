@@ -26,8 +26,8 @@ of the production interval walker. For example, `[0 12 6 12] 3 d` has dots at 27
 57 and positive runs 9–15, 39–45 and 69–75 on an 84-unit line. Square-dot control
 deltas are binary-exact after PDF float parsing so their direction remains correct.
 
-Use a separate worktree and build directory. From the repository root, export the
-PDFs into a new ignored directory beneath that worktree's `target/`:
+Use a separate build directory. From the repository root, export the PDFs into a new
+ignored directory beneath `target/`:
 
 ```sh
 export CARGO_TARGET_DIR="$PWD/target/mixed-dash-checks"

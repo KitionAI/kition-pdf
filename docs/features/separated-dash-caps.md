@@ -28,8 +28,8 @@ dots. For example, `[0 12 6 12] 0 d` restarts with dots at 0 and 30 on both a
 12-18 and 42-44 on the latter. Square-dot controls use binary-exact endpoint
 differences after PDF float parsing to preserve their authored directions.
 
-Use a separate worktree and build directory. From the repository root, export into
-a new ignored directory beneath that worktree's `target/`:
+Use a separate build directory. From the repository root, export into a new ignored
+directory beneath `target/`:
 
 ```sh
 export CARGO_TARGET_DIR="$PWD/target/separated-dash-checks"
