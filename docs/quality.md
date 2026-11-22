@@ -278,10 +278,11 @@ anything it lists goes to the maintainers and is never merged automatically.
 
 ## Expected results in this repository
 
-`conformance/golden/` holds stored reference outputs: the expected previews of
-`conformance/basic.pdf` (written by `bindings/wasm/examples/checks.rs`) and their
-`tolerance.json`. kition-sdk's `tools/check-expected.mjs` lists their changes for the maintainers
-through its `**/golden/**` glob.
+Besides `cases/**/expected/`, `conformance/expected/` is an expected result: the expected
+previews of `conformance/basic.pdf` (written by `bindings/wasm/examples/checks.rs`) and their
+`tolerance.json`. Only a maintainer approves a change to them, and kition-sdk's
+`tools/check-expected.mjs` lists every change for the maintainers (its `**/expected/**` glob
+covers them).
 
 `tools/xtask/src/corpus/` is the source code of `cargo xtask corpus` (private corpora rendered and
 compared with Poppler) and `web/tests/corpus.mjs` the local corpus smoke through the real host;

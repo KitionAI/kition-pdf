@@ -1,6 +1,6 @@
 //! Writes the conformance fixtures (KHP `spec/conformance.md`): `basic.pdf`, which `pdf_check` finds
 //! clean, one `check-<code>.pdf` per code of `agent/checks.json`, on which the check reports that
-//! code, and `golden/` (the previews of `basic.pdf`).
+//! code, and `expected/` (the expected previews of `basic.pdf`).
 //! `cargo run -p kition-pdf-kit --example checks -- conformance`. The files are written object by
 //! object (the same bytes on every run); the restricted one goes through the kit's own
 //! `doc_protect` tool.
@@ -157,23 +157,23 @@ fn restricted(dir: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// `golden/basic.png` and `golden/basic-scale-2.png`: the engine's own render of `basic.pdf`, at 1
+/// `expected/basic.png` and `expected/basic-scale-2.png`: the engine's own render of `basic.pdf`, at 1
 /// and 2 pixels per point, which `<prefix>_inspect { preview }` must match.
-fn golden(dir: &Path, bytes: &[u8]) -> Result<(), String> {
+fn expected_previews(dir: &Path, bytes: &[u8]) -> Result<(), String> {
     use kition_kit::KitDocument;
     let doc = kition_pdf_kit::PdfDocument::open("basic.pdf", bytes)?;
-    let golden = dir.join("golden");
-    std::fs::create_dir_all(&golden).map_err(|error| error.to_string())?;
+    let expected = dir.join("expected");
+    std::fs::create_dir_all(&expected).map_err(|error| error.to_string())?;
     for (file, scale) in [("basic.png", 1.0), ("basic-scale-2.png", 2.0)] {
         let (width, height) = ((f64::from(doc.width()) * scale) as u32, (f64::from(doc.height()) * scale) as u32);
         let rgba = doc.render(0.0, 0.0, scale, width, height)?;
-        let out = std::fs::File::create(golden.join(file)).map_err(|error| error.to_string())?;
+        let out = std::fs::File::create(expected.join(file)).map_err(|error| error.to_string())?;
         let mut encoder = png::Encoder::new(std::io::BufWriter::new(out), width, height);
         encoder.set_color(png::ColorType::Rgba);
         encoder.set_depth(png::BitDepth::Eight);
         let mut writer = encoder.write_header().map_err(|error| error.to_string())?;
         writer.write_image_data(&rgba).map_err(|error| error.to_string())?;
-        println!("wrote golden/{file}");
+        println!("wrote expected/{file}");
     }
     Ok(())
 }
@@ -186,7 +186,7 @@ fn main() -> Result<(), String> {
         std::fs::write(dir.join(name), &bytes).map_err(|error| format!("{name}: {error}"))?;
         println!("wrote {name}");
         if name == "basic.pdf" {
-            golden(dir, &bytes)?;
+            expected_previews(dir, &bytes)?;
         }
     }
     restricted(&std::fs::canonicalize(dir).map_err(|error| error.to_string())?)

@@ -939,7 +939,7 @@ usage = "khp check and agent/checks.json fixtures (bindings/wasm/tests/checks.rs
 sha256 = "2d19a6d1901ec3662ccc495433c06c2e0636adc27e109836432bde3eb2d12385"
 
 [[asset]]
-path = "conformance/golden/basic.png"
+path = "conformance/expected/basic.png"
 title = "Expected preview of conformance/basic.pdf (basic.png)"
 author = "Kition authors"
 source = "Contributor-original: written by bindings/wasm/examples/checks.rs (hand-written PDF objects; check-restricted.pdf through the kit's doc_protect tool; previews rendered by the kit's engine)"
@@ -950,7 +950,7 @@ usage = "khp check and agent/checks.json fixtures (bindings/wasm/tests/checks.rs
 sha256 = "956891fb1a6e82250a9ecdd311c9f5b9c2588e2cb0703fb419770d69a578491a"
 
 [[asset]]
-path = "conformance/golden/basic-scale-2.png"
+path = "conformance/expected/basic-scale-2.png"
 title = "Expected preview of conformance/basic.pdf (basic-scale-2.png)"
 author = "Kition authors"
 source = "Contributor-original: written by bindings/wasm/examples/checks.rs (hand-written PDF objects; check-restricted.pdf through the kit's doc_protect tool; previews rendered by the kit's engine)"
