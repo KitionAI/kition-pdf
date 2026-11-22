@@ -21,7 +21,7 @@ node tests/search.mjs \
 
 Run browsers serially. The report records the engine JavaScript/WASM hashes,
 harness hashes, fixture hash, browser version, and optional
-`KITION_GOLDEN_ENGINE_REVISION` / `KITION_GOLDEN_ENGINE_PROFILE` provenance.
+`KITION_ENGINE_REVISION` / `KITION_ENGINE_PROFILE` provenance.
 A binary hash alone does not prove the source revision or build profile.
 
 `--engine-dir` is optional. When supplied, the shared

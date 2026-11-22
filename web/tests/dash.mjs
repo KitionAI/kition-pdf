@@ -33,7 +33,7 @@ const report = {
   scope: 'Original affine dashed hairline controls through the real editor Worker',
   configuration: { scales: [1, 2, 4], viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, timeoutMs: options['timeout-ms'], cleanupTimeoutMs: 60000 },
   expected: null,
-  engine: { source: safe(process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unspecified; binary fingerprints alone do not establish source'), profile: safe(process.env.KITION_GOLDEN_ENGINE_PROFILE ?? 'unspecified') },
+  engine: { source: safe(process.env.KITION_ENGINE_REVISION ?? 'unspecified; binary fingerprints alone do not establish source'), profile: safe(process.env.KITION_ENGINE_PROFILE ?? 'unspecified') },
   limitations: ['Contributor-original paths only; no full-corpus fidelity claim.', 'User-space scalar intervals precede affine transformation; curved and compound paths use authored probes plus independently segmented controls.', 'Same-backend complete RGBA comparisons allow channel differences up to 2; exact equality is reported separately.', 'Direct RGBA comes from the live editor Worker; physical screen presentation is not asserted.'],
   cases: [], comparisons: [], errors: [],
 }

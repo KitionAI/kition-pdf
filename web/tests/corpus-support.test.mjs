@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { closeResource, parseOptions } from './golden-support.mjs'
+import { closeResource, parseOptions } from './corpus-support.mjs'
 
 test('CLI validates all options before starting a browser', () => {
   const valid = ['--manifest', '/tmp/cases.json', '--out', '/tmp/report.json']

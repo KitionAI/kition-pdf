@@ -10,8 +10,8 @@ The coordinating task schedules browser runs serially and pins the native
 fixture manifest before execution:
 
 ```sh
-KITION_GOLDEN_ENGINE_REVISION=<verified-source-digest> \
-KITION_GOLDEN_ENGINE_PROFILE=<verified-build-profile> \
+KITION_ENGINE_REVISION=<verified-source-digest> \
+KITION_ENGINE_PROFILE=<verified-build-profile> \
 node tests/mesh.mjs \
   --manifest <fixture-directory>/manifest-pinned.json \
   --engine-dir <isolated-engine-package> \

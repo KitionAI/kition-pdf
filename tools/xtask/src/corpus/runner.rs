@@ -5,8 +5,8 @@ use std::{collections::BTreeMap, io::BufReader, sync::Arc};
 pub(super) fn run(args: &[String]) -> Result<()> {
     validate_args(args, &["--manifest", "--out", "--suite", "--dpi", "--timeout", "--group", "--limit-files"], &["--resume"], None)?;
     let manifest: Manifest =
-        serde_json::from_slice(&fs::read(arg(args, "--manifest")?)?).context("expected native schema-v2 manifest; run golden inventory first")?;
-    ensure!(manifest.schema_version == SCHEMA && !manifest.files.is_empty(), "unsupported or empty manifest; run golden inventory first");
+        serde_json::from_slice(&fs::read(arg(args, "--manifest")?)?).context("expected native schema-v2 manifest; run corpus inventory first")?;
+    ensure!(manifest.schema_version == SCHEMA && !manifest.files.is_empty(), "unsupported or empty manifest; run corpus inventory first");
     let out = PathBuf::from(arg(args, "--out")?);
     fs::create_dir_all(&out)?;
     let suite = option(args, "--suite").unwrap_or_else(|| "smoke".into());
@@ -105,7 +105,7 @@ pub(super) fn run(args: &[String]) -> Result<()> {
     )?;
     html(&out, &results)?;
     eprintln!("report: {} ({} pages, {failed} failures)", out.join("report.json").display(), results.len());
-    ensure!(failed == 0, "{failed} golden tasks failed; all failures are recorded in report.json");
+    ensure!(failed == 0, "{failed} corpus tasks failed; all failures are recorded in report.json");
     Ok(())
 }
 fn selected_pages(count: u64, suite: &str) -> Vec<u64> {
@@ -120,7 +120,7 @@ fn selected_pages(count: u64, suite: &str) -> Vec<u64> {
 }
 fn measure(entry: &Entry, page: u64, dpi: u64, timeout: u64, dir: &Path, fingerprint: &str) -> Result<Value> {
     let mut native = Command::new(std::env::current_exe()?);
-    native.args(["golden", "worker-render"]).arg(&entry.path).arg(page.to_string()).arg(dpi.to_string()).arg(dir);
+    native.args(["corpus", "worker-render"]).arg(&entry.path).arg(page.to_string()).arg(dpi.to_string()).arg(dir);
     let native_process = timed(&mut native, timeout, &dir.join("native.log"))?;
     let mut reference = Command::new("pdftoppm");
     reference
@@ -255,7 +255,7 @@ fn escape(value: &str) -> String {
 }
 fn html(out: &Path, results: &[Value]) -> Result<()> {
     let mut html = String::from(
-        "<!doctype html><meta charset=utf-8><title>Local golden PDF comparison</title><style>body{font:14px sans-serif}img{width:32%;border:1px solid #ddd}article{margin:2em 0}</style><h1>Local golden PDF comparison</h1><p>Native / Poppler reference / absolute difference. Differences are review candidates, not correctness verdicts. See report.json for every file and failure.</p>",
+        "<!doctype html><meta charset=utf-8><title>Local corpus PDF comparison</title><style>body{font:14px sans-serif}img{width:32%;border:1px solid #ddd}article{margin:2em 0}</style><h1>Local corpus PDF comparison</h1><p>Native / Poppler reference / absolute difference. Differences are review candidates, not correctness verdicts. See report.json for every file and failure.</p>",
     );
     for r in results {
         html.push_str(&format!(

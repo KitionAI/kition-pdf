@@ -8,8 +8,8 @@ The coordinator schedules execution; preparation never builds an engine or
 opens a browser.
 
 ```sh
-KITION_GOLDEN_ENGINE_REVISION=<verified-source-digest> \
-KITION_GOLDEN_ENGINE_PROFILE=<verified-build-profile> \
+KITION_ENGINE_REVISION=<verified-source-digest> \
+KITION_ENGINE_PROFILE=<verified-build-profile> \
 node tests/type3.mjs \
   --manifest <fixture-directory>/manifest.json \
   --engine-dir <isolated-engine-package> \

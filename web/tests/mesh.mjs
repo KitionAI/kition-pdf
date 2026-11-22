@@ -33,7 +33,7 @@ const report = {
   scope: 'Original patch-mesh culling controls through the real editor Worker',
   configuration: { scales: [1, 2], viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, timeoutMs: options['timeout-ms'] },
   expected: null,
-  engine: { source: safe(process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unspecified; binary fingerprints alone do not establish source'), profile: safe(process.env.KITION_GOLDEN_ENGINE_PROFILE ?? 'unspecified') },
+  engine: { source: safe(process.env.KITION_ENGINE_REVISION ?? 'unspecified; binary fingerprints alone do not establish source'), profile: safe(process.env.KITION_ENGINE_PROFILE ?? 'unspecified') },
   limitations: ['Original authored mesh controls only; no corpus fidelity or general performance claim.', 'Explicit control pairs compare complete RGBA within one backend; no cross-renderer pixel identity is assumed.', 'Inflated-edge coverage preserves this rasterizer approximation; it is not a normative PDF visibility assertion.', 'Timing is descriptive and completion does not prove which native culling branch executed.', 'Direct RGBA is returned by the live editor Worker; this does not prove physical screen presentation.'],
   cases: [], comparisons: [], errors: [],
 }

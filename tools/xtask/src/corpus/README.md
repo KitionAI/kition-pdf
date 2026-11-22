@@ -1,20 +1,20 @@
-# Local golden PDF runner
+# Local corpus PDF runner
 
 Rust-only inventory and native PageRenderer baseline against an **external** Poppler
 `pdftoppm` executable. Corpus PDFs and generated images stay in private local output;
 never commit or publish them. The runner does not add fonts or extract embedded fonts.
 
 ```sh
-cargo xtask golden inventory \
-  --manifest /private/tmp/pdf-golden/manifest.json \
-  --cache /private/tmp/pdf-golden/cache \
+cargo xtask corpus inventory \
+  --manifest /private/tmp/pdf-corpus/manifest.json \
+  --cache /private/tmp/pdf-corpus/cache \
   --sources ../golden_ppt ../golden_excel.zip ../golden_word.zip
-cargo xtask golden run \
-  --manifest /private/tmp/pdf-golden/manifest.json \
-  --out /private/tmp/pdf-golden/smoke --suite smoke
-cargo xtask golden run \
-  --manifest /private/tmp/pdf-golden/manifest.json \
-  --out /private/tmp/pdf-golden/full --suite full --resume
+cargo xtask corpus run \
+  --manifest /private/tmp/pdf-corpus/manifest.json \
+  --out /private/tmp/pdf-corpus/smoke --suite smoke
+cargo xtask corpus run \
+  --manifest /private/tmp/pdf-corpus/manifest.json \
+  --out /private/tmp/pdf-corpus/full --suite full --resume
 ```
 
 Inventory accepts directories, individual PDFs, and ZIPs. ZIPs support stored and

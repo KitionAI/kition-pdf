@@ -1,4 +1,4 @@
-//! Private, local-only golden corpus measurement. Never bundles corpus assets.
+//! Private, local-only corpus measurement. Never bundles corpus assets.
 mod inventory;
 mod runner;
 
@@ -44,7 +44,7 @@ pub fn run(args: &[String]) -> Result<()> {
         Some("worker-inspect") => inventory::worker(&args[1..]),
         Some("worker-render") => runner::worker(&args[1..]),
         _ => bail!(
-            "usage: cargo xtask golden inventory --manifest FILE --cache DIR --sources DIR_OR_ZIP ... [--timeout 120]\n       cargo xtask golden run --manifest FILE --out DIR --suite smoke|full [--dpi 72] [--timeout 60] [--resume] [--group NAME] [--limit-files N]"
+            "usage: cargo xtask corpus inventory --manifest FILE --cache DIR --sources DIR_OR_ZIP ... [--timeout 120]\n       cargo xtask corpus run --manifest FILE --out DIR --suite smoke|full [--dpi 72] [--timeout 60] [--resume] [--group NAME] [--limit-files N]"
         ),
     }
 }
@@ -161,7 +161,7 @@ mod tests {
     #[test]
     #[cfg(unix)]
     fn timeout_reaps_the_child() {
-        let log = std::env::temp_dir().join(format!("kition-golden-timeout-{}.log", std::process::id()));
+        let log = std::env::temp_dir().join(format!("kition-corpus-timeout-{}.log", std::process::id()));
         let mut command = Command::new("sleep");
         command.arg("30");
         let result = timed(&mut command, 1, &log).unwrap();

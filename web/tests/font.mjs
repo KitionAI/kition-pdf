@@ -33,7 +33,7 @@ const report = {
   scope: 'Original embedded-font mapping controls through the real editor Worker',
   configuration: { scales: [1, 2], viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, timeoutMs: options['timeout-ms'], cleanupTimeoutMs: 60000 },
   expected: null,
-  engine: { source: safe(process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unspecified; binary fingerprints alone do not establish source'), profile: safe(process.env.KITION_GOLDEN_ENGINE_PROFILE ?? 'unspecified') },
+  engine: { source: safe(process.env.KITION_ENGINE_REVISION ?? 'unspecified; binary fingerprints alone do not establish source'), profile: safe(process.env.KITION_ENGINE_PROFILE ?? 'unspecified') },
   limitations: ['Contributor-original geometric fonts only; no corpus font extraction or corpus fidelity claim.', 'Explicit control pairs compare complete RGBA within one backend; no cross-renderer pixel identity is assumed.', 'Normative mapping assertions, accepted compatibility assertions, and descriptive malformed-wrapper observations are classified separately.', 'An observed-only mapping sample can pass measurement integrity without accepting its candidate mapping.', 'Empty pixels cannot distinguish empty .notdef from an absent glyph; native traced GID and no-fallback checks are separate.', 'Direct RGBA is returned by the live editor Worker; this does not prove physical screen presentation.'],
   cases: [], comparisons: [], errors: [],
 }

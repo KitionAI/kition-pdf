@@ -33,7 +33,7 @@ pub(super) fn run(args: &[String]) -> Result<()> {
             bail!("unsupported source {}", source.display());
         }
     }
-    ensure!(!entries.is_empty(), "no PDFs found; golden must not silently skip an empty corpus");
+    ensure!(!entries.is_empty(), "no PDFs found; corpus must not silently skip an empty corpus");
     entries.sort_by(|a, b| a.source.cmp(&b.source));
     let mut names = BTreeSet::new();
     for e in &entries {
@@ -44,7 +44,7 @@ pub(super) fn run(args: &[String]) -> Result<()> {
         let log = cache.join(format!("{}.inspect.log", entry.sha256));
         // Never reuse stale metadata after changing the engine.
         let mut command = Command::new(std::env::current_exe()?);
-        command.args(["golden", "worker-inspect"]).arg(&entry.path).arg(&metadata_path);
+        command.args(["corpus", "worker-inspect"]).arg(&entry.path).arg(&metadata_path);
         let status = timed(&mut command, timeout, &log)?;
         entry.metadata = if status["status"] == "ok" {
             serde_json::from_slice(&fs::read(metadata_path)?)?
@@ -53,7 +53,7 @@ pub(super) fn run(args: &[String]) -> Result<()> {
         };
         eprintln!("inventory {}/{}: {} ({})", i + 1, names.len(), entry.source, entry.metadata["status"]);
     }
-    let report = Manifest { schema_version: SCHEMA, kind: "native_golden_inventory".into(), environment: environment()?, files: entries };
+    let report = Manifest { schema_version: SCHEMA, kind: "native_corpus_inventory".into(), environment: environment()?, files: entries };
     json_write(&manifest, &report)?;
     eprintln!("wrote {} files to {}", report.files.len(), manifest.display());
     let failed = report.files.iter().filter(|entry| entry.metadata["status"] != "ok").count();

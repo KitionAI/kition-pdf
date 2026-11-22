@@ -24,8 +24,8 @@ assumed pixel-identical merely because their interiors agree.
 Run each browser with an isolated compiled package and frozen shared SDK:
 
 ```sh
-KITION_GOLDEN_ENGINE_REVISION=<verified-source-digest> \
-KITION_GOLDEN_ENGINE_PROFILE=<verified-build-profile> \
+KITION_ENGINE_REVISION=<verified-source-digest> \
+KITION_ENGINE_PROFILE=<verified-build-profile> \
 node tests/font.mjs \
   --manifest <fixture-directory>/manifest-pinned.json \
   --engine-dir <isolated-engine-package> \

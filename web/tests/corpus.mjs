@@ -1,10 +1,10 @@
 // Local corpus smoke through the real host. No PDFs or screenshots are copied into the repository.
-// Usage: node tests/golden.mjs --manifest /absolute/cases.json --out /tmp/results.json [--browser chromium|webkit|firefox]
+// Usage: node tests/corpus.mjs --manifest /absolute/cases.json --out /tmp/results.json [--browser chromium|webkit|firefox]
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { dirname, resolve, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { closeResource, parseOptions } from './golden-support.mjs'
+import { closeResource, parseOptions } from './corpus-support.mjs'
 
 let options
 try {
@@ -14,7 +14,7 @@ try {
   process.exit(2)
 }
 if (options.help) {
-  console.log('node tests/golden.mjs --manifest /absolute/cases.json --out /tmp/results.json [--browser chromium|webkit|firefox]\nManifest: { cases: [{ group: "golden_ppt|golden_excel|golden_word", path: "/absolute/file.pdf", pages: 15, sha256: "optional", query: "optional expected text" }] }')
+  console.log('node tests/corpus.mjs --manifest /absolute/cases.json --out /tmp/results.json [--browser chromium|webkit|firefox]\nManifest: { cases: [{ group: "golden_ppt|golden_excel|golden_word", path: "/absolute/file.pdf", pages: 15, sha256: "optional", query: "optional expected text" }] }')
   process.exit(0)
 }
 const { manifest: manifestPath, out: outputPath, browser: browserName } = options
@@ -38,7 +38,7 @@ try {
   for (const name of ['kition_pdf_kit.js', 'kition_pdf_kit_bg.wasm']) {
     report.engine[name] = hash(await readFile(resolve(root, 'public/engine', name)))
   }
-  report.engine.provenance = process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unknown: binary fingerprints do not prove source revision'
+  report.engine.provenance = process.env.KITION_ENGINE_REVISION ?? 'unknown: binary fingerprints do not prove source revision'
   const playwright = await import('playwright')
   const { createServer } = await import('vite')
   server = await createServer({ root, configFile: resolve(root, 'vite.config.ts'), server: { port: 0, host: '127.0.0.1' }, logLevel: 'error' })

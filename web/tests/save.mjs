@@ -32,7 +32,7 @@ const safe = error => String(error?.message ?? error).replace(/\/Users\/[^\s:)'"
 const report = {
   schema: 1, status: 'running', browser: options.browser,
   scope: 'Real PDF Worker serialization, Kit UI document/save and host/write, development-host memory storage, reopen, and undo/redo',
-  engine: { isolatedOverride: true, provenance: process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unknown; hashes alone do not prove source revision', profile: process.env.KITION_GOLDEN_ENGINE_PROFILE ?? 'unspecified' },
+  engine: { isolatedOverride: true, provenance: process.env.KITION_ENGINE_REVISION ?? 'unknown; hashes alone do not prove source revision', profile: process.env.KITION_ENGINE_PROFILE ?? 'unspecified' },
   limitations: ['The host stores files in memory; this does not test Kition PUT /v1/kits/files, atomic disk replacement, permissions, full disks, or crash recovery.', 'Failure and delayed acknowledgement are injected around the existing dev-host protocol handler in this browser page; no shared SDK or host source is modified.', 'Reopening uses the existing file picker and remounts the iframe; in-place replacement is not covered.', 'No replica capability is advertised by this dev host; replica persistence and collaboration merge are not tested.', 'Only the original eight-page Type3 fixture is used. No corpus fidelity, encrypted PDF, signature, or DocChecksum claim is made.', 'External PDF text/raster comparisons are separate; exported snapshots and expectations support them but do not count as passing those comparisons.'],
   checks: saveCheckNames.map(name => ({ name, status: 'untested' })), pageErrors: [], errors: [], snapshots: [],
 }

@@ -5,14 +5,14 @@ Use the already fingerprinted verification WASM. This is an unoptimized-build
 baseline, not release performance acceptance or a comparison to an older binary.
 
 ```sh
-KITION_GOLDEN_ENGINE_REVISION=<verified-source-digest> \
-KITION_GOLDEN_ENGINE_PROFILE='dev opt-level=0/debug=0' \
+KITION_ENGINE_REVISION=<verified-source-digest> \
+KITION_ENGINE_PROFILE='dev opt-level=0/debug=0' \
 node tests/performance.mjs \
   --manifest <absolute-manifest-path> \
   --out <report-path> --browser chromium
 ```
 
-Set `KITION_GOLDEN_ENGINE_PROFILE` from the build evidence. The value above
+Set `KITION_ENGINE_PROFILE` from the build evidence. The value above
 describes the current verification build; when omitted the report explicitly
 states that the profile is unspecified and makes no release-performance claim.
 

@@ -11,8 +11,8 @@ is required. Generated fixture bytes remain outside tracked source files.
 Run only when the coordinating task schedules the browser:
 
 ```sh
-KITION_GOLDEN_ENGINE_REVISION=<verified-source-digest> \
-KITION_GOLDEN_ENGINE_PROFILE=<verified-build-profile> \
+KITION_ENGINE_REVISION=<verified-source-digest> \
+KITION_ENGINE_PROFILE=<verified-build-profile> \
 node tests/hairline.mjs \
   --manifest <fixture-directory>/manifest-pinned.json \
   --engine-dir <isolated-engine-package> \

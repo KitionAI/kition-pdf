@@ -12,7 +12,7 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 const out = process.argv[2]
 if (!out) throw new Error('Usage: node tests/thumbnails.mjs <report.json>')
 const temporary = await mkdtemp(resolve(tmpdir(), 'kition-pdf-thumbnails-'))
-const report = { status: 'failed', scope: 'Virtual thumbnails, synthetic PDFs, injected failure/retry', engineProvenance: process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unknown: binary fingerprint does not prove source revision', cases: [] }
+const report = { status: 'failed', scope: 'Virtual thumbnails, synthetic PDFs, injected failure/retry', engineProvenance: process.env.KITION_ENGINE_REVISION ?? 'unknown: binary fingerprint does not prove source revision', cases: [] }
 
 function syntheticPdf(count) {
   const objects = ['', '<< /Type /Catalog /Pages 2 0 R >>', `<< /Type /Pages /Count ${count} /Kids [${Array.from({ length: count }, (_, i) => `${3 + i * 2} 0 R`).join(' ')}] >>`]

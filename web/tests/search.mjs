@@ -41,7 +41,7 @@ const safe = error => String(error?.message ?? error).replace(/\/Users\/[^\s:)'"
 const report = {
   schema: 1, status: 'running', browser: options.browser,
   scope: 'Real editor search lifecycle and independently authored multiline match geometry, eight crop/rotation pages',
-  engine: { isolatedOverride: Boolean(options['engine-dir']), provenance: process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unknown; binary hashes do not establish source revision', profile: process.env.KITION_GOLDEN_ENGINE_PROFILE ?? 'unspecified' },
+  engine: { isolatedOverride: Boolean(options['engine-dir']), provenance: process.env.KITION_ENGINE_REVISION ?? 'unknown; binary hashes do not establish source revision', profile: process.env.KITION_ENGINE_PROFILE ?? 'unspecified' },
   configuration: { zooms: [0.5, 1, 2], deviceScaleFactors: [1, 2], cssTolerance: 0.75 },
   limitations: ['Exact scale changes call the real editor viewport from the harness; actual-size capture and search navigation use UI controls.', 'Synthetic Type3 geometry only; no general font, private corpus, physical-screen presentation, or performance claim.', 'Delayed replies are actual worker results held by a test-only page wrapper after completion; the probe does not alter engine output.', 'DPR scales raster backing pixels; expected search geometry is measured in CSS pixels.', 'Canvas checks sample only visible authored rectangle centers for opaque dark ink, not full-page or whole-glyph fidelity.', 'Screenshots, if requested, contain only the original fixture and attributed Inter UI text.'],
   cases: [], errors: [],

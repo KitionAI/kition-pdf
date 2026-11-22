@@ -33,7 +33,7 @@ const report = {
   scope: 'Original Type3 recursion and finite nesting through the real editor Worker',
   configuration: { scales: [1, 2], passes: [1, 2], viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, timeoutMs: options['timeout-ms'], cleanupTimeoutMs: 60000 },
   expected: null,
-  engine: { source: safe(process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unspecified; binary fingerprints alone do not establish source'), profile: safe(process.env.KITION_GOLDEN_ENGINE_PROFILE ?? 'unspecified') },
+  engine: { source: safe(process.env.KITION_ENGINE_REVISION ?? 'unspecified; binary fingerprints alone do not establish source'), profile: safe(process.env.KITION_ENGINE_PROFILE ?? 'unspecified') },
   limitations: ['Original authored type3 controls only; no corpus fidelity or general performance claim.', 'Explicit control pairs compare complete RGBA within one backend; no cross-renderer pixel identity is assumed.', 'Expected truncation rejects through the existing SDK error; detailed native warning counts are not exposed by Worker.', 'Direct RGBA is returned by the live editor Worker; this does not prove physical screen presentation.'],
   cases: [], comparisons: [], repeats: [], cleanup: [], errors: [],
 }

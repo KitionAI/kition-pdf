@@ -75,8 +75,8 @@ claim such a pixel comparison passed.
 
 Reports contain planned/passed/failed/untested counts, input/harness/shared
 source/engine hashes, isolated asset request counts, observed write/serialize/
-markSaved order, and output hashes. Set `KITION_GOLDEN_ENGINE_REVISION` and
-`KITION_GOLDEN_ENGINE_PROFILE` when source provenance is known. Every recorded
+markSaved order, and output hashes. Set `KITION_ENGINE_REVISION` and
+`KITION_ENGINE_PROFILE` when source provenance is known. Every recorded
 successful snapshot is the development host's stored byte array, not a second
 serialization made just for the test. A `manifest.json` beside the artifacts
 uses this external-oracle shape:

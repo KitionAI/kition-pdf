@@ -35,7 +35,7 @@ const near = (a, b, label, tolerance = 0.75) => assert.ok(Number.isFinite(a) && 
 const report = {
   schema: 1, status: 'running', browser: options.browser,
   scope: 'Original fixture pointer selection, native selected text, overlay geometry, and copy lifecycle',
-  engine: { isolatedOverride: Boolean(options['engine-dir']), provenance: process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unknown; hashes alone do not prove source revision', profile: process.env.KITION_GOLDEN_ENGINE_PROFILE ?? 'unspecified', served: {} },
+  engine: { isolatedOverride: Boolean(options['engine-dir']), provenance: process.env.KITION_ENGINE_REVISION ?? 'unknown; hashes alone do not prove source revision', profile: process.env.KITION_ENGINE_PROFILE ?? 'unspecified', served: {} },
   configuration: { zooms: [0.5, 1, 2], deviceScaleFactors: [1, 2], cssTolerance: 0.75 },
   limitations: ['All pointer drags use real browser mouse events; exact view positioning calls the real editor viewport.', 'Original Type3 fixture only; optional screenshots show this original fixture with attributed Inter UI text, never private corpus content.', 'Canvas samples cover only visible authored rectangle centers, not whole-page fidelity.', 'Native clipboard event payload is checked in both browsers; actual system clipboard reads are separately classified when unavailable.', 'Document replacement through the development host remounts the iframe; in-place replacement is not claimed.', 'Delayed replies retain real worker output in a page-only probe; the probe does not alter engine output or shared SDK source.'],
   cases: [], errors: [],

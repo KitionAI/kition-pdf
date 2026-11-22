@@ -23,9 +23,9 @@ const fixture = cacheFixture()
 const report = {
   schema: 1, started: new Date().toISOString(), status: 'running', browser: options.browser,
   scope: 'Deterministic real-editor 1:1 whole-page cache hit, pressure eviction, reconstruction, and edit invalidation evidence',
-  configuration: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, pageCount: PAGE_COUNT, pageSide: PAGE_SIDE, pageRgbaBytes: PAGE_BYTES, expectedBudgetBytes: CACHE_BUDGET, renderQuietMs: 250, timeoutMs: options.timeoutMs, engineOverride: Boolean(options.engineDir), engineProfile: process.env.KITION_GOLDEN_ENGINE_PROFILE ?? 'unspecified; no release-performance claim' },
+  configuration: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, pageCount: PAGE_COUNT, pageSide: PAGE_SIDE, pageRgbaBytes: PAGE_BYTES, expectedBudgetBytes: CACHE_BUDGET, renderQuietMs: 250, timeoutMs: options.timeoutMs, engineOverride: Boolean(options.engineDir), engineProfile: process.env.KITION_ENGINE_PROFILE ?? 'unspecified; no release-performance claim' },
   fixture: { sha256: hash(fixture), origin: 'Contributor-original ASCII rectangle geometry generated in memory; no fonts, images, or external documents.' },
-  engine: { provenance: process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unknown: binary hashes alone do not establish source revision' },
+  engine: { provenance: process.env.KITION_ENGINE_REVISION ?? 'unknown: binary hashes alone do not establish source revision' },
   limitations: ['Functional counter evidence only; timings include quiet waits and are not performance acceptance.', 'Snapshots aggregate one WASM instance/thread and must show exactly one live renderer cache.', 'Cold open includes thumbnails; they are unmounted and pending rendering drained before the measured 1:1 baseline.', 'Only the fixed 48-page synthetic document is covered; no corpus, screenshot, or total-memory-plateau claim.', 'Canvas completion reuses the exact-buffer presentation probe; two RAF opportunities do not prove physical display presentation.'],
   steps: cachePlan(), assertions: [], errors: [], pageErrors: [],
 }

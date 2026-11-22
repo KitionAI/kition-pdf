@@ -21,7 +21,7 @@ const portableError = error => String(error?.message ?? error).replaceAll(root, 
 const report = {
   schema: 1, started: new Date().toISOString(), browser: options.browser,
   environment: { platform: platform(), architecture: arch(), logicalCpuCount: cpus().length, totalRamBytes: totalmem(), loadAverageStart: loadavg() },
-  configuration: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cycles: options.cycles, windowPages: options.windowPages, timeoutMs: options.timeoutMs, sidebar: 'default thumbnails for cold open; bookmarks during navigation', engineProfile: process.env.KITION_GOLDEN_ENGINE_PROFILE ?? 'unspecified; no release-performance claim' },
+  configuration: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cycles: options.cycles, windowPages: options.windowPages, timeoutMs: options.timeoutMs, sidebar: 'default thumbnails for cold open; bookmarks during navigation', engineProfile: process.env.KITION_ENGINE_PROFILE ?? 'unspecified; no release-performance claim' },
   metric: 'Action event to matching completed worker render, bitmap upload, live canvas draw, and two requestAnimationFrame opportunities; not physical screen presentation.',
   engineLatency: 'Worker dispatch to reply includes queue wait, WASM work, and message transfer. Thumbnail work may share the queue.',
   decision: 'Measurement completion does not approve latency targets, certify a memory plateau, or establish regression against an earlier build.',
@@ -67,7 +67,7 @@ try {
   for (const item of manifest.cases) if (!isAbsolute(item.path) || !Number.isInteger(item.pages) || item.pages < 2) throw new Error('Each case needs an absolute PDF path and at least two pages')
   report.harness = {}
   for (const name of ['performance.mjs', 'performance-probe.mjs', 'performance-support.mjs', 'performance-process.mjs']) report.harness[name] = hash(await readFile(resolve(root, 'tests', name)))
-  report.engine = { provenance: process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unknown: hashes alone do not establish source revision' }
+  report.engine = { provenance: process.env.KITION_ENGINE_REVISION ?? 'unknown: hashes alone do not establish source revision' }
   for (const name of ['kition_pdf_kit.js', 'kition_pdf_kit_bg.wasm']) report.engine[name] = hash(await readFile(resolve(root, 'public/engine', name)))
   report.fontAssets = {}
   for (const name of await readdir(resolve(root, 'public/fonts'))) if (/\.(?:ttf|otf|woff2?)$/i.test(name)) report.fontAssets[name] = hash(await readFile(resolve(root, 'public/fonts', name)))

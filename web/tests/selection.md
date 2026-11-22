@@ -26,7 +26,7 @@ isolated package too. Only the two named `/engine/` assets are served by that
 override. The report records their hashes and served counts. Without the
 option, the existing `public/engine/` package is used. Ordinary package files
 are never changed. Optional provenance comes from
-`KITION_GOLDEN_ENGINE_REVISION` and `KITION_GOLDEN_ENGINE_PROFILE`; binary hashes
+`KITION_ENGINE_REVISION` and `KITION_ENGINE_PROFILE`; binary hashes
 alone do not establish a source revision or build profile.
 
 ## Fixture and expected results

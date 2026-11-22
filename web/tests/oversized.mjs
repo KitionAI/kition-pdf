@@ -1,5 +1,5 @@
 // Original geometric fixtures only. Exercise the real worker/WASM; never inject render errors.
-// Usage: KITION_GOLDEN_ENGINE_REVISION=<source-digest> node tests/oversized.mjs <report.json>
+// Usage: KITION_ENGINE_REVISION=<source-digest> node tests/oversized.mjs <report.json>
 import assert from 'node:assert/strict'
 import { readFile, mkdir, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
@@ -7,7 +7,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createServer } from 'vite'
 import { chromium, webkit } from 'playwright'
-import { closeResource } from './golden-support.mjs'
+import { closeResource } from './corpus-support.mjs'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const [output] = process.argv.slice(2)
@@ -42,7 +42,7 @@ const geometry = pdf([
 const excessive = pdf([{ width: 20000, height: 20000, marks: '0 0 1 rg 10 10 80 80 re f\n' }, healthy])
 const report = {
   scope: 'Real WASM oversized tile/reduction pixels, seams, work-budget failure, Retry, and unsaved document preservation',
-  engine: { provenance: process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unknown: fingerprints do not prove source revision' },
+  engine: { provenance: process.env.KITION_ENGINE_REVISION ?? 'unknown: fingerprints do not prove source revision' },
   fixtures: { geometry: hash(geometry), excessive: hash(excessive) },
   cases: [], errors: [],
 }

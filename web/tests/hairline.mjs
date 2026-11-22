@@ -33,7 +33,7 @@ const report = {
   scope: 'Original affine zero-width strokes through the live editor Worker; nonzero-width samples are descriptive only',
   configuration: { scales: [1, 2, 4], viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, timeoutMs: options['timeout-ms'], thresholds: hairlineLimits },
   expected: { normativeSamples: 63, nonzeroObservations: 63, identityComparisons: 54 },
-  engine: { source: safe(process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unspecified; binary fingerprints alone do not establish source'), profile: safe(process.env.KITION_GOLDEN_ENGINE_PROFILE ?? 'unspecified') },
+  engine: { source: safe(process.env.KITION_ENGINE_REVISION ?? 'unspecified; binary fingerprints alone do not establish source'), profile: safe(process.env.KITION_ENGINE_PROFILE ?? 'unspecified') },
   limitations: ['Only original black solid strokes with no fonts, dashes, clipping, patterns, text, or transparency.', 'One-device-pixel bounds target this renderer; no exact antialias match to external renderers is required.', 'Direct RGBA is returned by the live editor Worker; this does not prove physical screen presentation.', 'Nonzero-width fidelity is unassessed; execution failures remain failures.'],
   cases: [], comparisons: [], errors: [],
 }

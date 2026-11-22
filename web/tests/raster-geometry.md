@@ -7,8 +7,8 @@ hashes or changed bytes. No private PDF, external font program, screenshot, or
 reference bitmap is used.
 
 ```sh
-KITION_GOLDEN_ENGINE_REVISION=<verified-source-digest> \
-KITION_GOLDEN_ENGINE_PROFILE=<verified-build-profile> \
+KITION_ENGINE_REVISION=<verified-source-digest> \
+KITION_ENGINE_PROFILE=<verified-build-profile> \
 node tests/raster-geometry.mjs \
   --manifest <sha-pinned-manifest.json> --out <report.json> --browser chromium
 ```

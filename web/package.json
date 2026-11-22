@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
-    "test:unit": "node --test src/rewriteLease.test.mjs src/thumbnailQueue.test.mjs tests/golden-support.test.mjs tests/performance-support.test.mjs tests/performance-process.test.mjs tests/cache-support.test.mjs tests/raster-geometry-support.test.mjs src/searchGeometry.test.mjs src/searchSession.test.mjs src/textSelection.test.mjs src/pdf.test.mjs tests/selection-support.test.mjs tests/hairline-support.test.mjs tests/hairline-shared.test.mjs tests/mesh-support.test.mjs tests/type3-support.test.mjs tests/font-support.test.mjs tests/dash-support.test.mjs",
+    "test:unit": "node --test src/rewriteLease.test.mjs src/thumbnailQueue.test.mjs tests/corpus-support.test.mjs tests/performance-support.test.mjs tests/performance-process.test.mjs tests/cache-support.test.mjs tests/raster-geometry-support.test.mjs src/searchGeometry.test.mjs src/searchSession.test.mjs src/textSelection.test.mjs src/pdf.test.mjs tests/selection-support.test.mjs tests/hairline-support.test.mjs tests/hairline-shared.test.mjs tests/mesh-support.test.mjs tests/type3-support.test.mjs tests/font-support.test.mjs tests/dash-support.test.mjs",
     "test:flow": "node tests/flow.mjs chromium && node tests/flow.mjs webkit",
     "test:modes": "node tests/modes.mjs chromium && node tests/modes.mjs webkit",
     "test:focus": "node tests/focus.mjs chromium && node tests/focus.mjs webkit",

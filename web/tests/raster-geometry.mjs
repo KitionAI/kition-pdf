@@ -33,8 +33,8 @@ const safeError = error => String(error?.message ?? error).replace(/\/Users\/[^\
 const report = {
   schema: 1, started: new Date().toISOString(), status: 'running', browser: options.browser,
   scope: 'Original Type3 glyph and thin-stroke geometry on the real editor worker at 72/144/288 DPI',
-  configuration: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, scales: [1, 2, 4], timeoutMs: options.timeoutMs, engineProfile: process.env.KITION_GOLDEN_ENGINE_PROFILE ?? 'unspecified; no release-performance claim' },
-  engine: { provenance: process.env.KITION_GOLDEN_ENGINE_REVISION ?? 'unknown: binary fingerprints do not prove source revision' },
+  configuration: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, scales: [1, 2, 4], timeoutMs: options.timeoutMs, engineProfile: process.env.KITION_ENGINE_PROFILE ?? 'unspecified; no release-performance claim' },
+  engine: { provenance: process.env.KITION_ENGINE_REVISION ?? 'unknown: binary fingerprints do not prove source revision' },
   limitations: ['Synthetic geometry only; no private corpus, proprietary font, screenshot, or general font fidelity claim.', 'Region support and placement are tested independently of antialias coverage-mass observations.', 'Direct raster geometry and editor canvas sanity are separate checks; direct raster bytes are not assumed to have reached the visible canvas.', 'Two animation-frame opportunities establish canvas submission continuity, not physical screen presentation.', 'The existing editor engine instance is reused; no second document or page-thread WASM instance is created.'],
   cases: [], errors: [],
 }

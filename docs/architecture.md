@@ -101,7 +101,7 @@ Every user-facing feature is reachable headlessly (`AGENTS.md` §3):
 
 `cargo xtask ci` runs fmt, clippy (`-D warnings`), tests, the layering check, the WASM check,
 `xtask assets` (asset licences and hashes), `xtask parity` (checklist claims must cite real commands,
-tools and tests) and `xtask deny` (dependency licences). Other tasks: `xtask golden` (private
+tools and tests) and `xtask deny` (dependency licences). Other tasks: `xtask corpus` (private
 corpora rendered and compared with Poppler), `xtask demo-pdf`, `xtask models` (OCR models),
 `xtask version`, and `xtask eval` (real-model cases; only a maintainer starts it). This repository's only
 workflow is the Package workflow (`.github/workflows/package.yml`), which builds and publishes the

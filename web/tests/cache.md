@@ -10,8 +10,8 @@ untouched: `--engine-dir` serves exactly the two supplied glue/WASM files throug
 a Vite middleware installed before normal asset serving.
 
 ```sh
-KITION_GOLDEN_ENGINE_REVISION=<verified-source-digest> \
-KITION_GOLDEN_ENGINE_PROFILE='<verified-build-profile>; cache-diagnostics' \
+KITION_ENGINE_REVISION=<verified-source-digest> \
+KITION_ENGINE_PROFILE='<verified-build-profile>; cache-diagnostics' \
 node tests/cache.mjs --browser chromium \
   --engine-dir <diagnostics-engine-directory> --out <report-path>
 ```
