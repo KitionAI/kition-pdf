@@ -20,7 +20,6 @@ use kition_kits::tools::{CallOptions, Guard};
 use serde_json::{Value, json};
 
 const CHANGED: Want = Want::Refused("changed");
-const RELOCATED: Want = Want::Refused("relocated");
 
 fn comment_id(f: &Fixture, page: u64) -> Value {
     read_on_disk(&f.file(), "comment_list", json!({ "page": page }))["comments"][0]["id"].clone()
@@ -81,19 +80,22 @@ async fn s3_a_deleted_target_refuses_the_write_by_id() {
     f.shutdown().await;
 }
 
-/// 4. A page inserted before the index a write names: refused; 5. after it: applies.
+/// 4. A page inserted before the index a write names: refused; 5. after it: applies. The refusal
+/// lists two pages: the new page that moved into the place the write names and the page that was
+/// there, pushed out of it.
 #[tokio::test(flavor = "multi_thread")]
 async fn s4_s5_a_page_inserted_before_refuses_and_after_applies() {
     let f = Fixture::new(3);
     let mine = step("comment_edit", json!({ "page": 2, "index": 1, "contents": "mine" }));
-    case(&f, &[("page_insert_blank", json!({ "at": 2 }))], mine.clone(), RELOCATED).await;
+    case(&f, &[("page_insert_blank", json!({ "at": 2 }))], mine.clone(), Want::Refused("relocated+relocated")).await;
     case(&f, &[("page_insert_blank", json!({ "at": 4 }))], step("comment_edit", json!({ "page": 3, "index": 1, "contents": "mine" })), Want::Applies)
         .await;
     f.shutdown().await;
 }
 
 /// 6. The target comment moved: a write by index that sets its text applies (it does not rest on
-/// where the comment is); a write at a point of a page that moved is refused.
+/// where the comment is); a write at a point of a page that moved is refused, listing two pages:
+/// the page that moved away and the one that moved into its place.
 #[tokio::test(flavor = "multi_thread")]
 async fn s6_a_moved_comment_and_a_write_by_point() {
     let f = Fixture::new(3);
@@ -106,12 +108,13 @@ async fn s6_a_moved_comment_and_a_write_by_point() {
     .await;
     let at = step("comment_add", json!({ "page": 2, "type": "note", "at": [200, 200], "contents": "at a point" }));
     case(&f, &[("comment_edit", json!({ "page": 2, "index": 1, "move": [200, 200] }))], at.clone(), Want::Applies).await;
-    case(&f, &[("page_move", json!({ "pages": [2], "to": 3 }))], at, RELOCATED).await;
+    case(&f, &[("page_move", json!({ "pages": [2], "to": 3 }))], at, Want::Refused("relocated+relocated")).await;
     f.shutdown().await;
 }
 
 /// 7. The page holding the target moved ("parent moved"): by id the write follows the comment;
-/// by page and index it is refused.
+/// by page and index it is refused, listing two pages: the one that moved into the place the
+/// write names and the one that was there, pushed out of it.
 #[tokio::test(flavor = "multi_thread")]
 async fn s7_the_page_holding_the_target_moved() {
     let f = Fixture::new(3);
@@ -123,7 +126,7 @@ async fn s7_the_page_holding_the_target_moved() {
         &f,
         &[("page_move", json!({ "pages": [3], "to": 1 }))],
         step("comment_edit", json!({ "page": 2, "index": 1, "contents": "by index" })),
-        RELOCATED,
+        Want::Refused("relocated+relocated"),
     )
     .await;
     f.shutdown().await;

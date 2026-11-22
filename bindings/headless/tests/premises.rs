@@ -23,8 +23,9 @@ async fn comments_by_index_hold_the_comment_there_and_the_members_set() {
     case(&f, &[("comment_edit", json!({ "page": 2, "index": 1, "color": "blue" }))], mine("b"), Want::Applies).await;
     // The same comment's text: refused.
     case(&f, &[("comment_edit", json!({ "page": 2, "index": 1, "contents": "theirs" }))], mine("c"), CHANGED).await;
-    // A page put before: page 2 is another page now.
-    case(&f, &[("page_insert_blank", json!({ "at": 1 }))], mine("d"), RELOCATED).await;
+    // A page put before: page 2 is another page now. Two pages are listed: the one pushed out of
+    // the place the write names and the one that moved into it.
+    case(&f, &[("page_insert_blank", json!({ "at": 1 }))], mine("d"), Want::Refused("relocated+relocated")).await;
     // A page put after: applies.
     case(&f, &[("page_insert_blank", json!({ "at": 5 }))], step("comment_edit", json!({ "page": 3, "index": 1, "contents": "e" })), Want::Applies)
         .await;
@@ -63,7 +64,9 @@ async fn page_writes_hold_the_page_the_index_names() {
     case(&f, &[("page_rotate", json!({ "pages": [3], "degrees": 90 }))], rotate(2), Want::Applies).await;
     case(&f, &[("page_insert_blank", json!({ "at": 5 }))], rotate(2), Want::Applies).await;
     case(&f, &[("page_rotate", json!({ "pages": [2], "degrees": 180 }))], rotate(2), CHANGED).await;
-    case(&f, &[("page_delete", json!({ "pages": [1] }))], rotate(2), RELOCATED).await;
+    // Page 1 deleted: the page that was second moved out of the place the write names and the
+    // page that was third moved into it; both are listed.
+    case(&f, &[("page_delete", json!({ "pages": [1] }))], rotate(2), Want::Refused("relocated+relocated")).await;
     case(&f, &[("page_move", json!({ "pages": [4], "to": 1 }))], step("page_delete", json!({ "pages": [3] })), RELOCATED).await;
     case(
         &f,
@@ -83,7 +86,8 @@ async fn writes_at_a_point_hold_the_page_and_its_geometry() {
     case(&f, &[("comment_add", json!({ "page": 2, "type": "note", "at": [300, 300], "contents": "theirs" }))], mine(), Want::Applies).await;
     case(&f, &[("page_set_box", json!({ "pages": [2], "box": "crop", "margins": [36, 36, 36, 36] }))], mine(), CHANGED).await;
     case(&f, &[("page_rotate", json!({ "pages": [2], "degrees": 90 }))], mine(), CHANGED).await;
-    case(&f, &[("page_move", json!({ "pages": [2], "to": 4 }))], mine(), RELOCATED).await;
+    // Page 2 moved away and page 3 moved into its place: both are listed.
+    case(&f, &[("page_move", json!({ "pages": [2], "to": 4 }))], mine(), Want::Refused("relocated+relocated")).await;
     case(&f, &[("page_rotate", json!({ "pages": [1], "degrees": 90 }))], mine(), Want::Applies).await;
     f.shutdown().await;
 }
@@ -112,13 +116,15 @@ async fn content_items_hold_the_item_at_the_index() {
 
 /// A bookmark put among the top level rests on the bookmarks either side of where it goes (C8-pdf-3:
 /// objects in a window, no longer the parent's whole list as a fact): one put before them moves
-/// them (`relocated`), one put after them does not.
+/// them (`relocated`), one put after them does not. The refusal lists three bookmarks: the new one
+/// and `B1`, which it moves, and the agent's earlier `Mine`, pushed out of the window.
 #[tokio::test(flavor = "multi_thread")]
 async fn bookmarks_hold_the_parents_children() {
     let f = Fixture::new(3);
     let mine = || step("bookmark_add", json!({ "page": 2, "title": "Mine", "position": 2 }));
     case(&f, &[("comment_add", json!({ "page": 2, "type": "note", "at": [300, 300], "contents": "theirs" }))], mine(), Want::Applies).await;
-    case(&f, &[("bookmark_add", json!({ "page": 3, "title": "Theirs", "position": 1 }))], mine(), Want::Refused("relocated+relocated")).await;
+    case(&f, &[("bookmark_add", json!({ "page": 3, "title": "Theirs", "position": 1 }))], mine(), Want::Refused("relocated+relocated+relocated"))
+        .await;
     case(&f, &[("bookmark_add", json!({ "page": 3, "title": "After" }))], mine(), Want::Applies).await;
     f.shutdown().await;
 }
@@ -177,23 +183,25 @@ async fn document_scripts_hold_the_scripts() {
 
 /// A parameter read otherwise than its name says: `page_move`'s `to` is a place in the list
 /// without the moved pages (organize `move_pages`), so pages [1] to 2 go between pages 2 and 3. A
-/// page put there is in the gap (refused); one put at the end is not.
+/// page put there is in the gap (refused, listing the new page, which moved into the window, and
+/// the page it pushed out of it); one put at the end is not.
 #[tokio::test(flavor = "multi_thread")]
 async fn page_move_holds_the_pages_either_side_of_where_its_pages_go() {
     let f = Fixture::new(4);
     let mine = || step("page_move", json!({ "pages": [1], "to": 2 }));
-    case(&f, &[("page_insert_blank", json!({ "at": 3 }))], mine(), RELOCATED).await;
+    case(&f, &[("page_insert_blank", json!({ "at": 3 }))], mine(), Want::Refused("relocated+relocated")).await;
     case(&f, &[("page_insert_blank", json!({ "at": 5 }))], mine(), Want::Applies).await;
     f.shutdown().await;
 }
 
-/// A value naming another object: an action that goes to page 2 names the page there.
+/// A value naming another object: an action that goes to page 2 names the page there. Moving page
+/// 2 away is refused, listing it and the page that moved into its place.
 #[tokio::test(flavor = "multi_thread")]
 async fn field_actions_hold_the_page_they_go_to() {
     let f = Fixture::new(3);
     let mine = || step("form_set_actions", json!({ "field": "F1", "actions": [{ "trigger": "mouse_up", "page": 2 }] }));
     case(&f, &[("page_rotate", json!({ "pages": [3], "degrees": 90 }))], mine(), Want::Applies).await;
-    case(&f, &[("page_move", json!({ "pages": [2], "to": 3 }))], mine(), RELOCATED).await;
+    case(&f, &[("page_move", json!({ "pages": [2], "to": 3 }))], mine(), Want::Refused("relocated+relocated")).await;
     f.shutdown().await;
 }
 
