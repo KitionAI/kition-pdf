@@ -121,7 +121,7 @@ fn bounded_failures_and_successful_tiles_preserve_cache_revision_and_save() {
     let normal = areas[2];
     let old = doc.render(normal.x + 10.0, normal.y + 10.0, 1.0, 16, 16).unwrap();
     let saved = doc.save(None).unwrap();
-    // A second save regenerates ModDate; observe immutable display/prepared-save state instead.
+    // Observe the immutable display and prepared-save state rather than saving again.
     let display_before = doc.doc().unwrap().display.clone();
     let prepared_before = doc.saved.borrow().as_ref().unwrap().clone();
     let revision = doc.revision();

@@ -34,7 +34,7 @@ features:
     priority: P0
     status: partial
     gap: "Six named-field reason cells wait for the pinned SDK's observed-name targeting; required deleted/relocated currently report changed. Both matrices have zero wrong writes and false refusals under the same-field rule; 48 default OCR executions remain blocked by missing models."
-    paths: [bindings/wasm/src/premises.rs, bindings/wasm/src/premises/**, crates/kdm/kdm-model/src/projection.rs, crates/kdm/kdm-model/model/schema.json, bindings/headless/tests/outside.rs, bindings/headless/tests/reread.rs, bindings/headless/tests/premises.rs, bindings/headless/tests/address_matrix.rs, bindings/headless/tests/address_full.rs, bindings/headless/tests/derived_matrix.rs, bindings/headless/tests/matrix/**, bindings/wasm/tests/declarations.rs, bindings/wasm/tests/declarations_independent.rs, bindings/wasm/tests/saved.rs, bindings/wasm/tests/reread.rs, crates/engine/engine/src/kdm_bridge.rs]
+    paths: [bindings/wasm/src/premises.rs, bindings/wasm/src/premises/**, crates/kdm/kdm-model/src/projection.rs, crates/kdm/kdm-model/model/schema.json, bindings/headless/tests/outside.rs, bindings/headless/tests/reread.rs, bindings/headless/tests/premises.rs, bindings/headless/tests/address_matrix.rs, bindings/headless/tests/address_full.rs, bindings/headless/tests/derived_matrix.rs, bindings/headless/tests/matrix/**, bindings/wasm/tests/declarations.rs, bindings/wasm/tests/declarations_independent.rs, bindings/wasm/tests/saved.rs, bindings/wasm/tests/edit_time.rs, bindings/wasm/tests/reread.rs, crates/engine/engine/src/kdm_bridge.rs]
     cases:
       - pdf.agent.premises/outside-writer
       - pdf.agent.premises/declarations
@@ -60,6 +60,7 @@ features:
       - regressions/issue-c8-pdf-5-page-scans
       - regressions/issue-c8-pdf-5-sdk-names
       - regressions/issue-c8-same-field
+      - regressions/issue-pdf-state-clock
     since: "2026-11-17"
   - id: pdf.agent.act
     title: An agent inserts and orders pages

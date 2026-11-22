@@ -1,0 +1,27 @@
+format: 1
+id: regressions/issue-pdf-state-clock
+feature: pdf.agent.premises
+intent: >-
+  A document's ~state (the hash of the bytes it saves as) and its saved bytes are a function of
+  its content and edits, never of the moment they are read or saved. /ModDate is the time of the
+  last edit, recorded when the edit is applied (an undo or redo brings back the time of the state
+  it returns to), not the time of saving: with the clock moving and no edit, ~state stays the
+  same and two saves write the same bytes; an edit changes ~state and is the saved /ModDate
+  however late the save; a document never edited, or with every edit undone, saves as its file
+  with the file's own /ModDate. Before, every save stamped the clock's now, so on the native kit
+  the ~state of an unchanged document changed every second, a premise on it could be refused
+  although nothing changed, and saved.rs failed when a second boundary fell between reading
+  ~state and saving.
+layer: gate
+tags: [headless, guard]
+source:
+  kind: synthetic
+  from: bindings/wasm/tests/edit_time.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: "kition-pdf-kit", test: "edit_time" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-22"

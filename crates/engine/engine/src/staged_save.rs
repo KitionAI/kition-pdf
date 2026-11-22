@@ -174,7 +174,9 @@ impl Session {
         let edited_cos = if let Some(prepared) = Self::prepare_edit(doc, &Edit::FlattenFillSign, moment, js_off)? {
             let previous = std::mem::replace(&mut editor.cos, prepared.cos);
             let previous_keys = std::mem::replace(&mut editor.keys, prepared.keys);
-            editor.undo.push((Edit::FlattenFillSign.label(), previous, previous_keys, prepared.scope, history));
+            // Flattening is an edit, made now: its time is the saved `/ModDate`.
+            let previous_edited = std::mem::replace(&mut editor.edited, moment.now);
+            editor.undo.push((Edit::FlattenFillSign.label(), previous, previous_keys, prepared.scope, history, previous_edited));
             if editor.undo.len() > MAX_UNDO {
                 editor.undo.remove(0);
             }
@@ -201,7 +203,8 @@ impl Session {
             .ok_or_else(|| EditError::Invalid("the document generation limit was reached".into()))?;
         #[cfg(test)]
         preparation_failure(PreparationStage::Write)?;
-        let opts = SaveOptions { mod_date: moment.now.map(kition_pdf_cos::pdf_date), ..SaveOptions::default() };
+        // Dated at the last edit, as `save_bytes` dates (never the time of saving).
+        let opts = SaveOptions { mod_date: editor.edited.map(kition_pdf_cos::pdf_date), ..SaveOptions::default() };
         let bytes = if full {
             Arc::new(write_full(&editor.cos, &opts).map_err(|error| EditError::Write(error.to_string()))?)
         } else if editor.cos.is_modified() {
@@ -216,6 +219,7 @@ impl Session {
         editor.cos = kition_pdf_cos::Document::open_with_password(bytes, editor.keys.reopen.as_deref())
             .map_err(|error| EditError::Reopen(error.to_string()))?;
         editor.keys.protection_pending = false;
+        editor.edited = None;
         #[cfg(test)]
         preparation_failure(PreparationStage::View)?;
         let view = PreparedView::new(doc, &editor, &xfa_warnings)?;

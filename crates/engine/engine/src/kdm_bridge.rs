@@ -292,11 +292,14 @@ impl Document {
         self.editor.as_ref().and_then(|e| e.keys.reopen.clone().or_else(|| e.keys.render.clone())).or_else(|| self.password.clone())
     }
 
-    /// After an import: the editor's document follows the replica.
-    fn follow_kdm(&mut self) -> Result<(), EditError> {
+    /// After an import: the editor's document follows the replica. The import is the change
+    /// that made the content, applied `now` (the session clock's): its time is the `/ModDate` a
+    /// save stamps.
+    fn follow_kdm(&mut self, now: Option<i64>) -> Result<(), EditError> {
         let Some(view) = self.link.kdm.as_ref().map(|kdm| kdm.document().clone()) else { return Ok(()) };
         if let Some(editor) = self.editor.as_mut() {
             editor.cos = view.clone();
+            editor.edited = now;
         }
         self.link.synced = Some(view);
         self.dirty = true;
@@ -421,6 +424,7 @@ impl Session {
     /// added first, [`Session::add_blobs`]). The document follows the replica; one whose view
     /// could not be read from it leaves it (a reset) rather than diff against it later.
     pub fn import_changes(&mut self, id: DocId, bytes: &[u8]) -> Result<Damage, EditError> {
+        let now = self.now();
         let kdm = self.active_kdm(id)?;
         let before = kdm.version();
         let result = kdm.import_changes(bytes);
@@ -429,7 +433,7 @@ impl Session {
         let doc = self.doc_mut(id)?;
         if follow {
             if changed {
-                doc.follow_kdm()?;
+                doc.follow_kdm(now)?;
             }
         } else if changed && let Some(cos) = doc.editor.as_ref().map(|e| e.cos.clone()) {
             doc.link.detach(&cos);
@@ -537,7 +541,7 @@ impl Session {
             return Ok(false);
         }
         let Some(after) = file_difference(current, &opened) else { return Ok(false) };
-        let staged = crate::Editor { cos: opened.clone(), undo: Vec::new(), redo: Vec::new(), keys: editor.keys.clone() };
+        let staged = crate::Editor { cos: opened.clone(), undo: Vec::new(), redo: Vec::new(), keys: editor.keys.clone(), edited: None };
         let view = crate::PreparedView::new(doc, &staged, &doc.xfa_warnings)?;
         if let Some(kdm) = doc.link.kdm.as_mut() {
             kdm.record(&Origin::new(OriginKind::Import, "file:reread"), &after).map_err(replica_error)?;
@@ -546,6 +550,7 @@ impl Session {
         doc.link.synced = Some(opened.clone());
         if let Some(editor) = doc.editor.as_mut() {
             editor.cos = opened;
+            editor.edited = None;
         }
         view.install(doc);
         doc.dirty = false;
@@ -562,9 +567,18 @@ impl Session {
         };
         let info = inspect(bytes.clone(), password).map_err(|e| EditError::Reopen(e.to_string()))?;
         let xfa = kition_pdf_xfa::existing_layout(&cos);
+        let modified = cos.is_modified();
         let id = self
             .push_document(name, None, bytes, info, Ok(Ok(cos)), password.map(str::to_owned), password, xfa)
             .map_err(|e| EditError::Reopen(e.to_string()))?;
+        // A view with edits no file holds yet: they reach this session now, as an import's do
+        // ([`Document::follow_kdm`]), and that is the `/ModDate` a save stamps.
+        if modified {
+            let now = self.now();
+            if let Some(editor) = self.doc_mut(id)?.editor.as_mut() {
+                editor.edited = now;
+            }
+        }
         Ok(id)
     }
 }

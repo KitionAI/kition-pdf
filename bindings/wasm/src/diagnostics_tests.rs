@@ -74,7 +74,7 @@ fn observing_real_document_does_not_make_renderer_and_invalidations_keep_lifetim
     let before_render = snapshot().unwrap();
     assert_eq!(before_render.display_invalidations, 0, "snapshot observes existing state; only rendering replaces the old display cache");
     let saved = doc.save(None).unwrap();
-    // A second save regenerates ModDate; observe immutable display/prepared-save state instead.
+    // Observe the immutable display and prepared-save state rather than saving again.
     let display_before = doc.doc().unwrap().display.clone();
     let prepared_before = doc.saved.borrow().as_ref().unwrap().clone();
     let revision = doc.revision();

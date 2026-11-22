@@ -113,7 +113,7 @@ fn real_oversized_page_views_use_colored_tiles_without_retaining_a_full_raster()
     let mut doc = PdfDocument::open("RendererLimit.pdf", &fixture.save(None).unwrap()).unwrap();
     doc.execute("comment_add", json!({ "page": 2, "type": "note", "contents": "Retained edit", "at": [80, 80] })).unwrap();
     let before = doc.save(None).unwrap();
-    // A second save regenerates ModDate; observe immutable display/prepared-save state instead.
+    // Observe the immutable display and prepared-save state rather than saving again.
     let display_before = doc.doc().unwrap().display.clone();
     let prepared_before = doc.saved.borrow().as_ref().unwrap().clone();
     let revision = doc.revision();

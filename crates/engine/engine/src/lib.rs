@@ -210,10 +210,10 @@ fn scope_of(edit: &Edit) -> Scope {
     }
 }
 
-/// One undo/redo step: its label, the document state, its passwords, what it changed, and whose
+/// One undo/redo step: its label, the document state, its passwords, what it changed, whose
 /// history it is in (KitModel M12a: the person's, or the agents' working for them, as the origin
-/// of the edit that made it).
-type Snapshot = (String, kition_pdf_cos::Document, Keys, Scope, UndoScope);
+/// of the edit that made it), and the state's edit time ([`Editor::edited`]).
+type Snapshot = (String, kition_pdf_cos::Document, Keys, Scope, UndoScope, Option<i64>);
 
 /// Editing state of a document (absent when the document cannot be edited yet, e.g. encrypted).
 #[derive(Clone)]
@@ -222,6 +222,13 @@ struct Editor {
     undo: Vec<Snapshot>,
     redo: Vec<Snapshot>,
     keys: Keys,
+    /// When the change that made `cos` was applied (seconds since the Unix epoch, the session
+    /// clock's): the `/ModDate` a save stamps. `None` when the session has no clock (the browser)
+    /// or `cos` is the file as opened, saved or reverted, which keeps the file's own `/ModDate`.
+    /// Saving never reads the clock, so the saved bytes and the `~state` hashed from them are a
+    /// function of the edits, never of when the document is saved or read. An undo or redo
+    /// brings back the time of the state it returns to (it travels with the [`Snapshot`]).
+    edited: Option<i64>,
 }
 
 mod staged_save;
@@ -2328,8 +2335,9 @@ impl Session {
         };
         // A dynamic XFA form is a shell around an XML template; lay the template out into real
         // pages and fields so the rest of the engine works on it. The original bytes stay: the
-        // laid-out form is one appended revision.
-        let opts = SaveOptions { mod_date: self.now().map(kition_pdf_cos::pdf_date), ..SaveOptions::default() };
+        // laid-out form is one appended revision. Laying out is no edit: the file keeps its own
+        // `/ModDate`, so opening the same file gives the same document whenever it is opened.
+        let opts = SaveOptions::default();
         // Write `work` as one more revision and reopen it: what the document then is.
         let rebase = |work: &kition_pdf_cos::Document| -> Result<(Arc<Vec<u8>>, DocInfo, kition_pdf_cos::Document), String> {
             let new_bytes = write_incremental(work, &opts).map(Arc::new).map_err(|e| e.to_string())?;
@@ -2471,7 +2479,7 @@ impl Session {
         let (mut editor, read_only_reason) = match cos {
             Ok(Ok(cos)) => {
                 let keys = Keys { render: render_password.clone(), reopen: password.map(str::to_owned), protection_pending: false };
-                (Some(Editor { cos, undo: Vec::new(), redo: Vec::new(), keys }), None)
+                (Some(Editor { cos, undo: Vec::new(), redo: Vec::new(), keys, edited: None }), None)
             }
             Ok(Err(e)) => (None, Some(e.to_string())),
             Err(_) => (None, Some("the document structure could not be read for editing".into())),
@@ -2551,7 +2559,9 @@ impl Session {
         let editor = doc.editor.as_mut().ok_or_else(|| EditError::ReadOnly(doc.read_only_reason.clone().unwrap_or_default()))?;
         let previous = std::mem::replace(&mut editor.cos, next);
         let previous_keys = std::mem::replace(&mut editor.keys, keys);
-        editor.undo.push((edit.label(), previous, previous_keys, scope, history));
+        // The edit's time is the state's from now on: what a save stamps as `/ModDate`.
+        let previous_edited = std::mem::replace(&mut editor.edited, moment.now);
+        editor.undo.push((edit.label(), previous, previous_keys, scope, history, previous_edited));
         if editor.undo.len() > MAX_UNDO {
             editor.undo.remove(0);
         }
@@ -2564,10 +2574,11 @@ impl Session {
         if let Err(e) = refreshed {
             // Roll back: the edit produced something we cannot display.
             if let Some(ed) = doc.editor.as_mut()
-                && let Some((_, prev, keys, ..)) = ed.undo.pop()
+                && let Some((_, prev, keys, _, _, edited)) = ed.undo.pop()
             {
                 ed.cos = prev;
                 ed.keys = keys;
+                ed.edited = edited;
             }
             Self::adopt_keys(doc);
             let _ = guard(|| Self::refresh(doc));
@@ -2724,7 +2735,7 @@ impl Session {
             return Self::step_under(doc, i, undo, history).ok_or_else(none);
         }
         let popped = if undo { editor.undo.pop() } else { editor.redo.pop() };
-        let (label, snapshot, keys, scope, _) = popped.ok_or_else(none)?;
+        let (label, snapshot, keys, scope, _, edited) = popped.ok_or_else(none)?;
         let current = editor.cos.clone();
         let steps = if undo { doc.link.undo_steps.pop() } else { doc.link.redo_steps.pop() }.unwrap_or(0);
         let (cos, scope, steps) = match doc.link.step(steps, undo, history, &current) {
@@ -2747,11 +2758,13 @@ impl Session {
         let editor = doc.editor.as_mut().ok_or_else(none)?;
         let previous = std::mem::replace(&mut editor.cos, cos);
         let previous_keys = std::mem::replace(&mut editor.keys, keys);
+        // The state stepped to comes back with its own edit time.
+        let previous_edited = std::mem::replace(&mut editor.edited, edited);
         if undo {
-            editor.redo.push((label.clone(), previous, previous_keys, scope, history));
+            editor.redo.push((label.clone(), previous, previous_keys, scope, history, previous_edited));
             doc.link.redo_steps.push(steps);
         } else {
-            editor.undo.push((label.clone(), previous, previous_keys, scope, history));
+            editor.undo.push((label.clone(), previous, previous_keys, scope, history, previous_edited));
             doc.link.undo_steps.push(steps);
         }
         doc.link.trim();
@@ -2778,8 +2791,9 @@ impl Session {
             doc.link.redo_steps.remove(i)
         };
         let previous = std::mem::replace(&mut editor.cos, view);
-        // The passwords stay the document's own: the replica's view keeps the later steps'.
-        let entry = (label.clone(), previous, editor.keys.clone(), Scope::Full, history);
+        // The passwords stay the document's own: the replica's view keeps the later steps'. So
+        // does the edit time: the later steps are still the last edits.
+        let entry = (label.clone(), previous, editor.keys.clone(), Scope::Full, history, editor.edited);
         if undo {
             editor.redo.push(entry);
             doc.link.redo_steps.push(steps);
@@ -2895,25 +2909,28 @@ impl Session {
     }
 
     /// The bytes to write for Save: an incremental update of the file as opened/last saved,
-    /// with `/ModDate` stamped. Call `mark_saved` after writing them successfully.
+    /// with `/ModDate` stamped at the last edit's time ([`Editor::edited`], never the time of
+    /// saving: saving an unchanged document again writes the same bytes). Call `mark_saved`
+    /// after writing them successfully.
     pub fn save_bytes(&self, id: DocId) -> Result<Arc<Vec<u8>>, EditError> {
         let doc = self.get(id).ok_or(EditError::NoDocument)?;
         let Some(editor) = doc.editor.as_ref() else { return Ok(doc.bytes.clone()) };
         if !editor.cos.is_modified() {
             return Ok(editor.cos.bytes().clone());
         }
-        let opts = SaveOptions { mod_date: self.now().map(kition_pdf_cos::pdf_date), ..SaveOptions::default() };
+        let opts = SaveOptions { mod_date: editor.edited.map(kition_pdf_cos::pdf_date), ..SaveOptions::default() };
         guard(|| write_incremental(&editor.cos, &opts)).map_err(EditError::Write)?.map(Arc::new).map_err(|e| EditError::Write(e.to_string()))
     }
 
     /// A compact, garbage-collected rewrite (Save As ▸ "Optimized" / Reduce File Size groundwork).
+    /// Dated as [`Session::save_bytes`] dates: at the last edit, the file's own when never edited.
     pub fn save_full_bytes(&self, id: DocId) -> Result<Arc<Vec<u8>>, EditError> {
         let doc = self.get(id).ok_or(EditError::NoDocument)?;
         if doc.is_signed() {
             return Err(EditError::Signed);
         }
         let editor = doc.editor.as_ref().ok_or_else(|| EditError::ReadOnly(doc.read_only_reason.clone().unwrap_or_default()))?;
-        let opts = SaveOptions { mod_date: self.now().map(kition_pdf_cos::pdf_date), ..SaveOptions::default() };
+        let opts = SaveOptions { mod_date: editor.edited.map(kition_pdf_cos::pdf_date), ..SaveOptions::default() };
         guard(|| write_full(&editor.cos, &opts)).map_err(EditError::Write)?.map(Arc::new).map_err(|e| EditError::Write(e.to_string()))
     }
 
@@ -2931,6 +2948,8 @@ impl Session {
             editor.cos = kition_pdf_cos::Document::open_with_password(bytes.clone(), editor.keys.reopen.as_deref())
                 .map_err(|e| EditError::Reopen(e.to_string()))?;
             editor.keys.protection_pending = false;
+            // The saved file carries the edit time; the next save of it is the file again.
+            editor.edited = None;
             let password = editor.keys.reopen.clone().or_else(|| editor.keys.render.clone());
             doc.link.saved(&editor.cos, extends, password.as_deref());
         }
@@ -2960,6 +2979,7 @@ impl Session {
             .ok_or_else(|| EditError::Reopen("the saved file can't be opened".into()))?;
         editor.cos = cos;
         editor.keys = Keys { protection_pending: false, ..keys };
+        editor.edited = None;
         editor.undo.clear();
         editor.redo.clear();
         // The replica follows (a `system` change: the history is gone, as in Acrobat).

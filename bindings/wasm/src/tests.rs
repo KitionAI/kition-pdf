@@ -35,7 +35,7 @@ fn failed_page_renders_return_errors_without_losing_edits_or_poisoning_other_pag
     let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
     doc.execute("doc_watermark", json!({ "pages": [1], "text": "DRAFT", "opacity": 1.0 })).unwrap();
     let saved = doc.save(None).unwrap();
-    // A second save regenerates ModDate; observe immutable display/prepared-save state instead.
+    // Observe the immutable display and prepared-save state rather than saving again.
     let display_before = doc.doc().unwrap().display.clone();
     let prepared_before = doc.saved.borrow().as_ref().unwrap().clone();
     let revision = doc.revision();

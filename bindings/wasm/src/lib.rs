@@ -317,6 +317,13 @@ impl PdfDocument {
         Ok(Self { auto, id, renderer: RefCell::new(None), saved: RefCell::new(None), saved_revision: Cell::new(None), pasteboard: PASTEBOARD })
     }
 
+    /// Takes the time from `clock` (seconds since the Unix epoch) instead of the system clock:
+    /// the session's fixed-clock seam ([`kition_pdf_engine::Session::with_clock`]), for tests.
+    pub fn with_clock(mut self, clock: fn() -> i64) -> Self {
+        self.auto = std::mem::take(&mut self.auto).with_clock(clock);
+        self
+    }
+
     fn doc(&self) -> Option<&Document> {
         self.auto.session().get(self.id)
     }

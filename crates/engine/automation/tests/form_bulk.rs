@@ -41,7 +41,7 @@ fn setup(test: &str) -> (Automation, u64, std::path::PathBuf) {
         .unwrap();
     }
     std::fs::write(dir.join("form.pdf"), s.save_bytes(id).unwrap().as_slice()).unwrap();
-    // Saves stamp /ModDate from the clock: pin it, or two saves a second apart differ.
+    // Edits are dated (and saves stamp /ModDate) by the clock: pin it, so runs repeat.
     let mut a = Automation::new().with_root(&dir).unwrap().with_clock(|| 1_700_000_000);
     let id = tool(&mut a, "doc_open", json!({"path": "form.pdf"}))["doc"].as_u64().unwrap();
     (a, id, dir)
