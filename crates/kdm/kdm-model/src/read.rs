@@ -109,6 +109,9 @@ pub fn read_document(
     // Number every added object first, in key order, so references between them resolve.
     let mut added = Vec::new();
     let mut freed = std::collections::HashSet::new();
+    // The highest number any entry references, plus one: a number referenced stays reserved even
+    // when no entry holds its object (a peer's reference to an object an undo took back).
+    let mut referenced = 0u32;
     for (key, value) in &entries {
         if key == TRAILER {
             continue;
@@ -124,7 +127,7 @@ pub fn read_document(
     for (key, value) in &entries {
         if key == TRAILER {
             let Some(object) = value.get("object") else { continue };
-            let mut num = |k: &str| ids.num_of(k, floor);
+            let mut num = |k: &str| reference(ids.num_of(k, floor), &mut referenced);
             let mut trailer = Decoder { num: &mut num, blobs }.dict(object).map_err(|e| kdm_err(format!("trailer: {e}")))?;
             for save_key in SAVE_KEYS {
                 trailer.remove(save_key);
@@ -143,7 +146,7 @@ pub fn read_document(
             continue;
         }
         let Some(object) = value.get("object") else { continue };
-        let mut num = |k: &str| ids.num_of(k, floor);
+        let mut num = |k: &str| reference(ids.num_of(k, floor), &mut referenced);
         let object = Decoder { num: &mut num, blobs }.object(object).map_err(|e| kdm_err(format!("object {key}: {e}")))?;
         doc.set(ObjRef::new(target, generation), object);
     }
@@ -155,6 +158,22 @@ pub fn read_document(
     missing.extend(freed);
     crate::dangling::drop_missing(&mut doc, &missing);
     crate::lists::repair(&mut doc, &added);
-    doc.raise_next_num(ids.next_free(floor));
+    // The next object takes the number after every number the view holds (an object or a freed
+    // entry) or references, never one of the base's: not after the numbers of added objects an
+    // undo took back (ISO 32000-1 7.5.5: `/Size` is one greater than the highest object number the
+    // file defines). So a view equals the one the same edits make without the undone ones, saves
+    // as its bytes (`/Size` and all), and its next edit numbers its objects as there.
+    let held = doc.overlay_entries().map(|(num, _, _)| num.saturating_add(1)).max().unwrap_or(0);
+    let next = floor.max(ids.base_max().saturating_add(1)).max(held).max(referenced);
+    doc.raise_next_num(next);
+    ids.retire_from(doc.next_num());
     Ok((doc, pristine))
+}
+
+/// `num` (a reference's number), counted into `referenced` (one past the highest seen).
+fn reference(num: Option<u32>, referenced: &mut u32) -> Option<u32> {
+    if let Some(num) = num {
+        *referenced = (*referenced).max(num.saturating_add(1));
+    }
+    num
 }

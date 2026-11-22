@@ -124,9 +124,8 @@ static CLOCK_E: AtomicI64 = AtomicI64::new(1_800_000_000);
 /// (e) Undo and redo bring back the time of the state they return to, never the time of the
 /// undo: undoing every edit gives the file as opened, byte for byte (its own `/ModDate`, the
 /// `~state` read at opening), however late; undoing one of two edits is dated at the first edit,
-/// and the state it gives holds still while the clock moves. (Its bytes are the replica's view of
-/// that state, whose trailer `/Size` still counts the numbers the undone edit took, so they are
-/// not the bytes saved right after the first edit; the clock plays no part in that.)
+/// and the state it gives holds still while the clock moves. (That its bytes are the bytes saved
+/// right after the first edit is undo_numbers.rs's, regressions/issue-pdf-undo-size.)
 #[test]
 fn undo_and_redo_bring_back_the_time_of_the_state() {
     let file = source();

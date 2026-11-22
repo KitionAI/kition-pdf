@@ -875,6 +875,17 @@ impl Document {
         self.next_num
     }
 
+    /// One greater than the highest object number the document defines: in the file's
+    /// cross-reference sections (at least its trailer's `/Size`) or in its edits (objects set or
+    /// freed). What an incremental save writes as `/Size` (ISO 32000-1 §7.5.5), which never counts
+    /// numbers [`Document::next_num`] passed without anything taking them.
+    pub fn defined_size(&self) -> u32 {
+        let file = self.entries.keys().next_back().map_or(0, |num| num.saturating_add(1));
+        let edits = self.overlay.keys().next_back().map_or(0, |num| num.saturating_add(1));
+        let stated = u32::try_from(self.trailer.int(b"Size").unwrap_or(0).max(0)).unwrap_or(u32::MAX);
+        file.max(edits).max(stated)
+    }
+
     /// Makes [`Document::add`] take numbers from `next` on, when that is higher than the number
     /// it takes now (numbers in use stay out of reach). Kition's KDM bridge reserves the numbers
     /// a replica's other objects use this way.

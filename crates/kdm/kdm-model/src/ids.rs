@@ -4,20 +4,31 @@
 //! An object added since the base was written gets a key of its own, `<actor>.<n>` (the adding
 //! replica's actor id in hex and a counter), so two peers adding objects at once never take the
 //! same key. Which *number* such an object has is each replica's own choice, made when it first
-//! sees the key (above the base's highest number, never reused within a session): the numbers
+//! sees the key (above the base's highest number; never one a live key holds, see below): the numbers
 //! stay dense and within what PDF readers accept (ISO 32000-1 Annex C's 8,388,607 indirect
 //! objects), which per-actor number ranges carved out of that space could not promise to any
 //! number of peers. Keys are what replicate; numbers are a view's.
 //!
 //! The numbering belongs to one epoch (one base): a rebase starts a new one.
+//!
+//! A key keeps its number while anything may still name it: an undo that takes back an added
+//! object keeps the binding, so a redo brings the object back under its number. Once a view is
+//! read in which nothing holds or references such a number and no number above it is in use
+//! (`Ids::retire_from`), the view's next object may take it (a view's numbering is its own; the
+//! file it saves never held the number, or is replaced by the save): the key gives it up and the
+//! new object gets a key of its own, so the number never stands for two keys and a key never
+//! for two objects.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 /// The numbering of one epoch's added objects.
 #[derive(Clone, Debug, Default)]
 struct Numbering {
     by_num: BTreeMap<u32, String>,
     by_key: HashMap<String, u32>,
+    /// Bound numbers the last read view does not use ([`Ids::retire_from`]): the view's next
+    /// objects may take them.
+    retired: BTreeSet<u32>,
 }
 
 /// Overlay keys ↔ object numbers for the view of one replica. See the module docs.
@@ -73,7 +84,13 @@ impl Ids {
         if num <= self.base_max {
             return num.to_string();
         }
-        if let Some(key) = self.current.by_num.get(&num) {
+        if self.current.retired.remove(&num) {
+            // A new object of the view took a number an undone object's key held: the key gives
+            // it up (it gets a fresh number if it ever comes back), the object gets its own key.
+            if let Some(old) = self.current.by_num.remove(&num) {
+                self.current.by_key.remove(&old);
+            }
+        } else if let Some(key) = self.current.by_num.get(&num) {
             return key.clone();
         }
         let key = format!("{:x}.{}", self.actor, self.counter);
@@ -85,7 +102,13 @@ impl Ids {
 
     /// The overlay key of `num` if it has one (never mints).
     pub fn known_key(&self, num: u32) -> Option<String> {
-        if num <= self.base_max { Some(num.to_string()) } else { self.current.by_num.get(&num).cloned() }
+        if num <= self.base_max {
+            Some(num.to_string())
+        } else if self.current.retired.contains(&num) {
+            None
+        } else {
+            self.current.by_num.get(&num).cloned()
+        }
     }
 
     /// This replica's number for `key`, giving an added object it has not seen yet the next
@@ -116,8 +139,18 @@ impl Ids {
     pub fn bind(&mut self, key: &str, num: u32) {
         if let Some(old) = self.current.by_key.insert(key.to_owned(), num) {
             self.current.by_num.remove(&old);
+            self.current.retired.remove(&old);
         }
+        self.current.retired.remove(&num);
         self.current.by_num.insert(num, key.to_owned());
+    }
+
+    /// A view was read whose objects and references use no number from `next` on (the number its
+    /// next object takes): the keys bound to such numbers (added objects an undo took back) give
+    /// them up to the first new objects that take them ([`Ids::key_of`]). Until then they keep
+    /// them, so a redo brings an object back under its number.
+    pub(crate) fn retire_from(&mut self, next: u32) {
+        self.current.retired = self.current.by_num.range(next..).map(|(num, _)| *num).collect();
     }
 
     /// The added objects' numbers, by key.
