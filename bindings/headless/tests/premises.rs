@@ -10,7 +10,6 @@ use common::*;
 use serde_json::json;
 
 const CHANGED: Want = Want::Refused("changed");
-const RELOCATED: Want = Want::Refused("relocated");
 
 /// A comment addressed by page and index rests on which comment that is and the members it sets.
 #[tokio::test(flavor = "multi_thread")]
@@ -67,7 +66,10 @@ async fn page_writes_hold_the_page_the_index_names() {
     // Page 1 deleted: the page that was second moved out of the place the write names and the
     // page that was third moved into it; both are listed.
     case(&f, &[("page_delete", json!({ "pages": [1] }))], rotate(2), Want::Refused("relocated+relocated")).await;
-    case(&f, &[("page_move", json!({ "pages": [4], "to": 1 }))], step("page_delete", json!({ "pages": [3] })), RELOCATED).await;
+    // Page 4 moved to the front: the page that was second moved into the place the write names
+    // and the page that was third was pushed out of it; both are listed.
+    case(&f, &[("page_move", json!({ "pages": [4], "to": 1 }))], step("page_delete", json!({ "pages": [3] })), Want::Refused("relocated+relocated"))
+        .await;
     case(
         &f,
         &[("comment_add", json!({ "page": 1, "type": "note", "at": [300, 300], "contents": "theirs" }))],
