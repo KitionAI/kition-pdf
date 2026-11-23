@@ -1,7 +1,9 @@
-//! Regression: a document built by the same commands saves the same
-//! bytes when `SOURCE_DATE_EPOCH` is set (as a showcase sample or a gating test builds it):
-//! comments' dates are the epoch and their names follow from it instead of the clock and
-//! randomness. Each build runs in a process of its own: this test starts itself several times.
+//! Regression: a document built by the same commands saves the same bytes when
+//! `SOURCE_DATE_EPOCH` is set and ids are counted (as a gating test builds it): comments' dates
+//! are the epoch, and their names follow from `KITION_REPRODUCIBLE_IDS` instead of randomness
+//! (counted ids need the dev-only Cargo feature `reproducible-ids`, on here through the crate's
+//! dev-dependencies; the epoch alone leaves ids random, kition-pdf-engine tests/random_ids.rs).
+//! Each build runs in a process of its own: this test starts itself several times.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use std::path::PathBuf;
@@ -35,6 +37,7 @@ fn build_in_a_process(path: &PathBuf) -> Vec<u8> {
     let status = Command::new(std::env::current_exe().unwrap())
         .args(["--exact", "child_builds_a_document", "--test-threads=1", "--quiet"])
         .env("SOURCE_DATE_EPOCH", "1794182400")
+        .env("KITION_REPRODUCIBLE_IDS", "1794182400")
         .env(OUT, path)
         .status()
         .unwrap();

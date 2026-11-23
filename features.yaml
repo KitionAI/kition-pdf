@@ -95,7 +95,7 @@ features:
     commands: [comment_list, comment_add, comment_reply, comment_set_status, comment_mark, comment_lock, comment_edit, comment_image_preview, comment_delete, comments_hide]
     paths: [bindings/wasm/src/collab.rs]
     target: "Adobe Acrobat Pro 26.002.21931"
-    cases: [pdf.comments/incremental-save-reopen, pdf.comments/save-reopen, regressions/issue-2, regressions/issue-4]
+    cases: [pdf.comments/incremental-save-reopen, pdf.comments/save-reopen, regressions/issue-2, regressions/issue-4, regressions/issue-pdf-random-ids]
     since: "2026-11-17"
   - id: pdf.pages.organize
     title: "Inserted, duplicated, rotated and moved pages, crop boxes and page labels survive saving and reopening"

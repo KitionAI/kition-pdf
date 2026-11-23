@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-pdf-random-ids
+feature: pdf.comments
+intent: >-
+  A new comment's /NM is random in every shipped kit, even when the host passes
+  SOURCE_DATE_EPOCH (as hosts do for timestamps): two processes started with the same epoch name
+  their comments differently. Counted names need both the dev-only Cargo feature
+  reproducible-ids and KITION_REPRODUCIBLE_IDS, and then the same seed gives the same name.
+  Before, the epoch alone seeded the names, so two kit processes minted the same ones.
+layer: gate
+tags: [headless, guard]
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/random_ids.rs
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: "kition-pdf-engine", test: "random_ids" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-23"

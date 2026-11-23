@@ -32,6 +32,10 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 
 [dev-dependencies]
+# Counted ids for the tests that save the same bytes twice (tests/deterministic_save.rs, with
+# `KITION_REPRODUCIBLE_IDS`): the KDM's ids and the engine's comment names. Never in a shipped build.
+kition-kit = { workspace = true, features = ["session", "reproducible-ids"] }
+kition-pdf-engine = { workspace = true, features = ["reproducible-ids"] }
 # The showcase sample builder (examples/showcase.rs) saves its thumbnails.
 image = { version = "0.25", default-features = false, features = ["png"] }
 # The conformance fixture writer (examples/checks.rs) saves its previews.

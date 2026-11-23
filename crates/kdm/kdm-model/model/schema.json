@@ -1,7 +1,7 @@
 {
   "kdm": 1,
   "kit": "kit.pdf",
-  "schemaVersion": 4,
+  "schemaVersion": 1,
   "root": "Pdf",
   "types": {
     "Pdf": {

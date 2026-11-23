@@ -1545,17 +1545,14 @@ struct EditCtx {
 }
 
 impl EditCtx {
-    /// `fixed`: the time is a fixed clock (a test's, or `SOURCE_DATE_EPOCH`), so the ids follow
-    /// from it alone and a build repeats byte for byte.
-    fn new(now: Option<i64>, fixed: bool, salt: u64) -> Self {
+    /// `counted`: the seed new ids are counted from ([`Session::counted_ids`]), so they follow
+    /// from it and the edits alone and a build repeats byte for byte; `None`: they are random, so
+    /// two sessions, processes or machines never mint the same ones.
+    fn new(now: Option<i64>, counted: Option<u64>, salt: u64) -> Self {
         let mut seed = 0x9E37_79B9_7F4A_7C15u64 ^ salt;
-        if let Some(t) = now {
-            seed ^= (t as u64).rotate_left(17);
-        }
-        #[cfg(not(target_arch = "wasm32"))]
-        if now.is_some() && !fixed {
-            // Real clock: mix in sub-second time so ids from two sessions don't collide.
-            seed ^= std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.subsec_nanos() as u64).unwrap_or(0) << 32;
+        match counted {
+            Some(counted) => seed ^= counted.rotate_left(17),
+            None => seed ^= random_seed(),
         }
         Self {
             js: None,
@@ -1940,17 +1937,44 @@ fn comment_list(doc: &kition_pdf_cos::Document) -> Vec<kition_pdf_render::Annota
         .collect()
 }
 
-/// The time an edit or a save takes: seconds since the Unix epoch, whether that is a fixed clock
-/// (see [`Session::fixed_now`]), and today's local date.
+/// The time an edit or a save takes: seconds since the Unix epoch, the seed new ids are counted
+/// from if they are counted (see [`Session::counted_ids`]), and today's local date.
 #[derive(Clone, Copy)]
 struct Moment {
     now: Option<i64>,
-    fixed: bool,
+    ids: Option<u64>,
     today: (i64, u32, u32),
 }
 
+/// A random seed for new ids: the operating system's randomness (Web Crypto in the browser),
+/// else the standard library's per-process hash keys and the sub-second time.
+fn random_seed() -> u64 {
+    if let Ok(seed) = getrandom::u64() {
+        return seed;
+    }
+    use std::hash::{BuildHasher, Hasher};
+    let mut hasher = std::collections::hash_map::RandomState::new().build_hasher();
+    #[cfg(not(target_arch = "wasm32"))]
+    hasher.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0));
+    hasher.finish()
+}
+
+/// `KITION_REPRODUCIBLE_IDS` (a number, the seed), read only in a build with the Cargo feature
+/// `reproducible-ids`, which tests and sample builds enable through `[dev-dependencies]` and a
+/// shipped kit never has. No host passes the variable (kition-sdk kit process protocol, section 3).
+#[cfg(all(feature = "reproducible-ids", not(target_arch = "wasm32")))]
+fn reproducible_ids() -> Option<u64> {
+    std::env::var("KITION_REPRODUCIBLE_IDS").ok().and_then(|s| s.trim().parse::<u64>().ok())
+}
+
+#[cfg(not(all(feature = "reproducible-ids", not(target_arch = "wasm32"))))]
+fn reproducible_ids() -> Option<u64> {
+    None
+}
+
 /// `SOURCE_DATE_EPOCH` (seconds since the Unix epoch), which a reproducible build sets so the
-/// dates and ids it writes are the same on every run.
+/// dates it writes are the same on every run. It never changes ids: hosts pass it to every kit
+/// process, and two processes counting ids from it would mint the same ones.
 fn source_date_epoch() -> Option<i64> {
     #[cfg(not(target_arch = "wasm32"))]
     return std::env::var("SOURCE_DATE_EPOCH").ok().and_then(|s| s.trim().parse::<i64>().ok());
@@ -2259,13 +2283,21 @@ impl Session {
     }
 
     /// The fixed time, if the session has one: the injected clock, else `SOURCE_DATE_EPOCH` (a
-    /// reproducible build's). A fixed time is UTC and new ids follow from it.
+    /// reproducible build's). A fixed time is UTC.
     fn fixed_now(&self) -> Option<i64> {
         self.clock.map(|c| c()).or_else(source_date_epoch)
     }
 
+    /// The seed new ids (a comment's `/NM`) are counted from, so the same steps mint the same
+    /// ids: the injected clock's time (a test's, [`Session::with_clock`]), else
+    /// `KITION_REPRODUCIBLE_IDS` in a build with the dev-only feature `reproducible-ids`. Otherwise
+    /// (every shipped kit, with or without `SOURCE_DATE_EPOCH`) ids are random.
+    fn counted_ids(&self) -> Option<u64> {
+        self.clock.map(|c| c() as u64).or_else(reproducible_ids)
+    }
+
     fn moment(&self) -> Moment {
-        Moment { now: self.now(), fixed: self.fixed_now().is_some(), today: self.today() }
+        Moment { now: self.now(), ids: self.counted_ids(), today: self.today() }
     }
 
     fn now(&self) -> Option<i64> {
@@ -2610,7 +2642,7 @@ impl Session {
     fn prepare_edit(doc: &Document, edit: &Edit, moment: Moment, js_off: bool) -> Result<Option<PreparedEdit>, EditError> {
         let name = doc.name.clone();
         let is_xfa = doc.info.xfa.is_some();
-        let mut cx = EditCtx::new(moment.now, moment.fixed, doc.generation ^ (doc.id.0 << 48));
+        let mut cx = EditCtx::new(moment.now, moment.ids, doc.generation ^ (doc.id.0 << 48));
         if !js_off {
             cx.xfa = doc.xfa_template.clone();
         }

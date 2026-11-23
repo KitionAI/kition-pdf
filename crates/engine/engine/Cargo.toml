@@ -10,6 +10,12 @@ publish = false
 [lints]
 workspace = true
 
+[features]
+# Counted ids for tests and sample builds (`KITION_REPRODUCIBLE_IDS`, see `Session::counted_ids`):
+# enable it in `[dev-dependencies]` only, never in a shipped build, where two processes counting
+# from one seed would mint the same ids.
+reproducible-ids = []
+
 [dependencies]
 kition-pdf-measure = { workspace = true }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "tiff"] }
@@ -47,3 +53,13 @@ icu_properties = "2.3"
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 # Already in the graph through lopdf; used only for the local UTC offset ("today").
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
+# Already in the graph (kition-pdf-sign, kition-pdf-render): the random seed of new ids.
+getrandom = "0.4"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+# The random seed of new ids; in the browser it comes from Web Crypto.
+getrandom = { version = "0.4", features = ["wasm_js"] }
+
+[dev-dependencies]
+# The crate's own tests count ids when they ask for it (tests/random_ids.rs).
+kition-pdf-engine = { path = ".", features = ["reproducible-ids"] }

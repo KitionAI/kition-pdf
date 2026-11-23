@@ -2,11 +2,11 @@ format: 1
 id: regressions/issue-2
 feature: pdf.comments
 intent: >-
-  A document built by the same commands saves the same bytes when SOURCE_DATE_EPOCH is set (as a
-  showcase sample or a gating test builds it): comments are dated at the epoch (/M, /CreationDate,
-  a dynamic stamp's by-line, the document's ModDate, in UTC) and their /NM names follow from it
-  instead of the clock's sub-second time. Before, every save wrote wall-clock dates and other
-  random-looking names.
+  A document built by the same commands saves the same bytes when SOURCE_DATE_EPOCH is set and a
+  test build counts ids (the dev-only feature reproducible-ids and KITION_REPRODUCIBLE_IDS):
+  comments are dated at the epoch (/M, /CreationDate, a dynamic stamp's by-line, the document's
+  ModDate, in UTC) and their /NM names are counted from the seed. Before, every save wrote
+  wall-clock dates and other random-looking names. The epoch alone leaves names random.
 layer: gate
 source:
   kind: issue
