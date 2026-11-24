@@ -115,6 +115,8 @@ try {
       const page = await context.newPage()
       page.setDefaultTimeout(options['timeout-ms'])
       page.on('pageerror', error => result.pageErrors.push(safe(error)))
+      // A crashed web process leaves the pending wait to time out; name the crash in the report.
+      page.on('crash', () => result.errors.push('Browser web process crashed'))
       await page.route('**/sample/Sample.pdf', route => route.fulfill({ status: 404, body: '' }))
       await page.goto(`${origin}/dev.html?locale=en-US`)
       await page.waitForFunction(() => document.getElementById('status')?.textContent === 'choose a file' && window.devHost?.connection() === null)
