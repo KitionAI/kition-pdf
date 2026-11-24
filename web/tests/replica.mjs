@@ -40,15 +40,18 @@ const ask = (command, params = {}) => page.evaluate(async ([command, params]) =>
 const titles = async () => (await ask('bookmark_list', { limit: 1000 })).bookmarks.map((item) => item.title)
 const docId = () => page.evaluate(() => window.devHost.connection().replica.info())
 const version = () => page.evaluate(() => window.devHost.connection().ai.version())
-// What changed since `since`, or `null` when the replica's history does not hold it.
+// The kit's schema, as Kition sends it with `ai/changes` (the engine does not describe its own).
+const schema = JSON.parse(await readFile(new URL('../../crates/kdm/kdm-model/model/schema.json', import.meta.url), 'utf8'))
+// What changed since `since` (`changes: null` when the replica's history does not hold it), or the refusal.
 const changesSince = (since) =>
-  page.evaluate(async (since) => {
+  page.evaluate(async ([since, schema]) => {
     try {
-      return (await window.devHost.connection().ai.changes(since)).changes
-    } catch {
-      return null
+      return await window.devHost.connection().ai.changes(since, schema)
+    } catch (error) {
+      return { changes: null, error: String(error?.message ?? error) }
     }
-  }, since)
+  }, [since, schema])
+const why = (answer) => answer.error ?? answer.unavailable ?? ''
 const createdIds = (changes) => (changes?.created ?? []).map((object) => object.id).sort()
 const fileVersion = () => page.evaluate((path) => window.devHost.files.get(path).version, path)
 
@@ -73,8 +76,9 @@ try {
   await ask('bookmark_add', { page: 1, title: 'Inside' })
   const before = await version()
   await ask('comment_add', { page: 1, type: 'note', at: [40, 40], contents: 'kept' })
-  const made = createdIds(await changesSince(before))
-  step('the comment makes replica objects', made.length > 0, made.join(' '))
+  const first = await changesSince(before)
+  const made = createdIds(first.changes)
+  step('the comment makes replica objects', made.length > 0, made.join(' ') || why(first))
   const id = await docId()
   step('the document has a replica id', typeof id === 'string' && id.length > 0, String(id))
   await kit.getByTestId('pdf-save').click()
@@ -94,8 +98,8 @@ try {
   step('the comment is there', comments.some((comment) => comment.contents === 'kept'), JSON.stringify(comments))
   step('the document keeps its replica id', (await docId()) === id, String(await docId()))
   const since = await changesSince(before)
-  step("the replica's history still holds the version from before the change", since !== null)
-  const kept = createdIds(since)
+  step("the replica's history still holds the version from before the change", since.changes !== null, why(since))
+  const kept = createdIds(since.changes)
   step('the objects made before the change keep their ids', made.length > 0 && made.every((object) => kept.includes(object)), `${made.join(' ')} in ${kept.join(' ')}`)
   step('the outside change moved the replica on', (await version()) !== before)
   step('the stored replica is still kept', await page.evaluate((path) => window.devHost.history.replica(path) !== null, path))
@@ -104,7 +108,8 @@ try {
   await page.evaluate((bytes) => window.devHost.open('Sample.pdf', new Uint8Array(bytes).buffer), Array.from(changed))
   await until(async () => (await titles()).includes('Outside'))
   await ask('bookmark_add', { page: 1, title: 'Alone' })
-  step('a file opened alone has another replica', (await docId()) !== id && (await changesSince(before)) === null, String(await docId()))
+  const alone = await changesSince(before)
+  step('a file opened alone has another replica', (await docId()) !== id && alone.changes === null && !alone.error, `${await docId()} ${why(alone)}`)
 } catch (error) {
   failures += 1
   console.log(`FAIL ${error instanceof Error ? error.message.split('\n')[0] : String(error)}`)
