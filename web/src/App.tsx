@@ -39,7 +39,10 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const t = useMemo(() => createKitStrings(CATALOGS, host.init.locale), [host])
   const manifest = useMemo(engineManifest, [])
   // An agent step that rewrites the whole file takes the whole document's lease too (UI-L2).
+  // A PDF changed outside Kition opens with its stored replica all the same: the engine records
+  // what the file changed as one import, so the document keeps its identity and history (UI-R1).
   const session = useKitSession(host, manifest, describe, {
+    replicaMergesFile: true,
     agentLeaseScope: (command, _params, engine) => engine.invoke<string>('leaseScope', command),
   })
   const [current, setCurrent] = useState(0)

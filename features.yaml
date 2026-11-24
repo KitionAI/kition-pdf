@@ -186,6 +186,14 @@ features:
     paths: [web/src/App.tsx, web/src/ribbon/HomeTab.tsx, web/tests/modes.mjs, web/tests/focus.mjs]
     cases: [pdf.editor.display-modes/mode-smoke, regressions/issue-focus-tool-find-bar]
     since: "2026-11-17"
+  - id: pdf.editor.replica-merges-file
+    title: "A PDF changed outside Kition opens with its stored replica: the change shows, recorded as one import, and the document keeps its replica id and history (Kit UI protocol UI-R1, replicaMergesFile)"
+    dimension: [platform, data-safety]
+    priority: P1
+    status: has
+    paths: [web/src/App.tsx, web/tests/replica.mjs, crates/engine/engine/src/kdm_bridge.rs, crates/engine/engine/tests/kdm_bridge.rs]
+    cases: [pdf.editor.replica-merges-file/outside-change]
+    since: "2026-11-24"
   - id: pdf.editor.host-theme
     title: "The editor follows the host's light or dark theme, live: the pasteboard the engine paints around the PDF's pages is the host's canvas color, and the pages stay white"
     dimension: [platform]
