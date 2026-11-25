@@ -363,17 +363,17 @@ mod tests {
 
     fn fixture() -> Vec<u8> {
         let mut doc = PdfDocument::create("Report.pdf", 612, 792).unwrap();
-        doc.execute("page_insert_blank", json!({ "at": 2 })).unwrap();
-        doc.execute("form_add_field", json!({ "page": 1, "type": "text", "rect": [72, 600, 300, 624], "name": "Name" })).unwrap();
+        doc.execute("page.insertBlank", json!({ "at": 2 })).unwrap();
+        doc.execute("form.addField", json!({ "page": 1, "type": "text", "rect": [72, 600, 300, 624], "name": "Name" })).unwrap();
         doc.save(None).unwrap()
     }
 
     fn note(doc: &mut PdfDocument, page: u32, text: &str) {
-        doc.execute("comment_add", json!({ "page": page, "type": "note", "at": [100, 100], "contents": text })).unwrap();
+        doc.execute("comment.add", json!({ "page": page, "type": "note", "at": [100, 100], "contents": text })).unwrap();
     }
 
     fn comment_count(doc: &mut PdfDocument) -> usize {
-        doc.execute("comment_list", json!({})).unwrap()["comments"].as_array().map_or(0, Vec::len)
+        doc.execute("comment.list", json!({})).unwrap()["comments"].as_array().map_or(0, Vec::len)
     }
 
     #[test]
@@ -409,7 +409,7 @@ mod tests {
     fn execute_as_records_the_given_origin() {
         let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
         let agent = Origin::agent("agent:test");
-        doc.execute_as("comment_add", json!({ "page": 1, "type": "note", "at": [10, 10], "contents": "agent" }), &agent).unwrap();
+        doc.execute_as("comment.add", json!({ "page": 1, "type": "note", "at": [10, 10], "contents": "agent" }), &agent).unwrap();
         assert_eq!(comment_count(&mut doc), 1);
         // Engine rule E14a: canUndo is the person's, who has no step; the agent's undo takes it back.
         assert!(!doc.can_undo());
@@ -496,11 +496,11 @@ mod tests {
         assert_eq!(comment_count(&mut b), 2);
 
         let since = a.version().unwrap();
-        b.execute("form_fill", json!({ "values": { "Name": "Bob" } })).unwrap();
+        b.execute("form.fill", json!({ "values": { "Name": "Bob" } })).unwrap();
         a.add_blobs(&b.blobs_since(&since).unwrap()).unwrap();
         a.import_changes(&b.export_changes(&since).unwrap()).unwrap();
         assert_eq!(a.version().unwrap(), b.version().unwrap());
-        let value = |doc: &mut PdfDocument| doc.execute("form_fields", json!({})).unwrap()["fields"][0]["value"].clone();
+        let value = |doc: &mut PdfDocument| doc.execute("form.listFields", json!({})).unwrap()["fields"][0]["value"].clone();
         assert_eq!(value(&mut a), json!("Bob"));
         assert_eq!(a.render(0.0, 0.0, 1.0, a.width(), 300).unwrap(), b.render(0.0, 0.0, 1.0, b.width(), 300).unwrap(), "the same pixels");
         assert_eq!(a.kdm_resets() + b.kdm_resets(), 0);
@@ -541,7 +541,7 @@ mod tests {
 
     /// The contents of the document's comments, sorted.
     fn contents(doc: &mut PdfDocument) -> Vec<String> {
-        let listed = doc.execute("comment_list", json!({})).unwrap();
+        let listed = doc.execute("comment.list", json!({})).unwrap();
         let mut out: Vec<String> =
             listed["comments"].as_array().unwrap().iter().filter_map(|comment| comment["contents"].as_str().map(str::to_owned)).collect();
         out.sort();
@@ -655,12 +655,12 @@ mod tests {
 
     /// The id the kit lists for the comment whose contents are `text`.
     fn listed_id(doc: &mut PdfDocument, text: &str) -> String {
-        let listed = doc.execute("comment_list", json!({})).unwrap();
+        let listed = doc.execute("comment.list", json!({})).unwrap();
         let found = listed["comments"].as_array().unwrap().iter().find(|comment| comment["contents"] == text).cloned();
         found.and_then(|comment| comment["id"].as_str().map(str::to_owned)).unwrap_or_else(|| panic!("no comment {text}: {listed}"))
     }
 
-    /// A reply names the comment's KDM object by its tool id (its `/NM`, what `comment_list` and
+    /// A reply names the comment's KDM object by its tool id (its `/NM`, what `comment.list` and
     /// receipts name it by); text that merely holds an id stays.
     #[test]
     fn a_reply_names_objects_by_their_tool_ids() {
@@ -676,7 +676,7 @@ mod tests {
         assert!(doc.model_reply("not json").is_err());
     }
 
-    /// One id per comment at the tool interface: the id `comment_list` gives is the one the receipt
+    /// One id per comment at the tool interface: the id `comment.list` gives is the one the receipt
     /// names, the one `modelBatch` loads by, and after a save and a reopen with the stored replica
     /// it still names the same comment, behind which the replica keeps the same KDM object.
     #[test]
@@ -733,9 +733,9 @@ mod tests {
         let mut exchange = Exchange::new();
         let described = exchange.describe(&mut doc).unwrap();
         assert_eq!(described["capability"], "KitObjectModel 1.0");
-        assert!(described["commands"].as_array().unwrap().iter().any(|command| command["id"] == "comment_add"));
+        assert!(described["commands"].as_array().unwrap().iter().any(|command| command["id"] == "comment.add"));
 
-        let command = json!({ "ops": [{ "op": "command", "id": "comment_add", "params": { "page": 1, "type": "note", "at": [10, 10], "contents": "agent" } }] });
+        let command = json!({ "ops": [{ "op": "command", "id": "comment.add", "params": { "page": 1, "type": "note", "at": [10, 10], "contents": "agent" } }] });
         assert_eq!(exchange.batch(&mut doc, &command, true).unwrap_err().code, ModelErrorCode::ReadOnly);
         let before = doc.version().unwrap();
         exchange.batch(&mut doc, &command, false).unwrap();
@@ -757,8 +757,8 @@ mod tests {
     /// every comment and form field as the kit lists them, and the pixels of the first page.
     fn view(doc: &mut PdfDocument) -> (String, Value, Value, Vec<u8>) {
         let hash = doc.auto.session_mut().state_hash(doc.id).unwrap();
-        let comments = doc.execute("comment_list", json!({})).unwrap();
-        let fields = doc.execute("form_fields", json!({})).unwrap();
+        let comments = doc.execute("comment.list", json!({})).unwrap();
+        let fields = doc.execute("form.listFields", json!({})).unwrap();
         let pixels = doc.render(0.0, 0.0, 1.0, doc.width(), 300).unwrap();
         (hash, comments, fields, pixels)
     }
@@ -820,7 +820,7 @@ mod tests {
         note(&mut doc, 1, "kept");
         let checkpoint = doc.snapshot().unwrap();
         note(&mut doc, 2, "later");
-        doc.execute("form_fill", json!({ "values": { "Name": "Ada" } })).unwrap();
+        doc.execute("form.fill", json!({ "values": { "Name": "Ada" } })).unwrap();
         let before = view(&mut doc);
         assert_ne!(doc.restore_state(&checkpoint, &person()).unwrap(), Damage::None);
         let restored = view(&mut doc);
@@ -851,7 +851,7 @@ mod tests {
         wrote.sort();
         assert!(!wrote.is_empty(), "the draft's comment wrote overlay entries");
         let (changes, blobs) = (draft.export_changes(&base).unwrap(), draft.blobs_since(&base).unwrap());
-        doc.execute("doc_remove_hidden", json!({ "categories": ["comments"] })).unwrap();
+        doc.execute("file.removeHidden", json!({ "categories": ["comments"] })).unwrap();
         assert!(contents(&mut doc).is_empty(), "the rewrite removed the comments");
         doc.add_blobs(&blobs).unwrap();
 
@@ -886,7 +886,7 @@ mod tests {
         let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
         note(&mut doc, 1, "before");
         let (changes, blobs) = draft_with(&mut doc, |draft| {
-            draft.execute("doc_remove_hidden", json!({ "categories": ["comments"] })).unwrap();
+            draft.execute("file.removeHidden", json!({ "categories": ["comments"] })).unwrap();
         });
         note(&mut doc, 2, "meanwhile");
         doc.add_blobs(&blobs).unwrap();

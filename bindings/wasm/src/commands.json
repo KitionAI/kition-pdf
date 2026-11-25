@@ -1,5 +1,5 @@
 {
- "accessibility_check": {
+ "accessibility.check": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -43,7 +43,7 @@
    "type": "object"
   }
  },
- "accessibility_figures": {
+ "accessibility.listFigures": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -57,7 +57,7 @@
    "type": "object"
   }
  },
- "action_list": {
+ "action.list": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -101,7 +101,7 @@
    "type": "object"
   }
  },
- "bookmark_list": {
+ "bookmark.list": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -118,7 +118,7 @@
    "type": "object"
   }
  },
- "comment_image_preview": {
+ "comment.previewImage": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -138,7 +138,7 @@
    "type": "object"
   }
  },
- "comment_list": {
+ "comment.list": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -152,7 +152,7 @@
    "type": "object"
   }
  },
- "content_list": {
+ "content.list": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -166,7 +166,7 @@
    "type": "object"
   }
  },
- "doc_audit_space": {
+ "file.auditSpace": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -192,14 +192,14 @@
    "type": "object"
   }
  },
- "doc_compare": {
+ "file.compare": {
   "output": {
    "additionalProperties": true,
    "description": "the differences between the two documents, page by page",
    "type": "object"
   }
  },
- "doc_hidden_info": {
+ "file.getHiddenInfo": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -228,7 +228,7 @@
    "type": "object"
   }
  },
- "doc_info": {
+ "file.getInfo": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -374,7 +374,7 @@
    "type": "object"
   }
  },
- "doc_inspect": {
+ "file.inspect": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -520,14 +520,14 @@
    "type": "object"
   }
  },
- "form_actions": {
+ "form.listActions": {
   "output": {
    "additionalProperties": true,
    "description": "the field's scripts by event",
    "type": "object"
   }
  },
- "form_fields": {
+ "form.listFields": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -541,7 +541,7 @@
    "type": "object"
   }
  },
- "js_document_scripts": {
+ "script.list": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -552,7 +552,7 @@
    "type": "object"
   }
  },
- "link_list": {
+ "link.list": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -566,7 +566,7 @@
    "type": "object"
   }
  },
- "measure_info": {
+ "measure.getInfo": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -637,7 +637,7 @@
    "type": "object"
   }
  },
- "measure_list": {
+ "measure.list": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -657,7 +657,7 @@
    "type": "object"
   }
  },
- "measure_snap": {
+ "measure.setSnap": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -692,7 +692,7 @@
    "type": "object"
   }
  },
- "object_list": {
+ "object.list": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -712,7 +712,7 @@
    "type": "object"
   }
  },
- "ocr_status": {
+ "ocr.status": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -744,7 +744,7 @@
    "type": "object"
   }
  },
- "page_images": {
+ "page.listImages": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -761,7 +761,7 @@
    "type": "object"
   }
  },
- "page_render": {
+ "page.render": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -781,7 +781,7 @@
    "type": "object"
   }
  },
- "pdfa_verify": {
+ "pdfa.verify": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -831,7 +831,7 @@
    "type": "object"
   }
  },
- "render_preview": {
+ "file.render": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -851,7 +851,7 @@
    "type": "object"
   }
  },
- "sign_list": {
+ "signature.list": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -871,7 +871,7 @@
    "type": "object"
   }
  },
- "text_extract": {
+ "text.extract": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -894,7 +894,7 @@
    "type": "object"
   }
  },
- "text_find": {
+ "text.find": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -911,7 +911,7 @@
    "type": "object"
   }
  },
- "text_lines": {
+ "text.listLines": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -928,7 +928,7 @@
    "type": "object"
   }
  },
- "text_paragraphs": {
+ "text.listParagraphs": {
   "output": {
    "additionalProperties": true,
    "properties": {
@@ -945,7 +945,7 @@
    "type": "object"
   }
  },
- "text_select": {
+ "text.select": {
   "output": {
    "additionalProperties": true,
    "properties": {

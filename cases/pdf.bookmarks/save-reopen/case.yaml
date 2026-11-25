@@ -2,7 +2,7 @@ format: 1
 id: pdf.bookmarks/save-reopen
 feature: pdf.bookmarks
 intent: >-
-  Each bookmark_add on a PDF without an Info dictionary or ID saves incrementally after the original
+  Each bookmark.add on a PDF without an Info dictionary or ID saves incrementally after the original
   bytes, and the reopened copy keeps the document id and version (the save is not read back as an
   import). It does not yet check that the reopened copy lists the bookmark.
 layer: unit

@@ -13,11 +13,11 @@ fn original() -> Vec<u8> {
 }
 
 fn note(doc: &mut PdfDocument, text: &str) {
-    doc.execute("comment_add", json!({"page":1,"type":"note","at":[24,24],"contents":text})).unwrap();
+    doc.execute("comment.add", json!({"page":1,"type":"note","at":[24,24],"contents":text})).unwrap();
 }
 
 fn comment_count(doc: &mut PdfDocument) -> usize {
-    doc.execute("comment_list", json!({})).unwrap()["comments"].as_array().unwrap().len()
+    doc.execute("comment.list", json!({})).unwrap()["comments"].as_array().unwrap().len()
 }
 
 #[test]
@@ -99,7 +99,7 @@ fn original_type3_without_info_or_id_keeps_version_after_each_bookmark_save() {
     doc.version().unwrap();
     let identity = doc.doc_id();
     for count in 1..=3 {
-        doc.execute("bookmark_add", json!({"title":format!("Original bookmark {count}"),"page":count})).unwrap();
+        doc.execute("bookmark.add", json!({"title":format!("Original bookmark {count}"),"page":count})).unwrap();
         let version = doc.version().unwrap();
         let saved = doc.save(None).unwrap();
         assert!(saved.starts_with(&prior));
@@ -309,7 +309,7 @@ fn pinned_corpus_sdk_saves_and_kdm_reopen_are_strict() {
             let comments_before = comment_count(&mut doc);
             match mode {
                 "bookmark" => {
-                    doc.execute("bookmark_add", json!({"title":"SDK save oracle","page":1})).unwrap();
+                    doc.execute("bookmark.add", json!({"title":"SDK save oracle","page":1})).unwrap();
                 }
                 "annotation" => note(&mut doc, "SDK save oracle"),
                 _ => {}
@@ -360,7 +360,7 @@ fn pinned_corpus_sdk_saves_and_kdm_reopen_are_strict() {
 
 #[test]
 fn unsupported_trailer_protect_and_sanitize_fail_before_working_state_or_kdm_commit() {
-    for (command, args) in [("doc_protect", json!({"open_password":"obviously-fake-test-password"})), ("doc_remove_hidden", json!({}))] {
+    for (command, args) in [("file.protect", json!({"open_password":"obviously-fake-test-password"})), ("file.removeHidden", json!({}))] {
         let original = unknown_fixture(false);
         let mut doc = PdfDocument::open("Unknown.pdf", &original).unwrap();
         doc.auto = std::mem::take(&mut doc.auto).with_clock(|| 1_700_000_000);

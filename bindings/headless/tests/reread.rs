@@ -12,7 +12,7 @@ use serde_json::json;
 
 /// The contents of the comments on `page` (from 1) in the file on disk.
 fn comment_on(f: &Fixture, page: u64) -> Vec<String> {
-    let listed = read_on_disk(&f.file(), "comment_list", json!({ "page": page }));
+    let listed = read_on_disk(&f.file(), "comment.list", json!({ "page": page }));
     listed["comments"].as_array().unwrap().iter().map(|comment| comment["contents"].as_str().unwrap_or_default().to_owned()).collect()
 }
 
@@ -21,9 +21,9 @@ fn comment_on(f: &Fixture, page: u64) -> Vec<String> {
 #[tokio::test(flavor = "multi_thread")]
 async fn reread_keeps_the_agents_undo_and_the_outside_edit() {
     let f = Fixture::new(3);
-    f.ok("run", json!({ "steps": [step("comment_edit", json!({ "page": 1, "index": 1, "contents": "mine" }))] })).await;
+    f.ok("run", json!({ "steps": [step("comment.edit", json!({ "page": 1, "index": 1, "contents": "mine" }))] })).await;
     assert_eq!(comment_on(&f, 1), ["mine"]);
-    f.colleague(&[("comment_edit", json!({ "page": 3, "index": 1, "contents": "theirs" }))]);
+    f.colleague(&[("comment.edit", json!({ "page": 3, "index": 1, "contents": "theirs" }))]);
 
     let (_, basis) = f.inspect().await;
     let undone = f.ok("run", json!({ "basis": basis, "steps": [{ "command": "edit.undo", "params": {} }] })).await;
@@ -44,11 +44,11 @@ async fn reread_keeps_the_agents_undo_and_the_outside_edit() {
 #[tokio::test(flavor = "multi_thread")]
 async fn rereads_in_a_row_keep_every_step() {
     let f = Fixture::new(3);
-    f.ok("run", json!({ "steps": [step("comment_edit", json!({ "page": 1, "index": 1, "contents": "mine 1" }))] })).await;
-    f.colleague(&[("comment_edit", json!({ "page": 3, "index": 1, "contents": "theirs 1" }))]);
+    f.ok("run", json!({ "steps": [step("comment.edit", json!({ "page": 1, "index": 1, "contents": "mine 1" }))] })).await;
+    f.colleague(&[("comment.edit", json!({ "page": 3, "index": 1, "contents": "theirs 1" }))]);
     let (_, basis) = f.inspect().await;
-    f.ok("run", json!({ "basis": basis, "steps": [step("comment_edit", json!({ "page": 2, "index": 1, "contents": "mine 2" }))] })).await;
-    f.colleague(&[("form_fill", json!({ "values": { "F3": "theirs 2" } }))]);
+    f.ok("run", json!({ "basis": basis, "steps": [step("comment.edit", json!({ "page": 2, "index": 1, "contents": "mine 2" }))] })).await;
+    f.colleague(&[("form.fill", json!({ "values": { "F3": "theirs 2" } }))]);
 
     let (_, basis) = f.inspect().await;
     f.ok("run", json!({ "basis": basis, "steps": [{ "command": "edit.undo", "params": {} }] })).await;
@@ -58,7 +58,7 @@ async fn rereads_in_a_row_keep_every_step() {
     f.ok("run", json!({ "basis": basis, "steps": [{ "command": "edit.undo", "params": {} }] })).await;
     assert_eq!(comment_on(&f, 1), ["note 1"]);
     assert_eq!(comment_on(&f, 3), ["theirs 1"]);
-    let fields = read_on_disk(&f.file(), "form_fields", json!({}));
+    let fields = read_on_disk(&f.file(), "form.listFields", json!({}));
     let f3 = fields["fields"].as_array().unwrap().iter().find(|field| field["name"] == "F3").unwrap().clone();
     assert_eq!(f3["value"], "theirs 2", "{f3}");
     f.shutdown().await;
@@ -70,7 +70,7 @@ async fn rereads_in_a_row_keep_every_step() {
 #[tokio::test(flavor = "multi_thread")]
 async fn a_rewrite_by_another_program_with_history_is_refused() {
     let f = Fixture::new(2);
-    f.ok("run", json!({ "steps": [step("comment_edit", json!({ "page": 1, "index": 1, "contents": "mine" }))] })).await;
+    f.ok("run", json!({ "steps": [step("comment.edit", json!({ "page": 1, "index": 1, "contents": "mine" }))] })).await;
     let at = std::fs::metadata(f.file()).unwrap().modified().unwrap();
     let mut doc = lopdf::Document::load_mem(&std::fs::read(f.file()).unwrap()).unwrap();
     doc.renumber_objects_with(100);

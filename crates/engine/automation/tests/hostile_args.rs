@@ -232,7 +232,7 @@ fn no_tool_escapes_the_root() {
     let mut a = Automation::new().with_root(&root).expect("root");
 
     // A real document, so tools reach their path arguments instead of failing on `doc` first.
-    let created = a.call("doc_create", &json!({ "from": "blank", "pages": 1 })).expect("create a blank document");
+    let created = a.call("file.new", &json!({ "from": "blank", "pages": 1 })).expect("create a blank document");
     let doc = created
         .into_iter()
         .find_map(|c| match c {

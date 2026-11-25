@@ -3,7 +3,7 @@ id: pdf.bookmarks.edit/save-reopen
 feature: pdf.bookmarks.edit
 intent: >-
   Nested bookmarks with CJK titles survive saving and reopening: a new PDF edited only with engine commands is saved, reopened from the saved bytes and
-  compared whole (doc_inspect, comments, bookmarks, fields, links, text, page pixels), and a second
+  compared whole (file.inspect, comments, bookmarks, fields, links, text, page pixels), and a second
   save reopens the same.
 layer: unit
 source:

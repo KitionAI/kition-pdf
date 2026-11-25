@@ -94,7 +94,7 @@ async function captureEngine(page, filename) {
       return execute.apply(this, args)
     }
   }), 'Capture existing engine')
-  const command = await bounded(page.evaluate(() => window.devHost.connection().ai.run([{ command: 'bookmark_list', params: { limit: 1 } }], false)), 'Read-only engine capture')
+  const command = await bounded(page.evaluate(() => window.devHost.connection().ai.run([{ command: 'bookmark.list', params: { limit: 1 } }], false)), 'Read-only engine capture')
   assert.equal(command.completed.length, 1)
   await frame.waitForFunction(() => window.__type3Engine && window.__kitionCacheQuiet.pending === 0 && performance.now() - window.__kitionCacheQuiet.lastActivity >= 250)
   return frame
@@ -171,7 +171,7 @@ try {
       const info = await frame.evaluate(() => ({ pages: window.__type3Engine.info.inspected.pages.map(item => item.area), dirty: window.__type3Engine.info.dirty, dpr: devicePixelRatio }))
       assert.equal(info.pages.length, manifest.pageCount); assert.equal(info.pages[0].width, manifest.pageWidth); assert.equal(info.pages[0].height, manifest.pageHeight)
       assert.equal(info.dirty, false); assert.equal(info.dpr, 1)
-      result.connection = { status: 'passed', openAndCaptureMs: performance.now() - openedAt, freshContext: true, initialConnectionNull: true, openedFilename: fixture.file, captureCommand: 'bookmark_list', ...info }
+      result.connection = { status: 'passed', openAndCaptureMs: performance.now() - openedAt, freshContext: true, initialConnectionNull: true, openedFilename: fixture.file, captureCommand: 'bookmark.list', ...info }
       const failureUi = frame.getByTestId('kit-render-failure')
       if (fixture.expectedTruncation) {
         await failureUi.waitFor({ state: 'visible' })

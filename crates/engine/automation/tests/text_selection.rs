@@ -47,15 +47,15 @@ fn inclusive_full_partial_reverse_and_single_glyph_ranges_follow_rotations_and_c
     for (index, page) in fixture::pages().into_iter().enumerate() {
         for (start, end, expected, partial) in [(0, 3, "AB\nCD", false), (1, 2, "B\nC", true)] {
             let args = json!({"doc":id,"page":index + 1,"anchor":center(glyph(page,start)),"focus":center(glyph(page,end))});
-            let result = call(&mut automation, "text_select", args.clone());
+            let result = call(&mut automation, "text.select", args.clone());
             assert_eq!(result["text"], expected);
             assert_eq!(result["pages"][0]["text"], expected);
             rects_equal(&result["pages"][0]["rects"], &page.rects(partial));
             let reversed = json!({"anchor":args["focus"],"focus":args["anchor"],"doc":id,"page":index + 1});
-            assert_eq!(call(&mut automation, "text_select", reversed), result);
+            assert_eq!(call(&mut automation, "text.select", reversed), result);
         }
         let result =
-            call(&mut automation, "text_select", json!({"doc":id,"page":index + 1,"anchor":center(glyph(page,1)),"focus":center(glyph(page,1))}));
+            call(&mut automation, "text.select", json!({"doc":id,"page":index + 1,"anchor":center(glyph(page,1)),"focus":center(glyph(page,1))}));
         assert_eq!(result["text"], "B");
         rects_equal(&result["pages"][0]["rects"], &[glyph(page, 1)]);
     }
@@ -66,14 +66,14 @@ fn cross_page_range_normalizes_direction_and_includes_whole_intermediate_pages()
     let (mut automation, id) = open();
     let pages = fixture::pages();
     let args = json!({"doc":id,"page":2,"end_page":5,"anchor":center(glyph(pages[1],1)),"focus":center(glyph(pages[4],2))});
-    let result = call(&mut automation, "text_select", args.clone());
+    let result = call(&mut automation, "text.select", args.clone());
     assert_eq!(result["text"], "B\nCD\nAB\nCD\nAB\nCD\nAB\nC");
     assert_eq!(result["pages"].as_array().unwrap().iter().map(|p| p["page"].as_u64().unwrap()).collect::<Vec<_>>(), [2, 3, 4, 5]);
     rects_equal(&result["pages"][0]["rects"], &[glyph(pages[1], 1), pages[1].rects(false)[1]]);
     rects_equal(&result["pages"][1]["rects"], &pages[2].rects(false));
     rects_equal(&result["pages"][2]["rects"], &pages[3].rects(false));
     rects_equal(&result["pages"][3]["rects"], &[pages[4].rects(false)[0], glyph(pages[4], 2)]);
-    assert_eq!(call(&mut automation, "text_select", json!({"doc":id,"page":5,"end_page":2,"anchor":args["focus"],"focus":args["anchor"]})), result);
+    assert_eq!(call(&mut automation, "text.select", json!({"doc":id,"page":5,"end_page":2,"anchor":args["focus"],"focus":args["anchor"]})), result);
 }
 
 #[test]
@@ -83,7 +83,7 @@ fn column_selection_uses_glyph_centers_and_retains_only_selected_line_runs() {
         let rect = page.view_rect([50., 96., 62., 156.]);
         let result = call(
             &mut automation,
-            "text_select",
+            "text.select",
             json!({"doc":id,"page":index + 1,"mode":"column","anchor":[rect[0],rect[1]],"focus":[rect[2],rect[3]]}),
         );
         assert_eq!(result["text"], if page.rotation == 180 { "C\nA" } else { "A\nC" });
@@ -91,13 +91,13 @@ fn column_selection_uses_glyph_centers_and_retains_only_selected_line_runs() {
         assert_eq!(
             call(
                 &mut automation,
-                "text_select",
+                "text.select",
                 json!({"doc":id,"page":index + 1,"mode":"column","anchor":[rect[2],rect[3]],"focus":[rect[0],rect[1]]})
             ),
             result
         );
     }
-    let empty = call(&mut automation, "text_select", json!({"doc":id,"page":1,"mode":"column","anchor":[0,0],"focus":[1,1]}));
+    let empty = call(&mut automation, "text.select", json!({"doc":id,"page":1,"mode":"column","anchor":[0,0],"focus":[1,1]}));
     assert_eq!(empty, json!({"text":"","pages":[{"page":1,"text":"","rects":[]}]}));
 }
 
@@ -106,15 +106,15 @@ fn blank_pages_and_maximum_page_span_are_safe_without_partial_results() {
     let mut automation = Automation::new();
     let bytes = automation.session().create_blank(240., 200., 65).unwrap();
     let id = automation.session_mut().open("BlankSelection.pdf", None, bytes, None).unwrap().0;
-    let result = call(&mut automation, "text_select", json!({"doc":id,"page":1,"anchor":[1,1],"focus":[2,2]}));
+    let result = call(&mut automation, "text.select", json!({"doc":id,"page":1,"anchor":[1,1],"focus":[2,2]}));
     assert_eq!(result, json!({"text":"","pages":[{"page":1,"text":"","rects":[]}]}));
     let args = json!({"doc":id,"page":1,"end_page":64,"anchor":[1,1],"focus":[2,2]});
-    let result = call(&mut automation, "text_select", args.clone());
+    let result = call(&mut automation, "text.select", args.clone());
     assert_eq!(result["pages"].as_array().unwrap().len(), 64);
     assert_eq!(result["text"], "\n".repeat(63));
     let mut too_many = args;
     too_many["end_page"] = json!(65);
-    assert!(automation.call("text_select", &too_many).unwrap_err().to_string().contains("64 pages"));
+    assert!(automation.call("text.select", &too_many).unwrap_err().to_string().contains("64 pages"));
 }
 
 #[test]
@@ -139,27 +139,27 @@ fn invalid_arguments_and_cross_page_columns_are_actionable_errors() {
     ] {
         let mut args = base.clone();
         args[key] = value;
-        assert!(matches!(automation.call("text_select", &args), Err(ToolError::InvalidArgs(_))), "{args}");
+        assert!(matches!(automation.call("text.select", &args), Err(ToolError::InvalidArgs(_))), "{args}");
     }
     for key in ["anchor", "focus", "page", "doc"] {
         let mut args = base.clone();
         args.as_object_mut().unwrap().remove(key);
-        assert!(automation.call("text_select", &args).is_err(), "missing {key}");
+        assert!(automation.call("text.select", &args).is_err(), "missing {key}");
     }
     let mut args = base;
     args["end_page"] = json!(2);
     args["mode"] = json!("column");
-    assert!(automation.call("text_select", &args).unwrap_err().to_string().contains("same"));
+    assert!(automation.call("text.select", &args).unwrap_err().to_string().contains("same"));
 }
 
 #[test]
 fn selection_is_read_only_in_tool_metadata_bytes_history_and_document_summary() {
     let (mut automation, id) = open();
-    let tool = tools().into_iter().find(|tool| tool.name == "text_select").unwrap();
+    let tool = tools().into_iter().find(|tool| tool.name == "text.select").unwrap();
     assert!(tool.read_only && !tool.destructive);
-    let before = call(&mut automation, "doc_info", json!({"doc":id}));
+    let before = call(&mut automation, "file.getInfo", json!({"doc":id}));
     let bytes = automation.session().docs()[0].bytes.clone();
-    call(&mut automation, "text_select", json!({"doc":id,"page":1,"anchor":[56,54],"focus":[68,94]}));
-    assert_eq!(call(&mut automation, "doc_info", json!({"doc":id})), before);
+    call(&mut automation, "text.select", json!({"doc":id,"page":1,"anchor":[56,54],"focus":[68,94]}));
+    assert_eq!(call(&mut automation, "file.getInfo", json!({"doc":id})), before);
     assert!(Arc::ptr_eq(&automation.session().docs()[0].bytes, &bytes));
 }

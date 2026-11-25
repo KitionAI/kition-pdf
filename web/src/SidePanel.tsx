@@ -45,7 +45,7 @@ export function SidePanel({ info, current, onPage }: { info: PdfInfo; current: n
 
 function Bookmarks({ onPage }: { onPage: (index: number) => void }) {
   const { t } = useKitEditor()
-  const items = useEngineQuery<{ bookmarks: BookmarkItem[] }>('bookmark_list', { limit: 1000 })?.bookmarks ?? []
+  const items = useEngineQuery<{ bookmarks: BookmarkItem[] }>('bookmark.list', { limit: 1000 })?.bookmarks ?? []
   if (!items.length) return <p className="pdf-empty kui-muted">{t('noBookmarks')}</p>
   const tree = (list: BookmarkItem[], depth: number): React.ReactNode =>
     list.map((item, index) => (
@@ -61,7 +61,7 @@ function Bookmarks({ onPage }: { onPage: (index: number) => void }) {
 
 function Comments({ onPage }: { onPage: (index: number) => void }) {
   const { t, phrase: p } = useKitEditor()
-  const items = useEngineQuery<{ comments: CommentItem[] }>('comment_list')?.comments ?? []
+  const items = useEngineQuery<{ comments: CommentItem[] }>('comment.list')?.comments ?? []
   if (!items.length) return <p className="pdf-empty kui-muted">{t('noComments')}</p>
   return (
     <div>
@@ -83,8 +83,8 @@ function Comments({ onPage }: { onPage: (index: number) => void }) {
 function Fields({ onPage }: { onPage: (index: number) => void }) {
   const { run, enabled, t } = useKitEditor()
   // Filling a field edits the document: a read-only one shows the values only.
-  const canFill = enabled('form_fill')
-  const items = useEngineQuery<{ fields: FieldItem[] }>('form_fields')?.fields ?? []
+  const canFill = enabled('form.fill')
+  const items = useEngineQuery<{ fields: FieldItem[] }>('form.listFields')?.fields ?? []
   if (!items.length) return <p className="pdf-empty kui-muted">{t('noFields')}</p>
   return (
     <div className="pdf-fields">
@@ -92,7 +92,7 @@ function Fields({ onPage }: { onPage: (index: number) => void }) {
         <label key={field.name} className="pdf-field" onFocus={() => onPage(field.page - 1)}>
           <span className="kui-muted">{field.name}</span>
           {field.type === 'checkbox' ? (
-            <input type="checkbox" checked={field.value === true || field.value === 'Yes'} disabled={field.read_only || !canFill} onChange={(event) => void run('form_fill', { values: { [field.name]: event.target.checked } })} />
+            <input type="checkbox" checked={field.value === true || field.value === 'Yes'} disabled={field.read_only || !canFill} onChange={(event) => void run('form.fill', { values: { [field.name]: event.target.checked } })} />
           ) : (
             <input
               className="kui-field"
@@ -103,7 +103,7 @@ function Fields({ onPage }: { onPage: (index: number) => void }) {
               }}
               onBlur={(event) => {
                 const value = event.currentTarget.value
-                if (value !== (field.value == null ? '' : String(field.value))) void run('form_fill', { values: { [field.name]: value } })
+                if (value !== (field.value == null ? '' : String(field.value))) void run('form.fill', { values: { [field.name]: value } })
               }}
               data-testid={`pdf-field-${field.name}`}
             />

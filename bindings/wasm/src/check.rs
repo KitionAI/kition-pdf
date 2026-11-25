@@ -301,7 +301,7 @@ fn annotations(doc: &Document, index: usize, page: &kition_pdf_model::Page, page
     let Some(annots) = page.dict.get(b"Annots").map(|a| doc.resolve(a)) else { return };
     let Some(annots) = annots.as_array() else { return };
     let crop = page.crop(doc);
-    // The 1-based number `link_list` gives each link of the page, for the fix's `link_delete`.
+    // The 1-based number `link.list` gives each link of the page, for the fix's `link.delete`.
     let mut link = 0;
     for (k, annot) in annots.iter().enumerate() {
         let Some(annot) = doc.dict(annot) else { continue };
@@ -319,7 +319,7 @@ fn annotations(doc: &Document, index: usize, page: &kition_pdf_model::Page, page
                 found.push(
                     Diagnostic::new("pdf.broken-link", Severity::Error, format!("A link on page {} goes to {why}.", index + 1))
                         .on(at(Some(index), path.clone()))
-                        .fix("link_delete", Some(serde_json::json!({ "page": index + 1, "index": link }))),
+                        .fix("link.delete", Some(serde_json::json!({ "page": index + 1, "index": link }))),
                 );
             }
         }

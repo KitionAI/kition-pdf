@@ -450,7 +450,7 @@ pub fn project_keyed(doc: &Document, key: &dyn Fn(u32) -> String) -> Projection 
         }
     }
     // A comment's review status and check mark: the last state reply in its thread (at any depth),
-    // as `comment_list` reads them.
+    // as `comment.list` reads them.
     let root_of = |id: &str| -> Option<String> {
         let mut at = parents.get(id).cloned().flatten()?;
         for _ in 0..64 {

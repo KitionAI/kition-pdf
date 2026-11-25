@@ -329,21 +329,21 @@ impl Reader {
             "pages" => json!(self.pages),
             // The pages' labels (`/PageLabels`), in order.
             "labels" => {
-                let pages = self.read("doc_inspect", &json!({}))?;
+                let pages = self.read("file.inspect", &json!({}))?;
                 json!(pages["pages"].as_array().into_iter().flatten().map(|page| page["label"].clone()).collect::<Vec<_>>())
             }
             // What decides where a point given in page coordinates lands: the page's boxes,
             // rotation and size (as inspect reports them).
             "geometry" => {
-                let pages = self.read("doc_inspect", &json!({}))?;
+                let pages = self.read("file.inspect", &json!({}))?;
                 let index = usize::try_from(int(1)).unwrap_or(0).saturating_sub(1);
                 let boxes = kition_pdf_organize::page_boxes(&self.cos).ok().and_then(|boxes| boxes.get(index).copied());
                 let shown = pages["pages"].get(index).map(|page| json!([page["width"], page["height"], page["rotation"]]));
                 json!({ "page": self.page(int(1)), "shown": shown, "boxes": boxes.map(|b| b.iter().map(|r| r.to_vec()).collect::<Vec<_>>()) })
             }
-            // The page's text, as `text_extract` reads it (a write that finds text on it).
+            // The page's text, as `text.extract` reads it (a write that finds text on it).
             "text" => {
-                let answer = self.read("text_extract", &json!({ "pages": [int(1)] }))?;
+                let answer = self.read("text.extract", &json!({ "pages": [int(1)] }))?;
                 json!({ "page": self.page(int(1)), "text": answer["pages"].get(0).map(|page| page["text"].clone()) })
             }
             // The page's content: its content streams and resources (OCR, detecting fields).
@@ -354,7 +354,7 @@ impl Reader {
                 json!({ "page": self.page(int(1)), "content": parts })
             }
             "ocr-inputs" => {
-                let text = self.read("text_extract", &json!({"pages":[int(1)]}))?;
+                let text = self.read("text.extract", &json!({"pages":[int(1)]}))?;
                 let textual = text["pages"].get(0).and_then(|p| p.get("text")).and_then(Value::as_str).is_some_and(|s| !s.trim().is_empty());
                 if fact.get(2).and_then(Value::as_bool).unwrap_or(true) && textual {
                     json!({"skipped":true})
@@ -380,16 +380,16 @@ impl Reader {
                     _ => None,
                 };
                 let found = found.map(|mut item| {
-                    if command == "accessibility_figures"
+                    if command == "accessibility.listFigures"
                         && let Some(page) = item["page"].as_u64()
                     {
                         item["page"] = self.page(page);
                     }
-                    if command == "page_images" {
+                    if command == "page.listImages" {
                         item["$content"] =
                             json!(params["page"].as_u64().zip(item["image"].as_u64()).and_then(|(page, index)| self.image_content(page, index)));
                     }
-                    if command == "content_list" {
+                    if command == "content.list" {
                         item["$content"] =
                             json!(item["page"].as_u64().zip(item["index"].as_u64()).and_then(|(page, index)| self.added_content(page, index)));
                     }
@@ -414,11 +414,11 @@ impl Reader {
                     None => selected,
                 }
             }
-            // A comment by its `/NM` (`comment_list`'s `id`): its page by object number and
+            // A comment by its `/NM` (`comment.list`'s `id`): its page by object number and
             // the members listed (all of the entry when none are).
             "comment" => {
                 let id = fact.get(1).cloned().unwrap_or(Value::Null);
-                let answer = self.read("comment_list", &json!({}))?;
+                let answer = self.read("comment.list", &json!({}))?;
                 let item = answer["comments"].as_array().into_iter().flatten().find(|item| item["id"] == id).cloned();
                 match item {
                     None => Value::Null,
@@ -477,7 +477,7 @@ impl Reader {
             }
             // Bookmarks: the outline entries at a parent path, with their titles and pages.
             "bookmarks" => {
-                let answer = self.read("bookmark_list", &json!({ "limit": 1000 }))?;
+                let answer = self.read("bookmark.list", &json!({ "limit": 1000 }))?;
                 if answer["truncated"] == true {
                     return Err("more than 1000 bookmarks".into());
                 }
@@ -499,8 +499,8 @@ impl Reader {
             // content (C8-pdf-3 item 5).
             "covered" => {
                 let rects = rects_of(fact.get(2).unwrap_or(&Value::Null));
-                let lines = self.read("text_lines", &json!({ "page": int(1) }))?;
-                let mut images = self.read("page_images", &json!({ "page": int(1) }))?;
+                let lines = self.read("text.listLines", &json!({ "page": int(1) }))?;
+                let mut images = self.read("page.listImages", &json!({ "page": int(1) }))?;
                 for image in images["images"].as_array_mut().into_iter().flatten() {
                     image["$content"] = json!(image["image"].as_u64().and_then(|index| self.image_content(int(1), index)));
                 }
@@ -640,7 +640,7 @@ impl Reader {
             // The content of the page a figure's marked content is on (a decorative figure turns
             // it into an artifact).
             "figure_content" => {
-                let figures = self.read("accessibility_figures", &json!({}))?;
+                let figures = self.read("accessibility.listFigures", &json!({}))?;
                 let page =
                     figures["figures"].as_array().into_iter().flatten().find(|f| f["figure"] == json!(int(1))).and_then(|f| f["page"].as_u64());
                 match page {
@@ -746,13 +746,13 @@ fn numbers(params: &Value, key: &str) -> Vec<u64> {
 /// boxes.
 pub const GEOMETRY: &[&str] = &["width", "height", "rotation", "boxes"];
 
-/// What a link's style edit starts from: `link_edit` merges the parameters given over the style it
+/// What a link's style edit starts from: `link.edit` merges the parameters given over the style it
 /// reads (links.rs `link_style`).
 const LINK_STYLE: &[&str] = &["visible", "color", "width", "highlight"];
 /// A link action replaces its URL, page destination or other action as a unit.
 const LINK_ACTION: &[&str] = &["url", "toPage", "other"];
 
-/// Comment types that mark the page's text under them (`comment_add` with `rect` or `quads`).
+/// Comment types that mark the page's text under them (`comment.add` with `rect` or `quads`).
 const MARKUP: &[&str] = &["highlight", "underline", "strikeout", "squiggly", "replace"];
 
 /// The object holds of one call, built by command family ([`under`]).
@@ -819,7 +819,7 @@ impl Holds<'_> {
         }
     }
 
-    /// `page_move`: the pages moved, and the pages either side of where they go. The engine puts
+    /// `page.move`: the pages moved, and the pages either side of where they go. The engine puts
     /// them at `to` (from 1) in the list without them (organize `move_pages`), so the neighbours
     /// are the pages left before and at that place, wherever they are now.
     fn move_gap(&mut self, moved: &[u64], to: u64) {
@@ -896,7 +896,7 @@ impl Holds<'_> {
         }
     }
 
-    /// A link by `page` and `index` (its place among the page's annotations, as `link_list`
+    /// A link by `page` and `index` (its place among the page's annotations, as `link.list`
     /// numbers it): the link there now, in the window of its page's `links`.
     fn link(&mut self, params: &Value, fields: &[&str], geometry: bool) {
         let Some(page) = self.annotation_place(params, "links", geometry) else { return };
@@ -976,8 +976,8 @@ impl Holds<'_> {
     }
 }
 
-/// The fields of a comment `comment_edit` depends on, by its parameters (its handler:
-/// `kition-pdf-automation` `comments.rs` `comment_edit`; annot `set_contents`, `set_style`,
+/// The fields of a comment `comment.edit` depends on, by its parameters (its handler:
+/// `kition-pdf-automation` `comments.rs` `comment.edit`; annot `set_contents`, `set_style`,
 /// `set_fill`, `set_rect`, `move_annotation`). New text in a text box refits the box to it: it reads
 /// the box's rectangle and border.
 fn comment_edit_fields(params: &Value, free_text: bool) -> Vec<&'static str> {
@@ -1006,8 +1006,8 @@ fn comment_edit_fields(params: &Value, free_text: bool) -> Vec<&'static str> {
     fields
 }
 
-/// The fields of a form field `form_set_props` reads or replaces, by its parameters (its handler:
-/// `kition-pdf-automation` `forms.rs` `form_set_props`).
+/// The fields of a form field `form.setProps` reads or replaces, by its parameters (its handler:
+/// `kition-pdf-automation` `forms.rs` `form.setProps`).
 fn field_props(params: &Value) -> Vec<&'static str> {
     let mut fields = Vec::new();
     for (param, field) in [
@@ -1039,7 +1039,7 @@ fn field_props(params: &Value) -> Vec<&'static str> {
     fields
 }
 
-/// The fields of a link `link_edit` reads or replaces (links.rs `link_edit`, annot `links::set`).
+/// The fields of a link `link.edit` reads or replaces (links.rs `link.edit`, annot `links::set`).
 fn link_edit_fields(params: &Value) -> Vec<&'static str> {
     let mut fields = Vec::new();
     if params.get("rect").is_some() {
@@ -1076,12 +1076,12 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
     let page = |key: &str| numbers(params, key);
     match command {
         // ---- Writes at a point or rectangle of a page: the page and its geometry.
-        "comment_add" | "page_add_text" | "fill_sign_add" | "measure_distance" | "measure_perimeter" | "measure_area" | "measure_scale" => {
+        "comment.add" | "page.addText" | "fillSign.add" | "measure.distance" | "measure.perimeter" | "measure.area" | "measure.setScale" => {
             for number in page("page") {
                 h.page(number, GEOMETRY);
             }
         }
-        "redact_mark" => {
+        "redaction.mark" => {
             let whole = params.get("whole_pages").and_then(Value::as_bool) == Some(true);
             if params.get("rect").is_some() {
                 // A rectangle: on `page` (`pages` is not read).
@@ -1096,12 +1096,12 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
                 h.pages_or_all(&page("pages"), &[]);
             }
         }
-        "redact_apply" => {
+        "redaction.apply" => {
             for number in page("pages") {
                 h.page(number, &[]);
             }
         }
-        "link_add" => {
+        "link.add" => {
             for number in page("page") {
                 h.page(number, GEOMETRY);
             }
@@ -1111,24 +1111,24 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
         }
         // ---- Writes on whole pages by number.
         // Rotates by `degrees` from the rotation each page has; `orientation` picks pages by their
-        // size (lib.rs `page_rotate`, `filter_pages`).
-        "page_rotate" => {
+        // size (lib.rs `page.rotate`, `filter_pages`).
+        "page.rotate" => {
             let fields: &[&str] = if params.get("orientation").is_some() { &["rotation", "width", "height"] } else { &["rotation"] };
             h.pages_or_all(&page("pages"), fields);
         }
-        "page_set_box" | "doc_watermark" | "doc_background" => h.pages_or_all(&page("pages"), GEOMETRY),
-        "doc_header_footer" => h.pages_or_all(&page("pages"), GEOMETRY),
-        "doc_remove_marks" => {
+        "page.setBox" | "file.setWatermark" | "file.setBackground" => h.pages_or_all(&page("pages"), GEOMETRY),
+        "file.setHeaderFooter" => h.pages_or_all(&page("pages"), GEOMETRY),
+        "file.removeMarks" => {
             for number in page("pages") {
                 h.page(number, &[]);
             }
         }
-        "page_delete" | "page_duplicate" => {
+        "page.delete" | "page.duplicate" => {
             for number in page("pages") {
                 h.page(number, &[]);
             }
         }
-        "page_move" => {
+        "page.move" => {
             let pages = page("pages");
             for &number in &pages {
                 h.page(number, &[]);
@@ -1138,7 +1138,7 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
             }
         }
         // Without a size, the new page takes the size of the page before (lib.rs `insert_blank`).
-        "page_insert_blank" => {
+        "page.insertBlank" => {
             let at = params.get("at").and_then(Value::as_u64).unwrap_or(1);
             h.gap(at);
             if (params.get("width").is_none() || params.get("height").is_none())
@@ -1150,7 +1150,7 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
         }
         // The assigned range names pages by number. Only the following page's prior label
         // determines the restoration range; all other label ranges are preserved as read now.
-        "page_number" => {
+        "page.number" => {
             let from = params.get("from").and_then(Value::as_u64).unwrap_or(0);
             let to = params.get("to").and_then(Value::as_u64).unwrap_or(0);
             for number in from..=to.min(objects.pages.len() as u64) {
@@ -1161,10 +1161,10 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
             }
         }
         // The content fact holds the skip predicate, or raster inputs when not skipped.
-        "ocr_recognize" => h.pages_or_all(&page("pages"), &[]),
+        "ocr.recognize" => h.pages_or_all(&page("pages"), &[]),
         // Detection converts the words' places through the page's geometry and skips places of
         // the fields' widgets there.
-        "form_detect_fields" => {
+        "form.detectFields" => {
             let pages = page("pages");
             h.pages_or_all(&pages, GEOMETRY);
             let wanted: Vec<String> = if pages.is_empty() {
@@ -1191,45 +1191,45 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
             }
         }
         // ---- Items of a page's content by index (no id): the page; the item is a fact.
-        "content_update" => {
+        "content.set" => {
             // A new rectangle is flipped through the page's displayed height (content.rs `to_display`).
             let fields: &[&str] = if params.get("rect").is_some() { GEOMETRY } else { &[] };
             for number in page("page") {
                 h.page(number, fields);
             }
         }
-        "content_delete" => {
+        "content.delete" => {
             for number in page("page") {
                 h.page(number, &[]);
             }
         }
         // The offset turns into page space through the page's rotation (lib.rs `view_vector`).
-        "object_move" | "image_edit" => {
+        "object.move" | "image.edit" => {
             for number in page("page") {
                 h.page(number, GEOMETRY);
             }
         }
         // A paragraph without a width wraps at the page's crop box.
-        "text_edit" => {
+        "text.edit" => {
             let fields: &[&str] = if params.get("paragraph").is_some() && params.get("width").is_none() { GEOMETRY } else { &[] };
             for number in page("page") {
                 h.page(number, fields);
             }
         }
         // ---- Links by page and index among the page's annotations.
-        "link_edit" => {
+        "link.edit" => {
             let fields = link_edit_fields(params);
             h.link(params, &fields, params.get("rect").is_some());
             for number in page("to_page") {
                 h.page(number, &[]);
             }
         }
-        "link_delete" => h.link(params, &[], false),
+        "link.delete" => h.link(params, &[], false),
         // The candidate fact includes link-overlap filtering. Blank pages and unrelated
         // existing links do not decide which links this command creates.
-        "links_from_urls" => {}
+        "link.addFromUrls" => {}
         // ---- Comments, by id or by page and index.
-        "comment_edit" => {
+        "comment.edit" => {
             let free_text = match params.get("id").and_then(Value::as_str) {
                 Some(id) => objects.comment(id).is_some_and(|(_, _, c)| c.fields.get("type").and_then(Value::as_str) == Some("FreeText")),
                 None => {
@@ -1243,16 +1243,16 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
             h.comment(params, &fields, geometry);
         }
         // A reply (status and check replies too) copies the comment's rectangle (and colour).
-        "comment_reply" => h.comment(params, &["rect", "color"], false),
-        "comment_set_status" => h.comment(params, &["status", "rect", "color"], false),
-        "comment_mark" => h.comment(params, &["marked", "rect"], false),
-        "comment_lock" => h.comment(params, &["locked"], false),
-        "comment_delete" => h.comment(params, &[], false),
+        "comment.reply" => h.comment(params, &["rect", "color"], false),
+        "comment.setStatus" => h.comment(params, &["status", "rect", "color"], false),
+        "comment.mark" => h.comment(params, &["marked", "rect"], false),
+        "comment.lock" => h.comment(params, &["locked"], false),
+        "comment.delete" => h.comment(params, &[], false),
         // ---- Form fields, by their fully qualified names.
-        // `form_fill` converts the value by the field's type; the engine checks it against the
+        // `form.fill` converts the value by the field's type; the engine checks it against the
         // flags (read-only), maximum length, choices, check boxes' on states, and runs the
         // field's format and validation (forms `set_value_with`, `write_value`).
-        "form_fill" => {
+        "form.fill" => {
             let names: Vec<String> =
                 params.get("values").and_then(Value::as_object).map(|values| values.keys().cloned().collect()).unwrap_or_default();
             for name in &names {
@@ -1264,7 +1264,7 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
             }
         }
         // A reset writes each field's default (forms `reset`); none named: every field.
-        "form_reset" => {
+        "form.reset" => {
             let names = names(params, "fields");
             if params.get("fields").is_none() {
                 h.all_fields(&["value", "default", "widgets"]);
@@ -1273,7 +1273,7 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
                 h.field(name, &["value", "default", "widgets"]);
             }
         }
-        "form_set_props" => {
+        "form.setProps" => {
             let props = field_props(params);
             let mut names = names(params, "field");
             names.extend(self::names(params, "fields"));
@@ -1288,18 +1288,18 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
                 }
             }
         }
-        "form_delete_field" => {
+        "form.deleteField" => {
             for name in names(params, "field") {
                 h.field(&name, &[]);
             }
         }
-        "form_set_script" => {
+        "form.setScript" => {
             for name in names(params, "field") {
                 h.field(&name, &["actions"]);
             }
         }
         // Actions that go to a page name it by number (forms `set_field_actions`).
-        "form_set_actions" => {
+        "form.setActions" => {
             for name in names(params, "field") {
                 h.field(&name, &["actions"]);
             }
@@ -1311,14 +1311,14 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
         }
         // `order` assigns /Tabs; `field` with `move` consumes its page's effective order and
         // the widget slots it rewrites.
-        "form_tab_order" => {
+        "form.setTabOrder" => {
             if let Some(name) = params.get("field").and_then(Value::as_str) {
                 h.field(name, &["name"]);
             } else {
                 h.pages_or_all(&page("pages"), &[]);
             }
         }
-        "form_add_field" => {
+        "form.addField" => {
             for number in page("page") {
                 h.page(number, GEOMETRY);
             }
@@ -1332,11 +1332,11 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
         }
         // Scripts read and set any field; they also read the document's scripts, its
         // information and its number of pages (engine `run_javascript`).
-        "js_run" => {
+        "script.run" => {
             h.all_fields(&[]);
             h.within(json!(ROOT), "pages", 0, objects.pages.len());
         }
-        "bookmark_add" => {
+        "bookmark.add" => {
             for number in page("page") {
                 h.page(number, &[]);
             }
@@ -1346,9 +1346,9 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
             }
         }
         // `tab-order`: every page's `/Tabs`.
-        "accessibility_fix" if params.get("rule").and_then(Value::as_str) == Some("tab-order") => h.all_pages(&[]),
+        "accessibility.fix" if params.get("rule").and_then(Value::as_str) == Some("tab-order") => h.all_pages(&[]),
         // The page the document opens at, by number.
-        "doc_initial_view" => {
+        "file.setInitialView" => {
             for number in page("page") {
                 h.page(number.max(1), &[]);
             }
@@ -1372,16 +1372,16 @@ pub fn region(command: &str, params: &Value, objects: &Projection) -> Option<Val
     let rect = params.get("rect").cloned().unwrap_or(Value::Null);
     let mut facts: Vec<Value> = match command {
         // Writes that find text on the page (`all`: every match there, not every page).
-        "comment_add" if params.get("find").is_some() => page("page").iter().map(|page| json!(["text", page])).collect(),
+        "comment.add" if params.get("find").is_some() => page("page").iter().map(|page| json!(["text", page])).collect(),
         // A mark over the page's text by a rectangle: the content it covers.
-        "comment_add"
+        "comment.add"
             if params.get("type").and_then(Value::as_str).is_some_and(|t| MARKUP.contains(&t))
                 && (params.get("rect").is_some() || params.get("quads").is_some()) =>
         {
             let area = if params.get("rect").is_some() { rect.clone() } else { params.get("quads").cloned().unwrap_or(Value::Null) };
             page("page").iter().map(|page| json!(["covered", page, area])).collect()
         }
-        "redact_mark" => {
+        "redaction.mark" => {
             let finds = ["find", "pattern", "words"].iter().any(|key| params.get(*key).is_some());
             if params.get("rect").is_some() {
                 page("page").iter().map(|page| json!(["covered", page, rect])).collect()
@@ -1392,10 +1392,10 @@ pub fn region(command: &str, params: &Value, objects: &Projection) -> Option<Val
             }
         }
         // Measurements read the page's scale where the first point is (its viewports).
-        "measure_distance" | "measure_perimeter" | "measure_area" => page("page").iter().map(|page| json!(["viewports", page])).collect(),
+        "measure.distance" | "measure.perimeter" | "measure.area" => page("page").iter().map(|page| json!(["viewports", page])).collect(),
         // A new field's name: free now as it was; without one, a name made free of every name; a
         // radio button's `group`: the field it joins, or free.
-        "form_add_field" => {
+        "form.addField" => {
             let joins = params.get("group").and_then(Value::as_str);
             let mut facts: Vec<Value> = joins.map(|group| json!(["field", group])).into_iter().collect();
             match params.get("name").and_then(Value::as_str) {
@@ -1412,29 +1412,29 @@ pub fn region(command: &str, params: &Value, objects: &Projection) -> Option<Val
         // as a fact too (`a_rename_by_another_program_refuses_by_tool_id`,
         // `bindings/headless/tests/outside.rs`). A field with a stored id keeps it across a
         // rename, so its premise holds.
-        "form_fill" | "form_reset" | "form_set_props" | "form_delete_field" | "form_set_script" | "form_set_actions" | "form_tab_order" => {
+        "form.fill" | "form.reset" | "form.setProps" | "form.deleteField" | "form.setScript" | "form.setActions" | "form.setTabOrder" => {
             let mut held: Vec<String> = match command {
-                "form_fill" => params.get("values").and_then(Value::as_object).map(|values| values.keys().cloned().collect()).unwrap_or_default(),
-                "form_reset" => names(params, "fields"),
+                "form.fill" => params.get("values").and_then(Value::as_object).map(|values| values.keys().cloned().collect()).unwrap_or_default(),
+                "form.reset" => names(params, "fields"),
                 _ => names(params, "field"),
             };
-            if command == "form_set_props" {
+            if command == "form.setProps" {
                 held.extend(names(params, "fields"));
             }
             let mut facts: Vec<Value> =
                 held.iter().filter(|name| objects.field(name).is_none_or(|view| !view.stored)).map(|name| json!(["field", name])).collect();
-            if matches!(command, "form_fill" | "form_reset") {
-                let written = if command == "form_reset" && params.get("fields").is_none() {
+            if matches!(command, "form.fill" | "form.reset") {
+                let written = if command == "form.reset" && params.get("fields").is_none() {
                     objects.fields.iter().map(|f| f.name.clone()).collect()
                 } else {
                     held.clone()
                 };
                 facts.push(json!(["calculations", written]));
-                if command == "form_fill" {
+                if command == "form.fill" {
                     facts.push(json!(["fill-inputs", held]));
                 }
             }
-            if command == "form_set_props"
+            if command == "form.setProps"
                 && let Some(name) = params.get("name").and_then(Value::as_str)
             {
                 let leaf = name.trim();
@@ -1442,59 +1442,61 @@ pub fn region(command: &str, params: &Value, objects: &Projection) -> Option<Val
                 let renamed = prefix.map_or_else(|| leaf.to_owned(), |prefix| format!("{prefix}.{leaf}"));
                 facts.push(json!(["field", renamed]));
             }
-            if command == "form_tab_order"
+            if command == "form.setTabOrder"
                 && let Some(name) = params.get("field").and_then(Value::as_str)
             {
                 facts.push(json!(["tabs", name]));
-            } else if command == "form_tab_order" {
+            } else if command == "form.setTabOrder" {
                 facts.extend(or_all(page("pages")).iter().map(|number| json!(["tab-mode", number])));
             }
             facts
         }
         // The page's content (its content streams and resources), the fields' names (a new field
         // takes a name free of them).
-        "form_detect_fields" => {
+        "form.detectFields" => {
             let mut facts: Vec<Value> = or_all(page("pages")).iter().map(|page| json!(["content", page])).collect();
             facts.push(json!(["names"]));
             facts
         }
-        "ocr_recognize" => or_all(page("pages"))
+        "ocr.recognize" => or_all(page("pages"))
             .iter()
             .map(|page| json!(["ocr-inputs", page, params.get("skip_text_pages").and_then(Value::as_bool).unwrap_or(true)]))
             .collect(),
         // Items of a page's content by index: no item has an id but its content, so the item at
-        // the place, with its drawing stream as well as the editing metadata `content_list`
+        // the place, with its drawing stream as well as the editing metadata `content.list`
         // shows (another program may change only the drawing). Not its rectangle as listed: that is
         // turned with the page, which a change of the item's text does not read (a new `rect`
         // holds the page's geometry instead).
-        "content_update" | "content_delete" => {
+        "content.set" | "content.delete" => {
             vec![
-                json!(["entry", "content_list", {}, "items", { "page": at("page"), "index": at("index") }, ["type", "text", "font", "size", "bold", "italic", "$content"]]),
+                json!(["entry", "content.list", {}, "items", { "page": at("page"), "index": at("index") }, ["type", "text", "font", "size", "bold", "italic", "$content"]]),
             ]
         }
-        "image_edit" => vec![json!(["entry", "page_images", { "page": at("page") }, "images", at("image")])],
+        "image.edit" => vec![json!(["entry", "page.listImages", { "page": at("page") }, "images", at("image")])],
         // The selected entry and text removed along with it, including coincident copies.
-        "text_edit" => {
+        "text.edit" => {
             let item = match (params.get("paragraph").and_then(Value::as_u64), params.get("line").and_then(Value::as_u64)) {
-                (Some(paragraph), _) => Some(json!(["entry", "text_paragraphs", { "page": at("page") }, "paragraphs", { "paragraph": paragraph }])),
-                (None, Some(line)) => Some(json!(["entry", "text_lines", { "page": at("page") }, "lines", line])),
+                (Some(paragraph), _) => {
+                    Some(json!(["entry", "text.listParagraphs", { "page": at("page") }, "paragraphs", { "paragraph": paragraph }]))
+                }
+                (None, Some(line)) => Some(json!(["entry", "text.listLines", { "page": at("page") }, "lines", line])),
                 _ => None,
             };
             item.into_iter().chain(std::iter::once(json!(["text-overlap", at("page"), params]))).collect()
         }
-        "object_move" => params
+        "object.move" => params
             .get("objects")
             .and_then(Value::as_array)
             .into_iter()
             .flatten()
-            .map(|object| json!(["entry", "object_list", { "page": at("page") }, "objects", { "index": object["index"], "kind": object["kind"] }]))
+            .map(|object| json!(["entry", "object.list", { "page": at("page") }, "objects", { "index": object["index"], "kind": object["kind"] }]))
             .collect(),
-        "links_from_urls" => vec![json!(["urls"])],
+        "link.addFromUrls" => vec![json!(["urls"])],
         // A figure by its number: `figure` is the structure element's object number, as
-        // `accessibility_figures` lists it, not a place in that list. Decorative: the content of
+        // `accessibility.listFigures` lists it, not a place in that list. Decorative: the content of
         // its page too (its marked content becomes an artifact).
-        "accessibility_set_alt" => {
-            let mut facts = vec![json!(["entry", "accessibility_figures", {}, "figures", { "figure": at("figure") }])];
+        "accessibility.setAlt" => {
+            let mut facts = vec![json!(["entry", "accessibility.listFigures", {}, "figures", { "figure": at("figure") }])];
             if params.get("decorative").and_then(Value::as_bool) == Some(true) {
                 facts.push(json!(["figure_content", at("figure")]));
             } else if let Some(parts) = facts.first_mut().and_then(Value::as_array_mut) {
@@ -1505,9 +1507,9 @@ pub fn region(command: &str, params: &Value, objects: &Projection) -> Option<Val
         }
         // Bookmarks made of the tagged headings: the whole document (the structure tree and the
         // text of the pages).
-        "bookmark_from_structure" => vec![json!(["headings"])],
-        "redact_apply" => vec![json!(["redaction-inputs", page("pages")])],
-        "doc_flatten" => {
+        "bookmark.addFromStructure" => vec![json!(["headings"])],
+        "redaction.apply" => vec![json!(["redaction-inputs", page("pages")])],
+        "file.flatten" => {
             let (comments, fields) = match (params.get("comments").and_then(Value::as_bool), params.get("fields").and_then(Value::as_bool)) {
                 (None, None) => (true, true),
                 (Some(c), None) => (c, !c),
@@ -1517,38 +1519,38 @@ pub fn region(command: &str, params: &Value, objects: &Projection) -> Option<Val
             vec![json!(["flatten", comments, fields])]
         }
         // A header or footer with the number of pages (`<<n>>`) counts every page.
-        "doc_header_footer" => {
+        "file.setHeaderFooter" => {
             let counts = ["header_left", "header_center", "header_right", "footer_left", "footer_center", "footer_right"]
                 .iter()
                 .any(|key| params.get(*key).and_then(Value::as_str).is_some_and(|text| text.contains("<<n>>")));
             if counts { vec![json!(["pages"])] } else { Vec::new() }
         }
         // ---- Writes that rest on one setting of the document, not all of it.
-        "doc_remove_marks" => {
+        "file.removeMarks" => {
             if params.get("pages").is_some() {
                 page("pages").iter().map(|page| json!(["marks", page])).collect()
             } else {
                 vec![json!(["marks"])]
             }
         }
-        "redact_clear" => vec![json!(["redactions"])],
-        "js_set_document_script" => vec![json!(["scripts"])],
-        "js_run" => vec![json!(["scripts"]), json!(["info"])],
-        "doc_initial_view" => vec![json!(["view"])],
-        "accessibility_fix" => match params.get("rule").and_then(Value::as_str) {
+        "redaction.clear" => vec![json!(["redactions"])],
+        "script.set" => vec![json!(["scripts"])],
+        "script.run" => vec![json!(["scripts"]), json!(["info"])],
+        "file.setInitialView" => vec![json!(["view"])],
+        "accessibility.fix" => match params.get("rule").and_then(Value::as_str) {
             Some("title") => vec![json!(["view"]), json!(["info"])],
             Some("tab-order") => Vec::new(),
             _ => vec![json!(["view"])],
         },
-        // ---- Writes that change nothing of the document: a view setting (`comments_hide`), a
-        // preference (`fill_sign_date_format`, `js_enabled`), another document (`doc_create`), a
-        // read (`doc_revisions`).
-        "comments_hide" | "fill_sign_date_format" | "js_enabled" | "doc_create" | "doc_revisions" => Vec::new(),
+        // ---- Writes that change nothing of the document: a view setting (`comment.hide`), a
+        // preference (`fillSign.setDateFormat`, `script.enabled`), another document (`file.new`), a
+        // read (`file.listRevisions`).
+        "comment.hide" | "fillSign.setDateFormat" | "script.enabled" | "file.new" | "file.listRevisions" => Vec::new(),
         // Writes whose objects carry all they rest on.
-        "comment_add" | "page_add_text" | "measure_scale" | "fill_sign_add" | "link_add" | "link_edit" | "link_delete" | "links_remove"
-        | "page_rotate" | "page_set_box" | "doc_watermark" | "doc_background" | "page_delete" | "page_duplicate" | "page_move"
-        | "page_insert_blank" | "page_number" | "comment_edit" | "comment_set_status" | "comment_mark" | "comment_lock" | "comment_reply"
-        | "comment_delete" | "bookmark_add" => Vec::new(),
+        "comment.add" | "page.addText" | "measure.setScale" | "fillSign.add" | "link.add" | "link.edit" | "link.delete" | "link.removeAll"
+        | "page.rotate" | "page.setBox" | "file.setWatermark" | "file.setBackground" | "page.delete" | "page.duplicate" | "page.move"
+        | "page.insertBlank" | "page.number" | "comment.edit" | "comment.setStatus" | "comment.mark" | "comment.lock" | "comment.reply"
+        | "comment.delete" | "bookmark.add" => Vec::new(),
         // ---- Every other write rests on the whole document: a full rewrite (security, removing
         // hidden data, applying redactions, converting to PDF/A), flattening every comment or
         // field, comparing with another document, undo and redo.

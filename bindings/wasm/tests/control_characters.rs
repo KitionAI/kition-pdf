@@ -38,9 +38,9 @@ fn control_characters_are_never_drawn_from_a_face() {
     // Helvetica is drawn from Arimo (the item's own face); Courier has no face here, so a
     // character it lacks falls back to any face that has it.
     for font in ["helvetica", "courier"] {
-        let refused = doc.execute("page_add_text", json!({ "page": 1, "at": [72, 72], "width": 400, "text": "A\r\nB", "font": font }));
+        let refused = doc.execute("page.addText", json!({ "page": 1, "at": [72, 72], "width": 400, "text": "A\r\nB", "font": font }));
         let err = refused.map(|_| ()).unwrap_err().to_string();
         assert!(err.contains("U+000D"), "{font}: {err}");
-        doc.execute("page_add_text", json!({ "page": 1, "at": [72, 120], "width": 400, "text": "A\nB", "font": font })).unwrap();
+        doc.execute("page.addText", json!({ "page": 1, "at": [72, 120], "width": 400, "text": "A\nB", "font": font })).unwrap();
     }
 }

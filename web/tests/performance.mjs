@@ -128,7 +128,7 @@ try {
           await kit.getByTestId(activeSample.mode).click()
         } else if (activeSample.action === 'edit') {
           await frame.evaluate(() => window.__kitionPerf.start())
-          const response = await bounded(page.evaluate(async number => window.devHost.connection().ai.run([{ command: 'comment_add', params: { page: number, type: 'note', contents: 'Performance refresh probe', at: [80, 80] } }], false), activeSample.page), 'Edit command')
+          const response = await bounded(page.evaluate(async number => window.devHost.connection().ai.run([{ command: 'comment.add', params: { page: number, type: 'note', contents: 'Performance refresh probe', at: [80, 80] } }], false), activeSample.page), 'Edit command')
           if (response.completed?.length !== 1) throw new Error('Edit command did not complete')
         }
         await finish(activeSample)

@@ -17,7 +17,7 @@ steps:
         page exactly as it is.
       max_turns: 20
   - check: { path: summary.pdf, as: diagnostics }
-  - run: { path: summary.pdf, args: { save: false }, steps: [{ command: text_extract }], as: text }
+  - run: { path: summary.pdf, args: { save: false }, steps: [{ command: text.extract }], as: text }
 expected:
   - actual: out:diagnostics
     compare: diagnostics
@@ -29,6 +29,6 @@ expected:
       completed.0.result.pages.0.text: "Quarterly report\nSales rose in every region."
 solution:
   - tool: pdf_run
-    args: { path: summary.pdf, steps: [{ command: link_delete, params: { page: 1, index: 1 } }] }
+    args: { path: summary.pdf, steps: [{ command: link.delete, params: { page: 1, index: 1 } }] }
 since: "2026-11-17"
 timeout_s: 600

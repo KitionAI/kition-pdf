@@ -3,7 +3,7 @@ id: pdf.pages.organize/save-reopen
 feature: pdf.pages.organize
 intent: >-
   Inserted, duplicated, rotated and moved pages, crop boxes and page labels survive saving and reopening: a new PDF edited only with engine commands is saved, reopened from the saved bytes and
-  compared whole (doc_inspect, comments, bookmarks, fields, links, text, page pixels), and a second
+  compared whole (file.inspect, comments, bookmarks, fields, links, text, page pixels), and a second
   save reopens the same.
 layer: unit
 source:

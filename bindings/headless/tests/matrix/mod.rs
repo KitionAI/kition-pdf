@@ -70,8 +70,8 @@ pub fn figure(doc: &Document, n: usize) -> ObjRef {
 pub fn fixture() -> Vec<u8> {
     let mut doc = fixture_doc(4);
     for n in 1..=4 {
-        doc.execute("page_add_text", json!({"page":n,"at":[72,210],"text":format!("Neighbour {n}")})).unwrap();
-        doc.execute("link_add", json!({"page":n,"rect":[100,300,200,320],"url":format!("https://example.com/{n}")})).unwrap();
+        doc.execute("page.addText", json!({"page":n,"at":[72,210],"text":format!("Neighbour {n}")})).unwrap();
+        doc.execute("link.add", json!({"page":n,"rect":[100,300,200,320],"url":format!("https://example.com/{n}")})).unwrap();
     }
     let mut cos = open(&doc.save(None).unwrap());
     let root = cos.root().unwrap();
@@ -490,18 +490,18 @@ pub fn reads(bytes: &[u8], stable: &BTreeSet<String>) -> Value {
     let mut doc = PdfDocument::open(FILE, bytes).unwrap();
     let mut out = serde_json::Map::new();
     for command in [
-        "comment_list",
-        "form_fields",
-        "bookmark_list",
-        "link_list",
-        "content_list",
-        "text_extract",
-        "doc_inspect",
-        "accessibility_figures",
-        "measure_list",
+        "comment.list",
+        "form.listFields",
+        "bookmark.list",
+        "link.list",
+        "content.list",
+        "text.extract",
+        "file.inspect",
+        "accessibility.listFigures",
+        "measure.list",
     ] {
         let mut v = doc.execute(command, json!({})).unwrap();
-        if command == "doc_inspect" {
+        if command == "file.inspect" {
             v = v["pages"].clone();
         }
         normalize(&mut v);
@@ -512,7 +512,7 @@ pub fn reads(bytes: &[u8], stable: &BTreeSet<String>) -> Value {
     let engine = session.get(id).unwrap();
     let mut images = Vec::new();
     for page in 0..engine.info.pages.len() {
-        let mut listed = doc.execute("page_images", json!({"page":page + 1})).unwrap();
+        let mut listed = doc.execute("page.listImages", json!({"page":page + 1})).unwrap();
         for (index, image) in engine.page_images(page).iter().enumerate() {
             if !image.is_form {
                 let (_, bytes) = engine.page_image_file(page, index).unwrap();
@@ -522,7 +522,7 @@ pub fn reads(bytes: &[u8], stable: &BTreeSet<String>) -> Value {
         normalize(&mut listed);
         images.push(listed);
     }
-    out.insert("page_images".into(), json!(images));
+    out.insert("page.listImages".into(), json!(images));
     let cos = open(bytes);
     let root = dictionary(&cos, cos.root().unwrap());
     out.insert("language".into(), json!(root.get(b"Lang").and_then(Object::as_string).map(|s| s.to_text())));
@@ -625,7 +625,7 @@ pub async fn cell(bytes: &[u8], theirs: &[u8], mine: Value, want: Expected, labe
     std::fs::write(f.file(), theirs).unwrap();
     let got = f.call("run", json!({"basis":basis,"steps":[mine.clone()]})).await;
     totals.cells += 1;
-    let models_unavailable = matches!(&got,Err(e) if mine["command"]=="ocr_recognize" && e["error"]["code"]=="command-failed"
+    let models_unavailable = matches!(&got,Err(e) if mine["command"]=="ocr.recognize" && e["error"]["code"]=="command-failed"
         && e["error"]["message"].as_str().is_some_and(|s|s.contains("text recognition models are not installed")));
     let fail = match &got {
         Ok(_) if want.reason != "A" => {

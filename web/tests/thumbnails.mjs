@@ -91,7 +91,7 @@ try {
       await frame.waitForFunction(() => document.querySelector('[data-testid="pdf-thumb-299"] canvas')?.width > 1)
       result.checks.push('keyboard End navigates to and paints the last page')
       const before = await frame.evaluate(() => window.thumbnailProbe.calls.length)
-      await page.evaluate(() => window.devHost.connection().ai.run([{ command: 'bookmark_add', params: { page: 300, title: 'Synthetic revision' } }], false))
+      await page.evaluate(() => window.devHost.connection().ai.run([{ command: 'bookmark.add', params: { page: 300, title: 'Synthetic revision' } }], false))
       await frame.waitForFunction(count => window.thumbnailProbe.calls.length > count, before)
       result.checks.push('document revision invalidates thumbnails and renders again')
       await frame.evaluate(() => { window.thumbnailProbe.fail = true })

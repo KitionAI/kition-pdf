@@ -104,7 +104,7 @@ fn hosted_refusal(what: &str) -> ToolError {
     ))
 }
 
-/// Default and maximum resolution for `page_render`.
+/// Default and maximum resolution for `page.render`.
 const DEFAULT_DPI: f64 = 96.0;
 const MAX_DPI: f64 = 600.0;
 
@@ -192,19 +192,19 @@ impl Automation {
         let out = match name {
             "doc_open" => self.doc_open(&a)?,
             "doc_list" => json!({ "documents": self.session.docs().iter().map(summary).collect::<Vec<_>>() }),
-            "doc_info" => info(self.doc(&a)?),
+            "file.getInfo" => info(self.doc(&a)?),
             "doc_close" => self.doc_close(&a)?,
             "doc_save" => self.doc_save(&a)?,
             "doc_set_info" => {
                 let edit = Edit::SetInfo { key: a.str("key")?.into(), value: a.str("value")?.into() };
                 self.apply(&a, edit)?
             }
-            "page_render" => return self.page_render(&a).map(|c| vec![c]),
-            "comment_image_preview" => return self.comment_image_preview(&a),
-            "text_extract" => self.text_extract(&a)?,
-            "text_find" => self.text_find(&a)?,
-            "text_select" => self.text_select(&a)?,
-            "page_rotate" => {
+            "page.render" => return self.page_render(&a).map(|c| vec![c]),
+            "comment.previewImage" => return self.comment_image_preview(&a),
+            "text.extract" => self.text_extract(&a)?,
+            "text.find" => self.text_find(&a)?,
+            "text.select" => self.text_select(&a)?,
+            "page.rotate" => {
                 let degrees = a.int("degrees")?;
                 if degrees % 90 != 0 {
                     return Err(ToolError::InvalidArgs("degrees must be a multiple of 90".into()));
@@ -235,16 +235,16 @@ impl Automation {
                 out["rotated"] = json!(n);
                 out
             }
-            "page_delete" => {
+            "page.delete" => {
                 let pages = self.pages(&a, "pages")?;
                 self.apply(&a, Edit::DeletePages { pages })?
             }
-            "page_move" => {
+            "page.move" => {
                 let pages = self.pages(&a, "pages")?;
                 let to = self.position(&a, "to")?;
                 self.apply(&a, Edit::MovePages { pages, to })?
             }
-            "page_insert_blank" => self.insert_blank(&a)?,
+            "page.insertBlank" => self.insert_blank(&a)?,
             "page_insert_file" => self.insert_file(&a)?,
             "page_extract" => self.page_extract(&a)?,
             "doc_combine" => self.doc_combine(&a)?,
@@ -265,9 +265,9 @@ impl Automation {
             "command_list" => self.command_list(&a)?,
             "command_run" => return self.command_run(&a),
             "command_batch" => self.command_batch(&a)?,
-            "doc_inspect" => self.doc_inspect(&a)?,
-            "render_preview" => return self.render_preview(&a).map(|c| vec![c]),
-            "page_number" => {
+            "file.inspect" => self.doc_inspect(&a)?,
+            "file.render" => return self.render_preview(&a).map(|c| vec![c]),
+            "page.number" => {
                 use kition_pdf_organize::LabelStyle as L;
                 let n = self.doc(&a)?.info.pages.len();
                 let (from, to) = (a.int("from")?, a.int("to")?);
@@ -289,8 +289,8 @@ impl Automation {
                 out["labels"] = json!(self.doc(&a)?.info.pages.iter().map(|p| p.label.clone()).collect::<Vec<_>>());
                 out
             }
-            "bookmark_list" => self.bookmark_listing(&a)?,
-            "bookmark_add" => {
+            "bookmark.list" => self.bookmark_listing(&a)?,
+            "bookmark.add" => {
                 let page = self.page(&a)?;
                 let parent = a.opt_path("parent")?.unwrap_or_default();
                 let index = a.opt_int("position")?.map_or(usize::MAX, |p| (p.max(1) - 1) as usize);
@@ -315,14 +315,14 @@ impl Automation {
                 let (path, page) = (a.path("path")?, self.page(&a)?);
                 self.apply(&a, Edit::SetBookmarkPage { path, page })?
             }
-            "bookmark_from_structure" => {
+            "bookmark.addFromStructure" => {
                 let mut out = self.apply(&a, Edit::BookmarksFromStructure)?;
                 let listing = self.bookmark_listing(&a)?;
                 out["bookmarks"] = listing["bookmarks"].clone();
                 out["next"] = listing["next"].clone();
                 out
             }
-            "doc_protect" => self.doc_protect(&a)?,
+            "file.protect" => self.doc_protect(&a)?,
             "page_replace" => {
                 let pages = self.pages(&a, "pages")?;
                 let path = self.resolve(a.str("path")?, false)?;
@@ -334,13 +334,13 @@ impl Automation {
                 };
                 self.apply(&a, Edit::ReplacePages { pages, name, bytes, src_pages })?
             }
-            "page_duplicate" => {
+            "page.duplicate" => {
                 let pages = self.pages(&a, "pages")?;
                 self.apply(&a, Edit::DuplicatePages { pages })?
             }
-            "page_set_box" => self.page_set_box(&a)?,
-            "doc_create" => self.doc_create(&a)?,
-            "doc_flatten" => {
+            "page.setBox" => self.page_set_box(&a)?,
+            "file.new" => self.doc_create(&a)?,
+            "file.flatten" => {
                 // Naming one flattens only what it names; naming neither flattens both.
                 let (comments, fields) = match (a.opt_bool("comments")?, a.opt_bool("fields")?) {
                     (None, None) => (true, true),
@@ -366,9 +366,9 @@ impl Automation {
                 json!({ "path": path.to_string_lossy(), "written": written, "bytes_before": before, "bytes_after": bytes.len(), "merged_objects": merged })
             }
             "doc_optimize" => self.doc_optimize(&a)?,
-            "doc_initial_view" => self.doc_initial_view(&a)?,
-            "doc_revisions" => self.doc_revisions(&a)?,
-            "text_lines" => {
+            "file.setInitialView" => self.doc_initial_view(&a)?,
+            "file.listRevisions" => self.doc_revisions(&a)?,
+            "text.listLines" => {
                 let page = self.page(&a)?;
                 let doc = self.doc(&a)?;
                 let info = &doc.info.pages[page];
@@ -390,7 +390,7 @@ impl Automation {
                     .collect();
                 json!({ "page": page + 1, "count": lines.len(), "lines": lines })
             }
-            "page_images" => {
+            "page.listImages" => {
                 let page = self.page(&a)?;
                 let doc = self.doc(&a)?;
                 let info = &doc.info.pages[page];
@@ -406,7 +406,7 @@ impl Automation {
                     .collect();
                 json!({ "page": page + 1, "count": list.len(), "images": list })
             }
-            "image_edit" | "image_save" => {
+            "image.edit" | "image_save" => {
                 let page = self.page(&a)?;
                 let n = self.doc(&a)?.page_images(page).len();
                 let k = a.int("image")?;
@@ -456,7 +456,7 @@ impl Automation {
                     self.apply(&a, Edit::EditPageImage { page, index, change })?
                 }
             }
-            "text_paragraphs" => {
+            "text.listParagraphs" => {
                 let page = self.page(&a)?;
                 let doc = self.doc(&a)?;
                 let info = &doc.info.pages[page];
@@ -479,7 +479,7 @@ impl Automation {
                     .collect();
                 json!({ "page": page + 1, "count": blocks.len(), "paragraphs": blocks })
             }
-            "text_edit" if a.get("paragraph").is_some() => {
+            "text.edit" if a.get("paragraph").is_some() => {
                 let page = self.page(&a)?;
                 let n = self.doc(&a)?.text_blocks(page).len();
                 let k = a.int("paragraph")?;
@@ -529,7 +529,7 @@ impl Automation {
                 }
                 out
             }
-            "text_edit" => {
+            "text.edit" => {
                 let page = self.page(&a)?;
                 let n = self.doc(&a)?.text_lines(page).len();
                 let line = a.int("line")?;
@@ -544,7 +544,7 @@ impl Automation {
                 }
                 out
             }
-            "doc_audit_space" => {
+            "file.auditSpace" => {
                 let rows: Vec<Value> = self
                     .doc(&a)?
                     .audit_space()
@@ -560,88 +560,88 @@ impl Automation {
                 summary(self.session.get(new).ok_or_else(|| failed("the document vanished"))?)
             }
             "doc_export_images" | "doc_export_text" | "doc_export_all_images" => self.export(name, &a)?,
-            "doc_header_footer" | "doc_watermark" | "doc_background" | "doc_remove_marks" => self.marks(name, &a)?,
-            "doc_unprotect" => {
+            "file.setHeaderFooter" | "file.setWatermark" | "file.setBackground" | "file.removeMarks" => self.marks(name, &a)?,
+            "file.unprotect" => {
                 let mut out = self.apply(&a, Edit::RemoveProtection)?;
                 out["security"] = security(self.doc(&a)?);
                 out
             }
-            "form_fields" => self.form_fields(&a)?,
-            "form_fill" => self.form_fill(&a)?,
+            "form.listFields" => self.form_fields(&a)?,
+            "form.fill" => self.form_fill(&a)?,
             "form_set_image" => {
                 let path = self.resolve(a.str("path")?, false)?;
                 let bytes = std::fs::read(&path).map_err(|e| failed(format!("{}: {e}", path.display())))?;
                 self.apply(&a, Edit::SetFieldImage { name: a.str("field")?.to_owned(), image: Arc::new(bytes) })?
             }
-            "form_reset" => self.form_reset(&a)?,
-            "form_add_field" => self.form_add_field(&a)?,
-            "form_set_props" => self.form_set_props(&a)?,
-            "form_delete_field" => self.form_delete_field(&a)?,
-            "form_tab_order" => self.form_tab_order(&a)?,
+            "form.reset" => self.form_reset(&a)?,
+            "form.addField" => self.form_add_field(&a)?,
+            "form.setProps" => self.form_set_props(&a)?,
+            "form.deleteField" => self.form_delete_field(&a)?,
+            "form.setTabOrder" => self.form_tab_order(&a)?,
             "doc_export_data" => self.doc_export_data(&a)?,
             "doc_import_data" => self.doc_import_data(&a)?,
-            "redact_mark" => self.redact_mark(&a)?,
-            "redact_apply" => self.redact_apply(&a)?,
-            "redact_clear" => self.redact_clear(&a)?,
-            "doc_hidden_info" => self.doc_hidden_info(&a)?,
+            "redaction.mark" => self.redact_mark(&a)?,
+            "redaction.apply" => self.redact_apply(&a)?,
+            "redaction.clear" => self.redact_clear(&a)?,
+            "file.getHiddenInfo" => self.doc_hidden_info(&a)?,
             "printers" => self.printers()?,
             "printer_options" => self.printer_options(&a)?,
-            "link_list" => self.link_list(&a)?,
-            "link_add" => self.link_add(&a)?,
-            "link_edit" => self.link_edit(&a)?,
-            "link_delete" => self.link_delete(&a)?,
-            "links_from_urls" => self.links_from_urls(&a)?,
-            "links_remove" => self.links_remove(&a)?,
-            "object_list" => self.object_list(&a)?,
-            "object_move" => self.object_move(&a)?,
-            "content_list" => self.content_list(&a)?,
-            "page_add_text" => self.page_add_text(&a)?,
+            "link.list" => self.link_list(&a)?,
+            "link.add" => self.link_add(&a)?,
+            "link.edit" => self.link_edit(&a)?,
+            "link.delete" => self.link_delete(&a)?,
+            "link.addFromUrls" => self.links_from_urls(&a)?,
+            "link.removeAll" => self.links_remove(&a)?,
+            "object.list" => self.object_list(&a)?,
+            "object.move" => self.object_move(&a)?,
+            "content.list" => self.content_list(&a)?,
+            "page.addText" => self.page_add_text(&a)?,
             "page_add_image" => self.page_add_image(&a)?,
-            "content_update" => self.content_update(&a)?,
-            "content_delete" => self.content_delete(&a)?,
+            "content.set" => self.content_update(&a)?,
+            "content.delete" => self.content_delete(&a)?,
             "doc_print" => self.doc_print(&a)?,
-            "doc_remove_hidden" => self.doc_remove_hidden(&a)?,
-            "fill_sign_add" => self.fill_sign_add(&a)?,
-            "fill_sign_date_format" => self.fill_sign_date_format(&a)?,
-            "measure_distance" => self.measurement_add(&a, kition_pdf_engine::measure::Kind::Distance)?,
-            "measure_perimeter" => self.measurement_add(&a, kition_pdf_engine::measure::Kind::Perimeter)?,
-            "measure_area" => self.measurement_add(&a, kition_pdf_engine::measure::Kind::Area)?,
-            "measure_info" => self.measurement_info(&a)?,
-            "measure_list" => self.measurement_list(&a)?,
-            "measure_scale" => self.measurement_scale(&a)?,
-            "measure_snap" => self.measurement_snap(&a)?,
+            "file.removeHidden" => self.doc_remove_hidden(&a)?,
+            "fillSign.add" => self.fill_sign_add(&a)?,
+            "fillSign.setDateFormat" => self.fill_sign_date_format(&a)?,
+            "measure.distance" => self.measurement_add(&a, kition_pdf_engine::measure::Kind::Distance)?,
+            "measure.perimeter" => self.measurement_add(&a, kition_pdf_engine::measure::Kind::Perimeter)?,
+            "measure.area" => self.measurement_add(&a, kition_pdf_engine::measure::Kind::Area)?,
+            "measure.getInfo" => self.measurement_info(&a)?,
+            "measure.list" => self.measurement_list(&a)?,
+            "measure.setScale" => self.measurement_scale(&a)?,
+            "measure.setSnap" => self.measurement_snap(&a)?,
             "measure_export" => self.measurement_export(&a)?,
-            "comment_list" => self.comment_list(&a)?,
-            "comment_add" => self.comment_add(&a)?,
+            "comment.list" => self.comment_list(&a)?,
+            "comment.add" => self.comment_add(&a)?,
             "stamp_custom" => self.stamp_custom(&a)?,
-            "comment_reply" => self.comment_reply(&a)?,
-            "comment_set_status" => self.comment_set_status(&a)?,
-            "sign_list" => self.sign_list(&a)?,
-            "accessibility_check" => self.a11y_check(&a)?,
-            "ocr_recognize" => self.ocr_recognize(&a)?,
-            "js_run" => self.js_run(&a)?,
-            "js_document_scripts" => self.js_document_scripts(&a)?,
-            "js_set_document_script" => self.js_set_document_script(&a)?,
-            "js_enabled" => self.js_enabled(&a)?,
-            "form_set_script" => self.form_set_script(&a)?,
+            "comment.reply" => self.comment_reply(&a)?,
+            "comment.setStatus" => self.comment_set_status(&a)?,
+            "signature.list" => self.sign_list(&a)?,
+            "accessibility.check" => self.a11y_check(&a)?,
+            "ocr.recognize" => self.ocr_recognize(&a)?,
+            "script.run" => self.js_run(&a)?,
+            "script.list" => self.js_document_scripts(&a)?,
+            "script.set" => self.js_set_document_script(&a)?,
+            "script.enabled" => self.js_enabled(&a)?,
+            "form.setScript" => self.form_set_script(&a)?,
             "form_merge_data" => self.form_merge_data(&a)?,
-            "form_actions" => self.form_actions(&a)?,
-            "form_detect_fields" => self.form_detect_fields(&a)?,
-            "doc_compare" => self.doc_compare(&a)?,
-            "action_list" => self.action_list()?,
-            "pdfa_verify" => self.pdfa_verify(&a)?,
+            "form.listActions" => self.form_actions(&a)?,
+            "form.detectFields" => self.form_detect_fields(&a)?,
+            "file.compare" => self.doc_compare(&a)?,
+            "action.list" => self.action_list()?,
+            "pdfa.verify" => self.pdfa_verify(&a)?,
             "doc_export_office" => self.doc_export_office(&a)?,
-            "pdfa_convert" => self.pdfa_convert(&a)?,
+            "pdfa.convert" => self.pdfa_convert(&a)?,
             "action_run" => self.action_run(&a)?,
             "doc_compare_report" => self.doc_compare_report(&a)?,
-            "doc_compare_mark" => self.doc_compare_mark(&a)?,
-            "form_set_actions" => self.form_set_actions(&a)?,
-            "ocr_status" => self.ocr_status()?,
+            "file.compareMark" => self.doc_compare_mark(&a)?,
+            "form.setActions" => self.form_set_actions(&a)?,
+            "ocr.status" => self.ocr_status()?,
             "ocr_recognize_files" => self.ocr_recognize_files(&a)?,
             "accessibility_report" => self.a11y_report(&a)?,
-            "accessibility_fix" => self.a11y_fix(&a)?,
-            "accessibility_figures" => self.accessibility_figures(&a)?,
-            "accessibility_set_alt" => self.accessibility_set_alt(&a)?,
+            "accessibility.fix" => self.a11y_fix(&a)?,
+            "accessibility.listFigures" => self.accessibility_figures(&a)?,
+            "accessibility.setAlt" => self.accessibility_set_alt(&a)?,
             "sign_id_create" => self.sign_id_create(&a)?,
             "sign_document" => self.sign_document(&a)?,
             "sign_keychain_ids" => {
@@ -676,12 +676,12 @@ impl Automation {
                 json!({ "count": ids.len(), "ids": ids, "unusable": unusable })
             }
             "sign_trust" => self.sign_trust(&a)?,
-            "comment_mark" => self.comment_mark(&a)?,
-            "comment_lock" => self.comment_lock(&a)?,
-            "comments_hide" => self.comments_hide(&a)?,
+            "comment.mark" => self.comment_mark(&a)?,
+            "comment.lock" => self.comment_lock(&a)?,
+            "comment.hide" => self.comments_hide(&a)?,
             "comments_summarize" => self.comments_summarize(&a)?,
-            "comment_edit" => self.comment_edit(&a)?,
-            "comment_delete" => self.comment_delete(&a)?,
+            "comment.edit" => self.comment_edit(&a)?,
+            "comment.delete" => self.comment_delete(&a)?,
             other => return Err(ToolError::UnknownTool(other.into())),
         };
         Ok(vec![Content::Json(out)])
@@ -995,7 +995,7 @@ impl Automation {
             |key: &str, default: [f64; 3]| -> Result<[f64; 3]> { Ok(a.opt_str(key)?.map(comments::parse_color).transpose()?.unwrap_or(default)) };
         let replace = a.opt_bool("replace")?.unwrap_or(false);
         let edit = match tool {
-            "doc_header_footer" => {
+            "file.setHeaderFooter" => {
                 let mut hf = HeaderFooter::default();
                 for (k, key) in ["header_left", "header_center", "header_right", "footer_left", "footer_center", "footer_right"].iter().enumerate() {
                     hf.text[k] = a.opt_str(key)?.unwrap_or_default().to_string();
@@ -1013,7 +1013,7 @@ impl Automation {
                 }
                 Edit::AddHeaderFooter { pages, settings: hf, replace }
             }
-            "doc_watermark" => {
+            "file.setWatermark" => {
                 let d = Watermark::default();
                 let file = self.mark_file(a)?;
                 let text = match &file {
@@ -1033,7 +1033,7 @@ impl Automation {
                 };
                 Edit::AddWatermark { pages, settings: wm, replace, file }
             }
-            "doc_background" => Edit::AddBackground {
+            "file.setBackground" => Edit::AddBackground {
                 pages,
                 settings: Background {
                     color: color("color", [1.0; 3])?,

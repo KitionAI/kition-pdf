@@ -67,7 +67,7 @@ struct Snapshot {
 }
 
 fn snapshot(a: &mut Automation, id: DocId) -> Snapshot {
-    let comments = ok(a, "comment_list", json!({ "doc": id.0 }));
+    let comments = ok(a, "comment.list", json!({ "doc": id.0 }));
     // Ensure the replica exists before recording identity and counters.
     let version = format!("{:?}", a.session_mut().version(id).unwrap());
     let state_hash = a.session_mut().state_hash(id).unwrap();
@@ -114,13 +114,13 @@ fn prepared(dir: &Workdir, extension: &str) -> (Automation, DocId) {
     std::fs::write(dir.0.join("input.pdf"), fixture(extension)).unwrap();
     let mut a = Automation::new().with_root(&dir.0).unwrap().with_clock(|| 1_700_000_000);
     let id = DocId(ok(&mut a, "doc_open", json!({ "path": "input.pdf" }))["doc"].as_u64().unwrap());
-    ok(&mut a, "fill_sign_add", json!({ "doc": id.0, "page": 1, "type": "check", "at": [20, 40] }));
-    ok(&mut a, "comment_add", json!({ "doc": id.0, "page": 1, "type": "note", "at": [80, 40], "contents": "Retained prior annotation" }));
-    ok(&mut a, "comment_add", json!({ "doc": id.0, "page": 1, "type": "note", "at": [100, 40], "contents": "Redo branch annotation" }));
+    ok(&mut a, "fillSign.add", json!({ "doc": id.0, "page": 1, "type": "check", "at": [20, 40] }));
+    ok(&mut a, "comment.add", json!({ "doc": id.0, "page": 1, "type": "note", "at": [80, 40], "contents": "Retained prior annotation" }));
+    ok(&mut a, "comment.add", json!({ "doc": id.0, "page": 1, "type": "note", "at": [100, 40], "contents": "Redo branch annotation" }));
     ok(&mut a, "edit_undo", json!({ "doc": id.0 }));
     let current = a.session().get(id).unwrap();
     assert!(current.dirty && current.can_undo().is_some() && current.can_redo().is_some());
-    let comments = ok(&mut a, "comment_list", json!({ "doc": id.0 }));
+    let comments = ok(&mut a, "comment.list", json!({ "doc": id.0 }));
     assert_eq!(comments["count"], 2);
     assert!(comments["comments"].as_array().unwrap().iter().any(|note| note["contents"] == "Retained prior annotation"));
     (a, id)
@@ -171,7 +171,7 @@ fn ordinary_incremental_flatten_still_saves_extensions_and_keeps_original_prefix
         assert!(saved.starts_with(&original) && saved.len() > original.len());
         assert_eq!(std::fs::read(dir.0.join("input.pdf")).unwrap(), original);
         assert!(!a.session().get(id).unwrap().dirty);
-        let comments = ok(&mut a, "comment_list", json!({ "doc": id.0 }));
+        let comments = ok(&mut a, "comment.list", json!({ "doc": id.0 }));
         assert_eq!(comments["count"], 1);
         assert_eq!(comments["comments"][0]["contents"], "Retained prior annotation");
         let cos = kition_pdf_cos::Document::open(Arc::new(saved)).unwrap();
@@ -191,7 +191,7 @@ fn supported_full_flatten_still_saves_and_reopens() {
     ok(&mut a, "doc_save", json!({ "doc": id.0, "path": "output.pdf", "full": true, "flatten_fill_sign": true }));
     assert!(!a.session().get(id).unwrap().dirty);
     let reopened = ok(&mut a, "doc_open", json!({ "path": "output.pdf" }));
-    let comments = ok(&mut a, "comment_list", json!({ "doc": reopened["doc"] }));
+    let comments = ok(&mut a, "comment.list", json!({ "doc": reopened["doc"] }));
     assert_eq!(comments["count"], 1);
     assert_eq!(comments["comments"][0]["contents"], "Retained prior annotation");
 }

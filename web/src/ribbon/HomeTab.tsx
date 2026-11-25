@@ -31,7 +31,7 @@ export function HomeTab({ info, current, onPage, onZoom, selectionAvailable, onC
   const editable = info.editable
 
   const copyText = async () => {
-    const answer = await run('text_extract', { pages: page })
+    const answer = await run('text.extract', { pages: page })
     if (!answer) return
     const parsed = JSON.parse(answer) as { text?: string; pages?: Array<{ text?: string }> }
     const text = parsed.text ?? (parsed.pages ?? []).map((item) => item.text ?? '').join('\n')
@@ -81,22 +81,22 @@ export function HomeTab({ info, current, onPage, onZoom, selectionAvailable, onC
 
       <RibbonGroup label={p('Page')} icon={FileIcon}>
         <RibbonStack>
-          <RibbonButton icon={RotateCcw} label={t('rotateLeft')} disabled={!editable || !enabled('page_rotate')} onClick={() => void run('page_rotate', { degrees: -90, pages: page })} data-testid="pdf-rotate-left" primary />
-          <RibbonButton icon={RotateCw} label={t('rotateRight')} disabled={!editable || !enabled('page_rotate')} onClick={() => void run('page_rotate', { degrees: 90, pages: page })} data-testid="pdf-rotate-right" primary />
+          <RibbonButton icon={RotateCcw} label={t('rotateLeft')} disabled={!editable || !enabled('page.rotate')} onClick={() => void run('page.rotate', { degrees: -90, pages: page })} data-testid="pdf-rotate-left" primary />
+          <RibbonButton icon={RotateCw} label={t('rotateRight')} disabled={!editable || !enabled('page.rotate')} onClick={() => void run('page.rotate', { degrees: 90, pages: page })} data-testid="pdf-rotate-right" primary />
         </RibbonStack>
         <RibbonStack>
-          <RibbonButton icon={FilePlus2} label={t('insertPage')} disabled={!editable || !enabled('page_insert_blank')} onClick={() => void run('page_insert_blank', { at: current + 2 })} data-testid="pdf-insert-page" primary />
-          <RibbonButton icon={CopyPlus} label={t('duplicatePage')} disabled={!editable || !enabled('page_duplicate')} onClick={() => void run('page_duplicate', { pages: page })} data-testid="pdf-duplicate-page" />
-          <RibbonButton icon={Trash2} label={t('deletePage')} disabled={!editable || count < 2 || !enabled('page_delete')} onClick={() => void run('page_delete', { pages: page })} data-testid="pdf-delete-page" primary />
+          <RibbonButton icon={FilePlus2} label={t('insertPage')} disabled={!editable || !enabled('page.insertBlank')} onClick={() => void run('page.insertBlank', { at: current + 2 })} data-testid="pdf-insert-page" primary />
+          <RibbonButton icon={CopyPlus} label={t('duplicatePage')} disabled={!editable || !enabled('page.duplicate')} onClick={() => void run('page.duplicate', { pages: page })} data-testid="pdf-duplicate-page" />
+          <RibbonButton icon={Trash2} label={t('deletePage')} disabled={!editable || count < 2 || !enabled('page.delete')} onClick={() => void run('page.delete', { pages: page })} data-testid="pdf-delete-page" primary />
         </RibbonStack>
       </RibbonGroup>
 
       <RibbonGroup label={p('Comment')} icon={MessageSquarePlus}>
-        <RibbonButton icon={MessageSquarePlus} size="large" label={t('stickyNote')} disabled={!editable || !enabled('comment_add')} onClick={() => ask('comment_add')} data-testid="pdf-sticky-note" primary />
+        <RibbonButton icon={MessageSquarePlus} size="large" label={t('stickyNote')} disabled={!editable || !enabled('comment.add')} onClick={() => ask('comment.add')} data-testid="pdf-sticky-note" primary />
         <RibbonStack>
-          <RibbonButton icon={Highlighter} label={t('highlightText')} disabled={!editable || !enabled('comment_add')} onClick={() => ask('comment_add', { type: 'highlight', find: '' })} data-testid="pdf-highlight" primary />
-          <RibbonButton icon={Type} label={t('addText')} disabled={!editable || !enabled('page_add_text')} onClick={() => ask('page_add_text')} data-testid="pdf-add-text" primary />
-          <RibbonButton icon={Copy} label={t('copyText')} disabled={!enabled('text_extract')} onClick={() => void copyText()} data-testid="pdf-copy-text" />
+          <RibbonButton icon={Highlighter} label={t('highlightText')} disabled={!editable || !enabled('comment.add')} onClick={() => ask('comment.add', { type: 'highlight', find: '' })} data-testid="pdf-highlight" primary />
+          <RibbonButton icon={Type} label={t('addText')} disabled={!editable || !enabled('page.addText')} onClick={() => ask('page.addText')} data-testid="pdf-add-text" primary />
+          <RibbonButton icon={Copy} label={t('copyText')} disabled={!enabled('text.extract')} onClick={() => void copyText()} data-testid="pdf-copy-text" />
         </RibbonStack>
       </RibbonGroup>
       <RibbonGroup label={p('Select text')} icon={SelectTool}>

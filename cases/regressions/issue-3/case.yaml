@@ -2,9 +2,9 @@ format: 1
 id: regressions/issue-3
 feature: pdf.forms
 intent: >-
-  doc_flatten flattens only what it names: naming comments keeps the form fields, naming fields
+  file.flatten flattens only what it names: naming comments keeps the form fields, naming fields
   keeps the comments, and naming neither flattens both. A push button's caption takes the text
-  colour, font and size of its /DA (form_set_props appearance.text_color), before and after save
+  colour, font and size of its /DA (form.setProps appearance.text_color), before and after save
   and reopen and through a comments-only flatten. Before, {comments: true} also flattened (and so
   deleted) every field, and button captions were always black Helvetica.
 layer: gate

@@ -7,7 +7,7 @@ intent: >-
   names any document font by family (Lora), and a standard family is drawn from its
   metric-compatible document font when the host added it (Arimo, Tinos, Cousine), all as Type 3
   outlines with ToUnicode, so copy and search work, the item stays editable with its face, and the
-  page the kit writes embeds every font it uses (no pdf.font-not-embedded). Before, page_add_text
+  page the kit writes embeds every font it uses (no pdf.font-not-embedded). Before, page.addText
   refused Chinese and offered only the unembedded standard fonts.
 layer: gate
 source:

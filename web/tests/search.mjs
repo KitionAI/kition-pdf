@@ -208,7 +208,7 @@ try {
       begin(7)
       await input.fill(queries[0]); await count('1/8')
       const beforeEdit = await calls()
-      await page.evaluate(() => window.devHost.connection().ai.run([{ command: 'bookmark_add', params: { page: 1, title: 'Original search revision check' } }], false))
+      await page.evaluate(() => window.devHost.connection().ai.run([{ command: 'bookmark.add', params: { page: 1, title: 'Original search revision check' } }], false))
       await frame.waitForFunction(previous => window.__pdfSearch.calls.length > previous, beforeEdit)
       await count('1/8')
       check('document edit invalidates cached query and reissues search for the new revision')

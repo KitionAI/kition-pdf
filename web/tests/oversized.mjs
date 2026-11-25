@@ -186,7 +186,7 @@ try {
             inspect(pixels)
             checks.push({ label, status: 'passed', width, height, elapsedMs: Math.round(performance.now() - started) })
           }
-          await engine.execute('comment_add', { page: 4, type: 'note', contents: 'Unsaved edit survives rendering', at: [80, 80] })
+          await engine.execute('comment.add', { page: 4, type: 'note', contents: 'Unsaved edit survives rendering', at: [80, 80] })
           const before = await engine.save()
           const revision = engine.info.revision
           await image('9000-square far corner at 1:1', 16, 16,

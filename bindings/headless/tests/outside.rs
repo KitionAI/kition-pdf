@@ -22,11 +22,11 @@ use serde_json::{Value, json};
 const CHANGED: Want = Want::Refused("changed");
 
 fn comment_id(f: &Fixture, page: u64) -> Value {
-    read_on_disk(&f.file(), "comment_list", json!({ "page": page }))["comments"][0]["id"].clone()
+    read_on_disk(&f.file(), "comment.list", json!({ "page": page }))["comments"][0]["id"].clone()
 }
 
 fn contents_on_disk(f: &Fixture, page: u64) -> Value {
-    read_on_disk(&f.file(), "comment_list", json!({ "page": page }))["comments"][0]["contents"].clone()
+    read_on_disk(&f.file(), "comment.list", json!({ "page": page }))["comments"][0]["contents"].clone()
 }
 
 // ---- Scenarios ----
@@ -37,8 +37,8 @@ async fn s1_an_unrelated_change_applies_and_others_names_the_document() {
     let f = Fixture::new(3);
     let ran = case(
         &f,
-        &[("comment_edit", json!({ "page": 3, "index": 1, "contents": "theirs" }))],
-        step("comment_edit", json!({ "page": 1, "index": 1, "contents": "mine" })),
+        &[("comment.edit", json!({ "page": 3, "index": 1, "contents": "theirs" }))],
+        step("comment.edit", json!({ "page": 1, "index": 1, "contents": "mine" })),
         Want::Applies,
     )
     .await;
@@ -47,7 +47,7 @@ async fn s1_an_unrelated_change_applies_and_others_names_the_document() {
     // The comment the colleague changed, by its id, and the document object (its base and epoch,
     // and `~state`: see `waiting_for_sdk_a_private_content_fact_holds_after_an_outside_reread`).
     let changed: Vec<&str> = others["changed"].as_array().unwrap().iter().map(|c| c["id"].as_str().unwrap()).collect();
-    let theirs = read_on_disk(&f.file(), "comment_list", json!({ "page": 3 }))["comments"][0]["id"].clone();
+    let theirs = read_on_disk(&f.file(), "comment.list", json!({ "page": 3 }))["comments"][0]["id"].clone();
     assert_eq!(changed, [theirs.as_str().unwrap(), "pdf"], "{others}");
     // Its text (and its modification date, when the clock moved on a second).
     assert!(others["changed"][0]["fields"].as_array().unwrap().contains(&json!("contents")), "{others}");
@@ -61,8 +61,8 @@ async fn s1_an_unrelated_change_applies_and_others_names_the_document() {
 #[tokio::test(flavor = "multi_thread")]
 async fn s2_the_same_member_is_refused_and_the_retry_applies() {
     let f = Fixture::new(3);
-    let mine = step("comment_edit", json!({ "page": 2, "index": 1, "contents": "mine" }));
-    let refused = case(&f, &[("comment_edit", json!({ "page": 2, "index": 1, "contents": "theirs" }))], mine.clone(), CHANGED).await;
+    let mine = step("comment.edit", json!({ "page": 2, "index": 1, "contents": "mine" }));
+    let refused = case(&f, &[("comment.edit", json!({ "page": 2, "index": 1, "contents": "theirs" }))], mine.clone(), CHANGED).await;
     println!("s2: refused: {} bytes", refused.to_string().len());
     assert_eq!(contents_on_disk(&f, 2), json!("theirs"));
     case(&f, &[], mine, Want::Applies).await;
@@ -75,7 +75,7 @@ async fn s2_the_same_member_is_refused_and_the_retry_applies() {
 async fn s3_a_deleted_target_refuses_the_write_by_id() {
     let f = Fixture::new(3);
     let id = comment_id(&f, 2);
-    case(&f, &[("comment_delete", json!({ "id": id }))], step("comment_edit", json!({ "id": id, "contents": "mine" })), Want::Refused("deleted"))
+    case(&f, &[("comment.delete", json!({ "id": id }))], step("comment.edit", json!({ "id": id, "contents": "mine" })), Want::Refused("deleted"))
         .await;
     f.shutdown().await;
 }
@@ -86,9 +86,9 @@ async fn s3_a_deleted_target_refuses_the_write_by_id() {
 #[tokio::test(flavor = "multi_thread")]
 async fn s4_s5_a_page_inserted_before_refuses_and_after_applies() {
     let f = Fixture::new(3);
-    let mine = step("comment_edit", json!({ "page": 2, "index": 1, "contents": "mine" }));
-    case(&f, &[("page_insert_blank", json!({ "at": 2 }))], mine.clone(), Want::Refused("relocated+relocated")).await;
-    case(&f, &[("page_insert_blank", json!({ "at": 4 }))], step("comment_edit", json!({ "page": 3, "index": 1, "contents": "mine" })), Want::Applies)
+    let mine = step("comment.edit", json!({ "page": 2, "index": 1, "contents": "mine" }));
+    case(&f, &[("page.insertBlank", json!({ "at": 2 }))], mine.clone(), Want::Refused("relocated+relocated")).await;
+    case(&f, &[("page.insertBlank", json!({ "at": 4 }))], step("comment.edit", json!({ "page": 3, "index": 1, "contents": "mine" })), Want::Applies)
         .await;
     f.shutdown().await;
 }
@@ -101,14 +101,14 @@ async fn s6_a_moved_comment_and_a_write_by_point() {
     let f = Fixture::new(3);
     case(
         &f,
-        &[("comment_edit", json!({ "page": 2, "index": 1, "move": [400, 400] }))],
-        step("comment_edit", json!({ "page": 2, "index": 1, "contents": "mine" })),
+        &[("comment.edit", json!({ "page": 2, "index": 1, "move": [400, 400] }))],
+        step("comment.edit", json!({ "page": 2, "index": 1, "contents": "mine" })),
         Want::Applies,
     )
     .await;
-    let at = step("comment_add", json!({ "page": 2, "type": "note", "at": [200, 200], "contents": "at a point" }));
-    case(&f, &[("comment_edit", json!({ "page": 2, "index": 1, "move": [200, 200] }))], at.clone(), Want::Applies).await;
-    case(&f, &[("page_move", json!({ "pages": [2], "to": 3 }))], at, Want::Refused("relocated+relocated")).await;
+    let at = step("comment.add", json!({ "page": 2, "type": "note", "at": [200, 200], "contents": "at a point" }));
+    case(&f, &[("comment.edit", json!({ "page": 2, "index": 1, "move": [200, 200] }))], at.clone(), Want::Applies).await;
+    case(&f, &[("page.move", json!({ "pages": [2], "to": 3 }))], at, Want::Refused("relocated+relocated")).await;
     f.shutdown().await;
 }
 
@@ -119,13 +119,13 @@ async fn s6_a_moved_comment_and_a_write_by_point() {
 async fn s7_the_page_holding_the_target_moved() {
     let f = Fixture::new(3);
     let id = comment_id(&f, 2);
-    case(&f, &[("page_move", json!({ "pages": [2], "to": 3 }))], step("comment_edit", json!({ "id": id, "contents": "by id" })), Want::Applies).await;
+    case(&f, &[("page.move", json!({ "pages": [2], "to": 3 }))], step("comment.edit", json!({ "id": id, "contents": "by id" })), Want::Applies).await;
     let id3 = comment_id(&f, 3);
     assert_eq!(id3, id, "the comment is on page 3 now");
     case(
         &f,
-        &[("page_move", json!({ "pages": [3], "to": 1 }))],
-        step("comment_edit", json!({ "page": 2, "index": 1, "contents": "by index" })),
+        &[("page.move", json!({ "pages": [3], "to": 1 }))],
+        step("comment.edit", json!({ "page": 2, "index": 1, "contents": "by index" })),
         Want::Refused("relocated+relocated"),
     )
     .await;
@@ -137,13 +137,13 @@ async fn s7_the_page_holding_the_target_moved() {
 async fn s8_a_name_swap_refuses_a_fill_by_name() {
     let f = Fixture::new(3);
     let swap = [
-        ("form_set_props", json!({ "field": "F1", "name": "Tmp" })),
-        ("form_set_props", json!({ "field": "F2", "name": "F1" })),
-        ("form_set_props", json!({ "field": "Tmp", "name": "F2" })),
+        ("form.setProps", json!({ "field": "F1", "name": "Tmp" })),
+        ("form.setProps", json!({ "field": "F2", "name": "F1" })),
+        ("form.setProps", json!({ "field": "Tmp", "name": "F2" })),
     ];
     // The fields keep their ids (stored in them, C8-pdf-3): `F1` names the other field now, whose
     // name changed.
-    case(&f, &swap, step("form_fill", json!({ "values": { "F1": "mine" } })), CHANGED).await;
+    case(&f, &swap, step("form.fill", json!({ "values": { "F1": "mine" } })), CHANGED).await;
     f.shutdown().await;
 }
 
@@ -151,18 +151,18 @@ async fn s8_a_name_swap_refuses_a_fill_by_name() {
 #[tokio::test(flavor = "multi_thread")]
 async fn s9_a_rename_away_refuses_a_write_by_that_name() {
     let f = Fixture::new(3);
-    case(&f, &[("form_set_props", json!({ "field": "F3", "name": "G3" }))], step("form_fill", json!({ "values": { "F2": "mine" } })), Want::Applies)
+    case(&f, &[("form.setProps", json!({ "field": "F3", "name": "G3" }))], step("form.fill", json!({ "values": { "F2": "mine" } })), Want::Applies)
         .await;
-    case(&f, &[("form_set_props", json!({ "field": "F2", "name": "G2" }))], step("form_fill", json!({ "values": { "F2": "mine" } })), CHANGED).await;
+    case(&f, &[("form.setProps", json!({ "field": "F2", "name": "G2" }))], step("form.fill", json!({ "values": { "F2": "mine" } })), CHANGED).await;
     f.shutdown().await;
 }
 
 /// 10. `epoch` refuses an unrelated change, `premise` applies it, `off` applies even a related one.
 #[tokio::test(flavor = "multi_thread")]
 async fn s10_epoch_premise_and_off() {
-    let unrelated = [("comment_edit", json!({ "page": 3, "index": 1, "contents": "theirs" }))];
-    let related = [("comment_edit", json!({ "page": 1, "index": 1, "contents": "theirs" }))];
-    let mine = step("comment_edit", json!({ "page": 1, "index": 1, "contents": "mine" }));
+    let unrelated = [("comment.edit", json!({ "page": 3, "index": 1, "contents": "theirs" }))];
+    let related = [("comment.edit", json!({ "page": 1, "index": 1, "contents": "theirs" }))];
+    let mine = step("comment.edit", json!({ "page": 1, "index": 1, "contents": "mine" }));
     let epoch = Fixture::from_bytes(&fixture(3), CallOptions { guard: Guard::Epoch, ..CallOptions::default() });
     let refused = case(&epoch, &unrelated, mine.clone(), CHANGED).await;
     println!("s10: epoch refuses: {}", refused["error"]["message"]);
@@ -189,14 +189,14 @@ async fn s11_a_renumbering_rewrite_refuses_unknown() {
     renumber(&f.file());
     let before = std::fs::read(f.file()).unwrap();
     let refused =
-        f.refused("run", json!({ "basis": basis, "steps": [step("comment_edit", json!({ "page": 1, "index": 1, "contents": "mine" }))] })).await;
+        f.refused("run", json!({ "basis": basis, "steps": [step("comment.edit", json!({ "page": 1, "index": 1, "contents": "mine" }))] })).await;
     assert_eq!(reasons(&refused), "unknown", "{refused}");
     assert_eq!(std::fs::read(f.file()).unwrap(), before);
-    f.ok("run", json!({ "basis": basis, "steps": [step("comment_edit", json!({ "page": 2, "index": 1, "contents": "mine" }))] })).await;
+    f.ok("run", json!({ "basis": basis, "steps": [step("comment.edit", json!({ "page": 2, "index": 1, "contents": "mine" }))] })).await;
     assert_eq!(comment_id(&f, 2), id, "the same comment");
     assert_eq!(contents_on_disk(&f, 2), json!("mine"));
     let (_, basis) = f.inspect().await;
-    f.ok("run", json!({ "basis": basis, "steps": [step("comment_edit", json!({ "page": 1, "index": 1, "contents": "mine" }))] })).await;
+    f.ok("run", json!({ "basis": basis, "steps": [step("comment.edit", json!({ "page": 1, "index": 1, "contents": "mine" }))] })).await;
     f.shutdown().await;
 }
 
@@ -225,16 +225,16 @@ async fn table_fifty_unrelated_rounds() {
         for round in 0..50u64 {
             let (_, basis) = f.inspect().await;
             let theirs = match round % 4 {
-                0 => ("comment_edit", json!({ "page": 3, "index": 1, "contents": format!("theirs {round}") })),
-                1 => ("form_fill", json!({ "values": { "F4": format!("theirs {round}") } })),
-                2 => ("page_rotate", json!({ "pages": [4], "degrees": 90 })),
-                _ => ("comment_add", json!({ "page": 2, "type": "note", "at": [300, 300], "contents": format!("theirs {round}") })),
+                0 => ("comment.edit", json!({ "page": 3, "index": 1, "contents": format!("theirs {round}") })),
+                1 => ("form.fill", json!({ "values": { "F4": format!("theirs {round}") } })),
+                2 => ("page.rotate", json!({ "pages": [4], "degrees": 90 })),
+                _ => ("comment.add", json!({ "page": 2, "type": "note", "at": [300, 300], "contents": format!("theirs {round}") })),
             };
             f.colleague(&[theirs]);
             let answer = f
                 .call(
                     "run",
-                    json!({ "basis": basis, "steps": [step("comment_edit", json!({ "page": 1, "index": 1, "contents": format!("mine {round}") }))] }),
+                    json!({ "basis": basis, "steps": [step("comment.edit", json!({ "page": 1, "index": 1, "contents": format!("mine {round}") }))] }),
                 )
                 .await;
             if answer.is_err() {
@@ -268,18 +268,18 @@ const KINDS: &[&str] = &[
 
 fn kind_steps(kind: usize, id: &Value) -> Vec<(&'static str, Value)> {
     match kind {
-        0 => vec![("comment_edit", json!({ "id": id, "contents": "theirs" }))],
-        1 => vec![("comment_edit", json!({ "page": 3, "index": 1, "contents": "theirs" }))],
-        2 => vec![("form_fill", json!({ "values": { "F2": "theirs" } }))],
-        3 => vec![("form_fill", json!({ "values": { "F3": "theirs" } }))],
-        4 => vec![("page_insert_blank", json!({ "at": 1 }))],
-        5 => vec![("page_insert_blank", json!({ "at": 5 }))],
-        6 => vec![("page_rotate", json!({ "pages": [2], "degrees": 90 }))],
-        7 => vec![("page_rotate", json!({ "pages": [4], "degrees": 90 }))],
-        8 => vec![("comment_delete", json!({ "id": id }))],
-        9 => vec![("page_move", json!({ "pages": [2], "to": 4 }))],
-        10 => vec![("form_set_props", json!({ "field": "F2", "name": "G2" }))],
-        _ => vec![("comment_edit", json!({ "id": id, "color": "blue" }))],
+        0 => vec![("comment.edit", json!({ "id": id, "contents": "theirs" }))],
+        1 => vec![("comment.edit", json!({ "page": 3, "index": 1, "contents": "theirs" }))],
+        2 => vec![("form.fill", json!({ "values": { "F2": "theirs" } }))],
+        3 => vec![("form.fill", json!({ "values": { "F3": "theirs" } }))],
+        4 => vec![("page.insertBlank", json!({ "at": 1 }))],
+        5 => vec![("page.insertBlank", json!({ "at": 5 }))],
+        6 => vec![("page.rotate", json!({ "pages": [2], "degrees": 90 }))],
+        7 => vec![("page.rotate", json!({ "pages": [4], "degrees": 90 }))],
+        8 => vec![("comment.delete", json!({ "id": id }))],
+        9 => vec![("page.move", json!({ "pages": [2], "to": 4 }))],
+        10 => vec![("form.setProps", json!({ "field": "F2", "name": "G2" }))],
+        _ => vec![("comment.edit", json!({ "id": id, "color": "blue" }))],
     }
 }
 
@@ -300,11 +300,11 @@ const FORMS: &[(&str, &[usize])] =
 
 fn form_step(form: usize, id: &Value) -> Value {
     match form {
-        0 => step("comment_edit", json!({ "id": id, "contents": "mine" })),
-        1 => step("form_fill", json!({ "values": { "F2": "mine" } })),
-        2 => step("comment_edit", json!({ "page": 2, "index": 1, "contents": "mine" })),
-        3 => step("comment_add", json!({ "page": 2, "type": "note", "at": [200, 200], "contents": "mine" })),
-        _ => step("page_delete", json!({ "pages": [2] })),
+        0 => step("comment.edit", json!({ "id": id, "contents": "mine" })),
+        1 => step("form.fill", json!({ "values": { "F2": "mine" } })),
+        2 => step("comment.edit", json!({ "page": 2, "index": 1, "contents": "mine" })),
+        3 => step("comment.add", json!({ "page": 2, "type": "note", "at": [200, 200], "contents": "mine" })),
+        _ => step("page.delete", json!({ "pages": [2] })),
     }
 }
 
@@ -478,21 +478,21 @@ const FORMS2: &[(&str, &[usize])] = &[
 fn fixture_with_links() -> Vec<u8> {
     let mut doc = fixture_doc(4);
     for n in 1..=4 {
-        doc.execute("link_add", json!({ "page": n, "rect": [100, 300, 200, 320], "url": format!("https://example.com/{n}") })).unwrap();
+        doc.execute("link.add", json!({ "page": n, "rect": [100, 300, 200, 320], "url": format!("https://example.com/{n}") })).unwrap();
     }
     doc.save(None).unwrap()
 }
 
-/// Page `page`'s link's place in `/Annots`, as `link_list` numbers it.
+/// Page `page`'s link's place in `/Annots`, as `link.list` numbers it.
 fn link_index(f: &Fixture, page: u64) -> Value {
-    read_on_disk(&f.file(), "link_list", json!({}))["links"].as_array().unwrap().iter().find(|l| l["page"] == page).unwrap()["index"].clone()
+    read_on_disk(&f.file(), "link.list", json!({}))["links"].as_array().unwrap().iter().find(|l| l["page"] == page).unwrap()["index"].clone()
 }
 
 /// Kind `kind` of [`KINDS2`] done by the colleague.
 fn colleague2(f: &Fixture, kind: usize, id: &Value, link: &Value) {
     match kind {
         12 => {
-            f.colleague(&[("link_edit", json!({ "page": 2, "index": link, "to_page": 3 }))]);
+            f.colleague(&[("link.edit", json!({ "page": 2, "index": link, "to_page": 3 }))]);
         }
         13 => {
             // The kit has no command that moves a bookmark: another program moves it (the
@@ -504,10 +504,10 @@ fn colleague2(f: &Fixture, kind: usize, id: &Value, link: &Value) {
             std::fs::File::options().write(true).open(f.file()).unwrap().set_modified(at - std::time::Duration::from_secs(3600)).unwrap();
         }
         14 => {
-            f.colleague(&[("content_update", json!({ "page": 2, "index": 1, "text": "Theirs 2" }))]);
+            f.colleague(&[("content.set", json!({ "page": 2, "index": 1, "text": "Theirs 2" }))]);
         }
         15 => {
-            f.colleague(&[("doc_initial_view", json!({ "layout": "two_up" }))]);
+            f.colleague(&[("file.setInitialView", json!({ "layout": "two_up" }))]);
         }
         _ => {
             f.colleague(&kind_steps(kind, id));
@@ -517,11 +517,11 @@ fn colleague2(f: &Fixture, kind: usize, id: &Value, link: &Value) {
 
 fn form_step2(form: usize, id: &Value, link: &Value) -> Value {
     match form {
-        5 => step("bookmark_add", json!({ "page": 2, "title": "Mine", "parent": [2] })),
-        6 => step("link_edit", json!({ "page": 2, "index": link, "url": "https://example.com/mine" })),
-        7 => step("content_update", json!({ "page": 2, "index": 1, "text": "Mine 2" })),
-        8 => step("redact_mark", json!({ "page": 2, "rect": [60, 50, 200, 90] })),
-        9 => step("doc_initial_view", json!({ "layout": "single" })),
+        5 => step("bookmark.add", json!({ "page": 2, "title": "Mine", "parent": [2] })),
+        6 => step("link.edit", json!({ "page": 2, "index": link, "url": "https://example.com/mine" })),
+        7 => step("content.set", json!({ "page": 2, "index": 1, "text": "Mine 2" })),
+        8 => step("redaction.mark", json!({ "page": 2, "rect": [60, 50, 200, 90] })),
+        9 => step("file.setInitialView", json!({ "layout": "single" })),
         _ => form_step(form, id),
     }
 }
@@ -598,32 +598,32 @@ async fn table_every_form_and_kind_extended() {
 async fn receipt_bytes() {
     let size = |ran: &Value| ran["changes"].to_string().len();
     let f = Fixture::new(2);
-    let ran = case(&f, &[], step("comment_edit", json!({ "page": 1, "index": 1, "contents": "one property" })), Want::Applies).await;
+    let ran = case(&f, &[], step("comment.edit", json!({ "page": 1, "index": 1, "contents": "one property" })), Want::Applies).await;
     println!("receipt: one property (comment text): {} bytes", size(&ran));
-    let ran = case(&f, &[], step("comment_edit", json!({ "page": 1, "index": 1, "move": [300, 300] })), Want::Applies).await;
+    let ran = case(&f, &[], step("comment.edit", json!({ "page": 1, "index": 1, "move": [300, 300] })), Want::Applies).await;
     println!("receipt: one move (comment): {} bytes", size(&ran));
     f.shutdown().await;
     for children in [5usize, 200] {
         let mut doc = fixture_doc(3);
         for n in 0..children {
             doc.execute(
-                "comment_add",
+                "comment.add",
                 json!({ "page": 2, "type": "note", "at": [50 + (n % 20) * 25, 150 + (n / 20) * 25], "contents": format!("c{n}") }),
             )
             .unwrap();
         }
         let f = Fixture::from_bytes(&doc.save(None).unwrap(), CallOptions::default());
-        let ran = case(&f, &[], step("page_move", json!({ "pages": [2], "to": 3 })), Want::Applies).await;
+        let ran = case(&f, &[], step("page.move", json!({ "pages": [2], "to": 3 })), Want::Applies).await;
         println!("receipt: a page with {children} comments moved: {} bytes", size(&ran));
         f.shutdown().await;
     }
     let mut doc = fixture_doc(1);
     for n in 0..200 {
-        doc.execute("page_add_text", json!({ "page": 1, "at": [50 + (n % 10) * 50, 100 + (n / 10) * 30], "text": format!("t{n}") })).unwrap();
+        doc.execute("page.addText", json!({ "page": 1, "at": [50 + (n % 10) * 50, 100 + (n / 10) * 30], "text": format!("t{n}") })).unwrap();
     }
     let f = Fixture::from_bytes(&doc.save(None).unwrap(), CallOptions::default());
     let objects: Vec<Value> = (1..=200).map(|index| json!({ "index": index, "kind": "added" })).collect();
-    let ran = f.call("run", json!({ "steps": [step("object_move", json!({ "page": 1, "objects": objects, "offset": [5, 5] }))] })).await;
+    let ran = f.call("run", json!({ "steps": [step("object.move", json!({ "page": 1, "objects": objects, "offset": [5, 5] }))] })).await;
     match ran {
         Ok(ran) => println!("receipt: the same offset on 200 objects: {} bytes", size(&ran)),
         Err(error) => println!("receipt: the same offset on 200 objects: failed: {error}"),
@@ -657,8 +657,8 @@ async fn a_rename_by_another_program_refuses_by_tool_id() {
     let f = Fixture::from_bytes(&without_field_ids(&fixture(3)), CallOptions::default());
     let refused = case(
         &f,
-        &[("form_set_props", json!({ "field": "F2", "name": "G2" }))],
-        step("form_fill", json!({ "values": { "F2": "mine" } })),
+        &[("form.setProps", json!({ "field": "F2", "name": "G2" }))],
+        step("form.fill", json!({ "values": { "F2": "mine" } })),
         Want::Refused("relocated+changed"),
     )
     .await;
@@ -701,12 +701,12 @@ async fn independent_writer_rename_keeps_the_fields_id() {
     std::fs::write(f.file(), &bytes).unwrap();
     std::fs::File::options().write(true).open(f.file()).unwrap().set_modified(at - std::time::Duration::from_secs(3600)).unwrap();
     assert_eq!(id_of("G2"), Some((id.clone(), true)), "lopdf kept the field's id");
-    let refused = f.refused("run", json!({ "basis": basis, "steps": [step("form_fill", json!({ "values": { "F2": "mine" } }))] })).await;
+    let refused = f.refused("run", json!({ "basis": basis, "steps": [step("form.fill", json!({ "values": { "F2": "mine" } }))] })).await;
     assert_eq!(reasons(&refused), "unknown", "{refused}");
     let renamed = refused["others"]["changed"].as_array().unwrap().iter().find(|c| c["type"] == "Field").unwrap().clone();
     assert_eq!(renamed["id"], json!(format!("field:{id}")), "{renamed}");
     let (_, basis) = f.inspect().await;
-    f.ok("run", json!({ "basis": basis, "steps": [step("form_fill", json!({ "values": { "G2": "mine" } }))] })).await;
+    f.ok("run", json!({ "basis": basis, "steps": [step("form.fill", json!({ "values": { "G2": "mine" } }))] })).await;
     let filled = on_disk(&f.file()).objects().fields.iter().find(|field| field.id == id).unwrap().fields["value"].clone();
     assert_eq!(filled, json!(["mine"]));
     f.shutdown().await;
@@ -739,12 +739,12 @@ async fn independent_writer_reuses_a_pages_number() {
     assert!(bytes.starts_with(&before), "an incremental update");
     std::fs::write(f.file(), &bytes).unwrap();
     std::fs::File::options().write(true).open(f.file()).unwrap().set_modified(at - std::time::Duration::from_secs(3600)).unwrap();
-    let pages = read_on_disk(&f.file(), "doc_inspect", json!({}))["pages"].clone();
+    let pages = read_on_disk(&f.file(), "file.inspect", json!({}))["pages"].clone();
     assert_eq!(pages[0]["width"], json!(595.0), "page 1 is another page now: {pages}");
-    let refused = f.refused("run", json!({ "basis": basis, "steps": [step("page_rotate", json!({ "pages": [1], "degrees": 90 }))] })).await;
+    let refused = f.refused("run", json!({ "basis": basis, "steps": [step("page.rotate", json!({ "pages": [1], "degrees": 90 }))] })).await;
     assert_eq!(reasons(&refused), "unknown", "{refused}");
     assert_eq!(std::fs::read(f.file()).unwrap(), bytes, "a refused write wrote nothing");
-    f.ok("run", json!({ "basis": basis, "steps": [step("page_rotate", json!({ "pages": [2], "degrees": 90 }))] })).await;
+    f.ok("run", json!({ "basis": basis, "steps": [step("page.rotate", json!({ "pages": [2], "degrees": 90 }))] })).await;
     f.shutdown().await;
 }
 
@@ -767,10 +767,10 @@ async fn independent_writer_full_rewrite_renumbering() {
     std::fs::write(f.file(), &bytes).unwrap();
     std::fs::File::options().write(true).open(f.file()).unwrap().set_modified(at - std::time::Duration::from_secs(3600)).unwrap();
     let refused =
-        f.refused("run", json!({ "basis": basis, "steps": [step("comment_edit", json!({ "page": 1, "index": 1, "contents": "mine" }))] })).await;
+        f.refused("run", json!({ "basis": basis, "steps": [step("comment.edit", json!({ "page": 1, "index": 1, "contents": "mine" }))] })).await;
     assert_eq!(reasons(&refused), "unknown", "{refused}");
     assert_eq!(std::fs::read(f.file()).unwrap(), bytes, "a refused write wrote nothing");
-    let ran = f.ok("run", json!({ "basis": basis, "steps": [step("comment_edit", json!({ "page": 2, "index": 1, "contents": "mine" }))] })).await;
+    let ran = f.ok("run", json!({ "basis": basis, "steps": [step("comment.edit", json!({ "page": 2, "index": 1, "contents": "mine" }))] })).await;
     println!("independent rewrite: others {}", ran["others"]);
     assert_eq!(comment_id(&f, 2), id, "the same comment");
     assert_eq!(contents_on_disk(&f, 2), json!("mine"));
@@ -807,14 +807,14 @@ async fn independent_writer_incremental_comment() {
     assert!(bytes.starts_with(&before), "an incremental update");
     std::fs::write(f.file(), &bytes).unwrap();
     std::fs::File::options().write(true).open(f.file()).unwrap().set_modified(at - std::time::Duration::from_secs(3600)).unwrap();
-    let ran = f.ok("run", json!({ "basis": basis, "steps": [step("comment_edit", json!({ "page": 1, "index": 1, "contents": "mine" }))] })).await;
+    let ran = f.ok("run", json!({ "basis": basis, "steps": [step("comment.edit", json!({ "page": 1, "index": 1, "contents": "mine" }))] })).await;
     let others = &ran["others"];
     let created: Vec<&str> = others["created"].as_array().unwrap().iter().map(|c| c["id"].as_str().unwrap()).collect();
     assert_eq!(created, [format!("a{}", note.0)], "{others}");
     let changed: Vec<&str> = others["changed"].as_array().unwrap().iter().map(|c| c["id"].as_str().unwrap()).collect();
     assert_eq!(changed, ["pdf"], "{others}");
     assert!(others["deleted"].as_array().unwrap().is_empty(), "{others}");
-    let notes = read_on_disk(&f.file(), "comment_list", json!({ "page": 3 }));
+    let notes = read_on_disk(&f.file(), "comment.list", json!({ "page": 3 }));
     assert!(notes["comments"].as_array().unwrap().iter().any(|c| c["contents"] == "from lopdf" && c["id"] == format!("a{}", note.0)), "{notes}");
     f.shutdown().await;
 }

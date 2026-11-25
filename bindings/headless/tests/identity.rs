@@ -34,10 +34,10 @@ async fn launch(dir: &Path) -> HeadlessKit {
 /// as the kit saves a person's or an agent's edits.
 fn report() -> Vec<u8> {
     let mut doc = PdfDocument::create("Report.pdf", 612, 792).unwrap();
-    doc.execute("page_insert_blank", json!({ "at": 2 })).unwrap();
+    doc.execute("page.insertBlank", json!({ "at": 2 })).unwrap();
     let first = doc.save(None).unwrap();
     let mut doc = PdfDocument::open("Report.pdf", &first).unwrap();
-    doc.execute("comment_add", json!({ "page": 1, "type": "note", "at": [100, 100], "contents": "Kept" })).unwrap();
+    doc.execute("comment.add", json!({ "page": 1, "type": "note", "at": [100, 100], "contents": "Kept" })).unwrap();
     doc.save(None).unwrap()
 }
 
@@ -65,7 +65,7 @@ async fn a_pdf_carries_no_identity_and_forks_as_the_same_bytes() {
 
     // The fork opens as any PDF, with the source's pages and comment.
     let mut forked = PdfDocument::open("Fork.pdf", &std::fs::read(dir.join("Fork.pdf")).unwrap()).unwrap();
-    let listed = forked.execute("comment_list", json!({})).unwrap();
+    let listed = forked.execute("comment.list", json!({})).unwrap();
     let comments: Vec<&str> = listed["comments"].as_array().unwrap().iter().filter_map(|comment| comment["contents"].as_str()).collect();
     assert_eq!(comments, ["Kept"]);
 

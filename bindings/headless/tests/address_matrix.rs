@@ -16,7 +16,7 @@ enum Writer {
 fn with_links() -> Vec<u8> {
     let mut doc = fixture_doc(4);
     for page in 1..=4 {
-        doc.execute("link_add", json!({"page": page, "rect": [100, 300, 200, 320], "url": format!("https://example.com/{page}")})).unwrap();
+        doc.execute("link.add", json!({"page": page, "rect": [100, 300, 200, 320], "url": format!("https://example.com/{page}")})).unwrap();
     }
     doc.save(None).unwrap()
 }
@@ -88,9 +88,9 @@ fn normalize(value: &mut Value) {
 
 fn reads(doc: &mut kition_pdf_kit::PdfDocument) -> Value {
     let mut out = serde_json::Map::new();
-    for command in ["comment_list", "form_fields", "bookmark_list", "link_list", "content_list", "text_extract", "doc_inspect"] {
+    for command in ["comment.list", "form.listFields", "bookmark.list", "link.list", "content.list", "text.extract", "file.inspect"] {
         let mut value = doc.execute(command, json!({})).unwrap();
-        if command == "doc_inspect" {
+        if command == "file.inspect" {
             value = value["pages"].clone();
         }
         normalize(&mut value);
@@ -118,15 +118,15 @@ async fn annotation_slots_include_popups_and_widgets() {
                         let initial = if remove { annotation(&base, writer, subtype, false, slot) } else { base };
                         let f = Fixture::from_bytes(&initial, Default::default());
                         let index = if link {
-                            let links = read_on_disk(&f.file(), "link_list", json!({}));
+                            let links = read_on_disk(&f.file(), "link.list", json!({}));
                             links["links"].as_array().unwrap().iter().find(|l| l["page"] == 2).unwrap()["index"].clone()
                         } else {
-                            read_on_disk(&f.file(), "comment_list", json!({"page": 2}))["comments"][0]["index"].clone()
+                            read_on_disk(&f.file(), "comment.list", json!({"page": 2}))["comments"][0]["index"].clone()
                         };
                         let mine = if link {
-                            step("link_edit", json!({"page": 2, "index": index, "url": "https://example.com/mine"}))
+                            step("link.edit", json!({"page": 2, "index": index, "url": "https://example.com/mine"}))
                         } else {
-                            step("comment_edit", json!({"page": 2, "index": index, "contents": "mine"}))
+                            step("comment.edit", json!({"page": 2, "index": index, "contents": "mine"}))
                         };
                         let (_, basis) = f.inspect().await;
                         let theirs = annotation(&initial, writer, subtype, remove, slot);
@@ -197,12 +197,12 @@ async fn nested_rename_holds_the_resulting_name() {
         let f = Fixture::from_bytes(&nested_fields(), Default::default());
         let (_, basis) = f.inspect().await;
         if sibling {
-            f.colleague(&[("form_set_props", json!({"field": "group.F3", "name": "free"}))]);
+            f.colleague(&[("form.setProps", json!({"field": "group.F3", "name": "free"}))]);
         } else {
-            f.colleague(&[("form_add_field", json!({"page": 4, "name": "free", "type": "text", "rect": [20, 20, 100, 40]}))]);
+            f.colleague(&[("form.addField", json!({"page": 4, "name": "free", "type": "text", "rect": [20, 20, 100, 40]}))]);
         }
         let theirs = std::fs::read(f.file()).unwrap();
-        let mine = step("form_set_props", json!({"field": "group.F2", "name": "free"}));
+        let mine = step("form.setProps", json!({"field": "group.F2", "name": "free"}));
         let got = f.call("run", json!({"basis": basis, "steps": [mine.clone()]})).await;
         if sibling {
             match got {
@@ -214,7 +214,7 @@ async fn nested_rename_holds_the_resulting_name() {
             failures.push(format!("unrelated root: expected saved merge, got {error}"));
         } else {
             let mut expected = kition_pdf_kit::PdfDocument::open(FILE, &theirs).unwrap();
-            expected.execute("form_set_props", mine["params"].clone()).unwrap();
+            expected.execute("form.setProps", mine["params"].clone()).unwrap();
             let mut expected = kition_pdf_kit::PdfDocument::open(FILE, &expected.save(None).unwrap()).unwrap();
             assert_eq!(reads(&mut on_disk(&f.file())), reads(&mut expected));
         }

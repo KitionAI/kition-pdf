@@ -33,7 +33,7 @@ fn font_names(bytes: &[u8]) -> Vec<String> {
 }
 
 fn add_text(doc: &mut PdfDocument, y: u32, text: &str) -> Result<(), String> {
-    doc.execute("page_add_text", json!({ "page": 1, "at": [72, y], "width": 400, "text": text })).map(|_| ()).map_err(|e| e.to_string())
+    doc.execute("page.addText", json!({ "page": 1, "at": [72, y], "width": 400, "text": text })).map(|_| ()).map_err(|e| e.to_string())
 }
 
 #[test]

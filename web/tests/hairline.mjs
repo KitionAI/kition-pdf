@@ -127,13 +127,13 @@ try {
           return execute.apply(this, args)
         }
       }), 'Capture existing engine')
-      const command = await bounded(page.evaluate(() => window.devHost.connection().ai.run([{ command: 'bookmark_list', params: { limit: 1 } }], false)), 'Read-only engine capture')
+      const command = await bounded(page.evaluate(() => window.devHost.connection().ai.run([{ command: 'bookmark.list', params: { limit: 1 } }], false)), 'Read-only engine capture')
       assert.equal(command.completed.length, 1)
       await frame.waitForFunction(() => window.__hairlineEngine && window.__kitionCacheQuiet.pending === 0 && performance.now() - window.__kitionCacheQuiet.lastActivity >= 250)
       const info = await frame.evaluate(() => ({ pages: window.__hairlineEngine.info.inspected.pages.map(item => item.area), dirty: window.__hairlineEngine.info.dirty, dpr: devicePixelRatio }))
       assert.equal(info.pages.length, 1); assert.equal(info.pages[0].width, manifest.pageWidth); assert.equal(info.pages[0].height, manifest.pageHeight)
       assert.equal(info.dirty, false); assert.equal(info.dpr, 1)
-      result.connection = { status: 'passed', freshContext: true, initialConnectionNull: true, openedFilename: fixture.file, captureCommand: 'bookmark_list', ...info }
+      result.connection = { status: 'passed', freshContext: true, initialConnectionNull: true, openedFilename: fixture.file, captureCommand: 'bookmark.list', ...info }
       for (const sample of result.samples) {
         try {
           Object.assign(sample, await bounded(frame.evaluate(async ({ fixture, manifest, scale }) => {

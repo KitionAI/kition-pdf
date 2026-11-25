@@ -1,6 +1,6 @@
 //! Command-level round trips: a new PDF is edited only with engine commands, each edit is checked,
 //! then the file is saved (incrementally, as Kition PDF saves; a redaction rewrites it in full),
-//! reopened from the saved bytes alone, and compared whole: the inspected document (`doc_inspect`:
+//! reopened from the saved bytes alone, and compared whole: the inspected document (`file.inspect`:
 //! pages, annotations, fields, links, outline, metadata), the comments, bookmarks and form fields
 //! as their own commands list them, every page's text, and every page's pixels. A second save of
 //! the reopened file must reopen the same.
@@ -24,7 +24,7 @@ fn new_doc() -> PdfDocument {
 /// What the file keeps. The session's document number, unsaved flag, undo and redo, the file it
 /// was opened from, and the file's size in bytes (an incremental save appends) are not content.
 fn lasting(doc: &mut PdfDocument) -> Value {
-    let mut inspected = run(doc, "doc_inspect", json!({}));
+    let mut inspected = run(doc, "file.inspect", json!({}));
     let object = inspected.as_object_mut().unwrap();
     object.remove("file_size");
     for key in ["dirty", "doc", "path", "undo", "redo"] {
@@ -37,11 +37,11 @@ fn lasting(doc: &mut PdfDocument) -> Value {
     json!({
         "inspect": inspected,
         "summary": summary,
-        "comments": run(doc, "comment_list", json!({})),
-        "bookmarks": run(doc, "bookmark_list", json!({})),
-        "fields": run(doc, "form_fields", json!({})),
-        "links": run(doc, "link_list", json!({})),
-        "text": run(doc, "text_extract", json!({})),
+        "comments": run(doc, "comment.list", json!({})),
+        "bookmarks": run(doc, "bookmark.list", json!({})),
+        "fields": run(doc, "form.listFields", json!({})),
+        "links": run(doc, "link.list", json!({})),
+        "text": run(doc, "text.extract", json!({})),
     })
 }
 
@@ -93,15 +93,15 @@ fn assert_round_trip(doc: &mut PdfDocument) {
 #[test]
 fn pages_survive_save_and_reopen() {
     let mut doc = new_doc();
-    run(&mut doc, "page_add_text", json!({ "page": 1, "text": "First", "at": [20, 40], "size": 18 }));
-    run(&mut doc, "page_insert_blank", json!({ "at": 2, "width": 300, "height": 200 }));
-    run(&mut doc, "page_add_text", json!({ "page": 2, "text": "Second", "at": [20, 40], "size": 18 }));
-    run(&mut doc, "page_duplicate", json!({ "pages": [1] }));
-    run(&mut doc, "page_rotate", json!({ "pages": [2], "degrees": 90 }));
-    run(&mut doc, "page_move", json!({ "pages": [3], "to": 1 }));
-    run(&mut doc, "page_set_box", json!({ "pages": [1], "box": "crop", "margins": [10, 10, 10, 10] }));
-    run(&mut doc, "page_number", json!({ "from": 1, "to": 3, "style": "lower-roman", "prefix": "p-" }));
-    let pages = run(&mut doc, "doc_inspect", json!({}))["pages"].clone();
+    run(&mut doc, "page.addText", json!({ "page": 1, "text": "First", "at": [20, 40], "size": 18 }));
+    run(&mut doc, "page.insertBlank", json!({ "at": 2, "width": 300, "height": 200 }));
+    run(&mut doc, "page.addText", json!({ "page": 2, "text": "Second", "at": [20, 40], "size": 18 }));
+    run(&mut doc, "page.duplicate", json!({ "pages": [1] }));
+    run(&mut doc, "page.rotate", json!({ "pages": [2], "degrees": 90 }));
+    run(&mut doc, "page.move", json!({ "pages": [3], "to": 1 }));
+    run(&mut doc, "page.setBox", json!({ "pages": [1], "box": "crop", "margins": [10, 10, 10, 10] }));
+    run(&mut doc, "page.number", json!({ "from": 1, "to": 3, "style": "lower-roman", "prefix": "p-" }));
+    let pages = run(&mut doc, "file.inspect", json!({}))["pages"].clone();
     assert_eq!(pages.as_array().unwrap().len(), 3, "{pages}");
     assert_eq!(pages[0]["label"], "p-i", "{pages}");
     assert_round_trip(&mut doc);
@@ -110,16 +110,16 @@ fn pages_survive_save_and_reopen() {
 #[test]
 fn comments_and_replies_survive_save_and_reopen() {
     let mut doc = new_doc();
-    run(&mut doc, "page_add_text", json!({ "page": 1, "text": "Review this sentence", "at": [20, 40], "size": 14 }));
+    run(&mut doc, "page.addText", json!({ "page": 1, "text": "Review this sentence", "at": [20, 40], "size": 14 }));
     run(
         &mut doc,
-        "comment_add",
+        "comment.add",
         json!({ "page": 1, "type": "note", "at": [30, 30], "contents": "Check 中文 ✓", "author": "Ana", "color": "yellow" }),
     );
-    run(&mut doc, "comment_add", json!({ "page": 1, "type": "highlight", "find": "this sentence", "author": "Ana" }));
-    run(&mut doc, "comment_reply", json!({ "page": 1, "index": 1, "text": "Done", "author": "Ben" }));
-    run(&mut doc, "comment_set_status", json!({ "page": 1, "index": 1, "status": "completed", "author": "Ben" }));
-    let comments = run(&mut doc, "comment_list", json!({}));
+    run(&mut doc, "comment.add", json!({ "page": 1, "type": "highlight", "find": "this sentence", "author": "Ana" }));
+    run(&mut doc, "comment.reply", json!({ "page": 1, "index": 1, "text": "Done", "author": "Ben" }));
+    run(&mut doc, "comment.setStatus", json!({ "page": 1, "index": 1, "status": "completed", "author": "Ben" }));
+    let comments = run(&mut doc, "comment.list", json!({}));
     assert!(comments.to_string().contains("Check 中文 ✓"), "{comments}");
     assert_round_trip(&mut doc);
 }
@@ -127,25 +127,25 @@ fn comments_and_replies_survive_save_and_reopen() {
 #[test]
 fn bookmarks_survive_save_and_reopen() {
     let mut doc = new_doc();
-    run(&mut doc, "page_insert_blank", json!({ "at": 2 }));
-    run(&mut doc, "bookmark_add", json!({ "title": "Intro 中文", "page": 1 }));
-    run(&mut doc, "bookmark_add", json!({ "title": "Details", "page": 2, "parent": [1] }));
-    run(&mut doc, "bookmark_add", json!({ "title": "Appendix ✓", "page": 2 }));
-    let bookmarks = run(&mut doc, "bookmark_list", json!({}));
+    run(&mut doc, "page.insertBlank", json!({ "at": 2 }));
+    run(&mut doc, "bookmark.add", json!({ "title": "Intro 中文", "page": 1 }));
+    run(&mut doc, "bookmark.add", json!({ "title": "Details", "page": 2, "parent": [1] }));
+    run(&mut doc, "bookmark.add", json!({ "title": "Appendix ✓", "page": 2 }));
+    let bookmarks = run(&mut doc, "bookmark.list", json!({}));
     assert!(bookmarks.to_string().contains("Details"), "{bookmarks}");
     let mut reopened = reopen(&doc);
-    assert_eq!(run(&mut reopened, "bookmark_list", json!({})), bookmarks, "the bookmarks themselves survive");
+    assert_eq!(run(&mut reopened, "bookmark.list", json!({})), bookmarks, "the bookmarks themselves survive");
     assert_round_trip(&mut doc);
 }
 
 #[test]
 fn form_fields_and_values_survive_save_and_reopen() {
     let mut doc = new_doc();
-    run(&mut doc, "form_add_field", json!({ "page": 1, "type": "text", "name": "name", "rect": [20, 20, 160, 40] }));
-    run(&mut doc, "form_add_field", json!({ "page": 1, "type": "checkbox", "name": "agree", "rect": [20, 60, 36, 76] }));
-    run(&mut doc, "form_add_field", json!({ "page": 1, "type": "combo", "name": "size", "rect": [20, 90, 120, 110], "options": ["S", "M", "L"] }));
-    run(&mut doc, "form_fill", json!({ "values": { "name": "Ana 中文", "agree": true, "size": "M" } }));
-    let fields = run(&mut doc, "form_fields", json!({}));
+    run(&mut doc, "form.addField", json!({ "page": 1, "type": "text", "name": "name", "rect": [20, 20, 160, 40] }));
+    run(&mut doc, "form.addField", json!({ "page": 1, "type": "checkbox", "name": "agree", "rect": [20, 60, 36, 76] }));
+    run(&mut doc, "form.addField", json!({ "page": 1, "type": "combo", "name": "size", "rect": [20, 90, 120, 110], "options": ["S", "M", "L"] }));
+    run(&mut doc, "form.fill", json!({ "values": { "name": "Ana 中文", "agree": true, "size": "M" } }));
+    let fields = run(&mut doc, "form.listFields", json!({}));
     assert!(fields.to_string().contains("Ana 中文"), "{fields}");
     assert_round_trip(&mut doc);
 }
@@ -153,25 +153,25 @@ fn form_fields_and_values_survive_save_and_reopen() {
 #[test]
 fn links_and_text_edits_survive_save_and_reopen() {
     let mut doc = new_doc();
-    run(&mut doc, "page_insert_blank", json!({ "at": 2 }));
-    run(&mut doc, "page_add_text", json!({ "page": 1, "text": "Kition PDF text", "at": [20, 40], "size": 16 }));
-    run(&mut doc, "text_edit", json!({ "page": 1, "line": 1, "text": "Kition PDF edited", "bold": true, "color": "#aa2200" }));
-    run(&mut doc, "link_add", json!({ "page": 1, "rect": [20, 60, 120, 80], "url": "https://kition.ai" }));
-    run(&mut doc, "link_add", json!({ "page": 1, "rect": [20, 90, 120, 110], "to_page": 2 }));
-    let text = run(&mut doc, "text_extract", json!({ "pages": [1] }));
+    run(&mut doc, "page.insertBlank", json!({ "at": 2 }));
+    run(&mut doc, "page.addText", json!({ "page": 1, "text": "Kition PDF text", "at": [20, 40], "size": 16 }));
+    run(&mut doc, "text.edit", json!({ "page": 1, "line": 1, "text": "Kition PDF edited", "bold": true, "color": "#aa2200" }));
+    run(&mut doc, "link.add", json!({ "page": 1, "rect": [20, 60, 120, 80], "url": "https://kition.ai" }));
+    run(&mut doc, "link.add", json!({ "page": 1, "rect": [20, 90, 120, 110], "to_page": 2 }));
+    let text = run(&mut doc, "text.extract", json!({ "pages": [1] }));
     assert!(text.to_string().contains("Kition PDF edited"), "{text}");
-    assert_eq!(run(&mut doc, "link_list", json!({}))["links"].as_array().map_or(0, Vec::len), 2);
+    assert_eq!(run(&mut doc, "link.list", json!({}))["links"].as_array().map_or(0, Vec::len), 2);
     assert_round_trip(&mut doc);
 }
 
 #[test]
 fn applied_redactions_survive_a_full_rewrite_and_reopen() {
     let mut doc = new_doc();
-    run(&mut doc, "page_add_text", json!({ "page": 1, "text": "Public line", "at": [20, 40], "size": 14 }));
-    run(&mut doc, "page_add_text", json!({ "page": 1, "text": "Secret 4111", "at": [20, 80], "size": 14 }));
-    run(&mut doc, "redact_mark", json!({ "find": "Secret 4111", "fill": "#000000" }));
-    run(&mut doc, "redact_apply", json!({}));
-    let text = run(&mut doc, "text_extract", json!({}));
+    run(&mut doc, "page.addText", json!({ "page": 1, "text": "Public line", "at": [20, 40], "size": 14 }));
+    run(&mut doc, "page.addText", json!({ "page": 1, "text": "Secret 4111", "at": [20, 80], "size": 14 }));
+    run(&mut doc, "redaction.mark", json!({ "find": "Secret 4111", "fill": "#000000" }));
+    run(&mut doc, "redaction.apply", json!({}));
+    let text = run(&mut doc, "text.extract", json!({}));
     assert!(!text.to_string().contains("Secret"), "the redacted text is gone: {text}");
     assert!(text.to_string().contains("Public line"), "{text}");
     assert_round_trip(&mut doc);

@@ -16,8 +16,8 @@ items are disabled for grouped Form artwork. The tool does not ungroup Forms, ed
 individual internal elements, select arbitrary ungrouped vector paths, or edit inline
 images (`BI`/`ID`/`EI`). A Form's bounding box may include whitespace.
 
-For automation, `page_images` lists both kinds with `kind: "image"` or `kind: "form"`.
+For automation, `page.listImages` lists both kinds with `kind: "image"` or `kind: "form"`.
 Forms have `pixels: [0, 0]`, since they have no single bitmap resolution. Use the returned
-number with `image_edit` (move, rotate, flip_horizontal, flip_vertical, delete).
-Coordinates are top-left-origin page points. `image_save` and `image_edit`'s replace action
+number with `image.edit` (move, rotate, flip_horizontal, flip_vertical, delete).
+Coordinates are top-left-origin page points. `image_save` and `image.edit`'s replace action
 return a clear error for Form artwork.

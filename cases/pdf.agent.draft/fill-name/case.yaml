@@ -18,8 +18,8 @@ steps:
           field with "Ada Lovelace".
         - Sorry, in the same draft the name should be "Ada King".
       max_turns: 20
-  - run: { path: form.pdf, args: { draft: true, save: false }, steps: [{ command: form_fields }], as: draft }
-  - run: { path: form.pdf, args: { save: false }, steps: [{ command: form_fields }], as: after }
+  - run: { path: form.pdf, args: { draft: true, save: false }, steps: [{ command: form.listFields }], as: draft }
+  - run: { path: form.pdf, args: { save: false }, steps: [{ command: form.listFields }], as: after }
 expected:
   - actual: out:draft
     compare: values
@@ -32,8 +32,8 @@ expected:
       completed.0.result.fields: { any: { name: name, value: null } }
 solution:
   - tool: pdf_run
-    args: { path: form.pdf, draft: true, steps: [{ command: form_fill, params: { values: { name: Ada Lovelace } } }] }
+    args: { path: form.pdf, draft: true, steps: [{ command: form.fill, params: { values: { name: Ada Lovelace } } }] }
   - tool: pdf_run
-    args: { path: form.pdf, draft: true, steps: [{ command: form_fill, params: { values: { name: Ada King } } }] }
+    args: { path: form.pdf, draft: true, steps: [{ command: form.fill, params: { values: { name: Ada King } } }] }
 since: "2026-11-17"
 timeout_s: 600

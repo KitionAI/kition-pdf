@@ -169,7 +169,7 @@ export async function selectionLifecycle(harness) {
   await place(1, 1, 1)
   await run(11, async () => {
     await select(); await hold(); await drag(partial); await held()
-    await page.evaluate(() => window.devHost.connection().ai.run([{ command: 'bookmark_add', params: { page: 1, title: 'Original selection revision check' } }], false))
+    await page.evaluate(() => window.devHost.connection().ai.run([{ command: 'bookmark.add', params: { page: 1, title: 'Original selection revision check' } }], false))
     await none(); await disabled(); await release(); await quiet(); await settle(); await none(); await disabled()
   })
   await run(13, async () => {

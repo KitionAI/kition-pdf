@@ -154,7 +154,7 @@ impl Automation {
     fn comment_target(&self, a: &Args) -> Result<(usize, usize)> {
         let all = self.comments(a)?;
         if let Some(id) = a.opt_str("id")? {
-            // The comment's id as `comment_list` gives it: its `/NM`, or for one without, the id
+            // The comment's id as `comment.list` gives it: its `/NM`, or for one without, the id
             // the object model gives it (`kition_pdf_engine::projection`).
             let objects = self.doc(a)?.projection().unwrap_or_default();
             if let Some((page, _, comment)) = objects.comment(id) {

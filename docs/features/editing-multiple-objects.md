@@ -50,14 +50,14 @@ re-list after changes; the automation generation guard detects stale references 
 
 ## Tool calls
 
-`object_list` returns a document `generation` and items with
+`object.list` returns a document `generation` and items with
 `kind` (`added`, `text`, or `image`), 1-based `index`, `type`, displayed `rect`, and optional `text`.
 Treat those references as belonging to that generation and pass it back when moving:
 
 ```json
 [
   {"tool":"doc_open","args":{"path":"input.pdf"}},
-  {"tool":"object_list","args":{"doc":1,"page":1}}
+  {"tool":"object.list","args":{"doc":1,"page":1}}
 ]
 ```
 
@@ -66,7 +66,7 @@ session:
 
 ```json
 [
-  {"tool":"object_move","args":{
+  {"tool":"object.move","args":{
     "doc":1,"page":1,"generation":0,
     "objects":[{"kind":"text","index":1},{"kind":"image","index":1}],
     "offset":[24,18]

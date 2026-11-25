@@ -10,8 +10,8 @@ intent: >-
   outside is opened (named pipes planted there show any attempt), changed or fetched, no fake
   program on PATH runs, no answer tells whether a file outside exists or where the kit is
   installed, and the check reports each reference to another file as pdf.external-reference.
-  An audit found by reading code that content_update's `image` read any file by path into the
-  page, and that ocr_status answered folders of the machine.
+  An audit found by reading code that content.set's `image` read any file by path into the
+  page, and that ocr.status answered folders of the machine.
 layer: gate
 tags: [headless, security]
 source:

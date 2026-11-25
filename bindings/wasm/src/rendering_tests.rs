@@ -97,9 +97,9 @@ fn reduced_large_spans_keep_far_edges_and_match_pinned_integer_bins() {
 #[test]
 fn area_reduction_preserves_alpha_pasteboard_and_cross_page_bins() {
     let mut doc = PdfDocument::create("Alpha.pdf", 64, 48).unwrap();
-    doc.execute("page_insert_blank", json!({ "at": 2, "width": 64, "height": 48 })).unwrap();
-    doc.execute("doc_background", json!({ "pages": [1], "color": "#20c040" })).unwrap();
-    doc.execute("doc_background", json!({ "pages": [2], "color": "#2040c0" })).unwrap();
+    doc.execute("page.insertBlank", json!({ "at": 2, "width": 64, "height": 48 })).unwrap();
+    doc.execute("file.setBackground", json!({ "pages": [1], "color": "#20c040" })).unwrap();
+    doc.execute("file.setBackground", json!({ "pages": [2], "color": "#2040c0" })).unwrap();
     // The canvas stores premultiplied colors; reduction averages after straight conversion.
     doc.pasteboard = [40, 30, 20, 80];
     let full = doc.full(-10, -10, 170, 210).unwrap();
@@ -116,7 +116,7 @@ fn area_reduction_preserves_alpha_pasteboard_and_cross_page_bins() {
 #[test]
 fn bounded_failures_and_successful_tiles_preserve_cache_revision_and_save() {
     let mut doc = fixture();
-    doc.execute("comment_add", json!({ "page": 3, "type": "note", "contents": "Keep edit", "at": [40, 40] })).unwrap();
+    doc.execute("comment.add", json!({ "page": 3, "type": "note", "contents": "Keep edit", "at": [40, 40] })).unwrap();
     let areas = doc.areas();
     let normal = areas[2];
     let old = doc.render(normal.x + 10.0, normal.y + 10.0, 1.0, 16, 16).unwrap();
@@ -142,7 +142,7 @@ fn bounded_failures_and_successful_tiles_preserve_cache_revision_and_save() {
     assert!(Arc::ptr_eq(&doc.doc().unwrap().display, &display_before), "rendering must retain the immutable display");
     assert!(doc.saved.borrow().as_ref().is_some_and(|bytes| Arc::ptr_eq(bytes, &prepared_before)), "rendering must retain the prepared save");
     assert_eq!(doc.saved.borrow().as_deref().map(Vec::as_slice), Some(saved.as_slice()), "prepared save bytes remain unchanged");
-    doc.execute("page_rotate", json!({ "pages": [1], "degrees": 180 })).unwrap();
+    doc.execute("page.rotate", json!({ "pages": [1], "degrees": 180 })).unwrap();
     let edited = doc.render(areas[0].x + 20.0, areas[0].y + 20.0, 1.0, 16, 16).unwrap();
     let reopened = PdfDocument::open("Edited.pdf", &doc.save(None).unwrap()).unwrap();
     assert_eq!(edited, reopened.render(areas[0].x + 20.0, areas[0].y + 20.0, 1.0, 16, 16).unwrap());

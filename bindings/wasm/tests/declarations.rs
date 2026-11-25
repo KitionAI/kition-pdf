@@ -45,44 +45,44 @@ const ADDRESSES: &[&str] = &[
 
 /// Address parameters whose other value changes nothing a write holds, and why.
 const ADDRESS_ALLOW: &[(&str, &str, &str)] = &[
-    ("bookmark_add", "position", "the write holds every child of the parent (titles and pages), so any position among them"),
-    ("page_add_text", "at", "a point in page coordinates: held through the page's geometry with `page`"),
-    ("measure_scale", "at", "a point in page coordinates: held through the page's geometry with `page`"),
-    ("measure_scale", "name", "the new scale's own name: it names nothing in the document"),
-    ("comment_add", "at", "a point in page coordinates: held through the page's geometry with `page`"),
-    ("comment_add", "from", "a point in page coordinates (a line's start): held through the page's geometry"),
-    ("comment_add", "to", "a point in page coordinates (a line's end): held through the page's geometry"),
-    ("fill_sign_add", "at", "a point in page coordinates: held through the page's geometry with `page`"),
-    ("measure_distance", "points", "points in page coordinates: held through the page's geometry"),
-    ("redact_mark", "page", "read only with `rect` (C8-pdf-3): without, `pages` (or every page) is searched or marked"),
+    ("bookmark.add", "position", "the write holds every child of the parent (titles and pages), so any position among them"),
+    ("page.addText", "at", "a point in page coordinates: held through the page's geometry with `page`"),
+    ("measure.setScale", "at", "a point in page coordinates: held through the page's geometry with `page`"),
+    ("measure.setScale", "name", "the new scale's own name: it names nothing in the document"),
+    ("comment.add", "at", "a point in page coordinates: held through the page's geometry with `page`"),
+    ("comment.add", "from", "a point in page coordinates (a line's start): held through the page's geometry"),
+    ("comment.add", "to", "a point in page coordinates (a line's end): held through the page's geometry"),
+    ("fillSign.add", "at", "a point in page coordinates: held through the page's geometry with `page`"),
+    ("measure.distance", "points", "points in page coordinates: held through the page's geometry"),
+    ("redaction.mark", "page", "read only with `rect` (C8-pdf-3): without, `pages` (or every page) is searched or marked"),
     (
-        "link_edit",
+        "link.edit",
         "index",
         "an index naming no link holds the window of the page's links where one at it would be, the same for every place between two links",
     ),
     (
-        "link_delete",
+        "link.delete",
         "index",
         "an index naming no link holds the window of the page's links where one at it would be, the same for every place between two links",
     ),
-    ("js_run", "field", "only the event's target, which is not looked up: the write holds every field"),
-    ("js_set_document_script", "name", "the write holds every document script: it rewrites the whole tree of them"),
-    ("doc_create", "from", "makes another document: the write holds nothing of this one"),
-    ("doc_create", "name", "makes another document: the write holds nothing of this one"),
-    ("doc_create", "pages", "makes another document: the write holds nothing of this one"),
+    ("script.run", "field", "only the event's target, which is not looked up: the write holds every field"),
+    ("script.set", "name", "the write holds every document script: it rewrites the whole tree of them"),
+    ("file.new", "from", "makes another document: the write holds nothing of this one"),
+    ("file.new", "name", "makes another document: the write holds nothing of this one"),
+    ("file.new", "pages", "makes another document: the write holds nothing of this one"),
 ];
 
 pub fn fixture() -> PdfDocument {
     let mut doc = PdfDocument::create("Report.pdf", 612, 792).unwrap();
     for at in 2..=3 {
-        doc.execute("page_insert_blank", json!({ "at": at })).unwrap();
+        doc.execute("page.insertBlank", json!({ "at": at })).unwrap();
     }
     for n in 1..=3 {
-        doc.execute("page_add_text", json!({ "page": n, "at": [72, 60], "text": format!("Page {n}") })).unwrap();
-        doc.execute("comment_add", json!({ "page": n, "type": "note", "at": [100, 100], "contents": format!("note {n}") })).unwrap();
-        doc.execute("form_add_field", json!({ "page": n, "type": "text", "rect": [72, 600, 300, 624], "name": format!("F{n}") })).unwrap();
-        doc.execute("bookmark_add", json!({ "page": n, "title": format!("B{n}") })).unwrap();
-        doc.execute("link_add", json!({ "page": n, "rect": [100, 300, 200, 320], "url": format!("https://example.com/{n}") })).unwrap();
+        doc.execute("page.addText", json!({ "page": n, "at": [72, 60], "text": format!("Page {n}") })).unwrap();
+        doc.execute("comment.add", json!({ "page": n, "type": "note", "at": [100, 100], "contents": format!("note {n}") })).unwrap();
+        doc.execute("form.addField", json!({ "page": n, "type": "text", "rect": [72, 600, 300, 624], "name": format!("F{n}") })).unwrap();
+        doc.execute("bookmark.add", json!({ "page": n, "title": format!("B{n}") })).unwrap();
+        doc.execute("link.add", json!({ "page": n, "rect": [100, 300, 200, 320], "url": format!("https://example.com/{n}") })).unwrap();
     }
     let bytes = doc.save(None).unwrap();
     PdfDocument::open("Report.pdf", &bytes).unwrap()
@@ -92,7 +92,7 @@ pub fn fixture() -> PdfDocument {
 fn every_integer_id_parameter_is_marked() {
     let commands = fixture().commands();
     // Reads hold nothing, so they are not marked (a place on a read would hold the objects there).
-    let allow = [("comment_image_preview", "page")];
+    let allow = [("comment.previewImage", "page")];
     kition_kit::testing::check_id_params(&commands, &allow).unwrap_or_else(|problems| panic!("{problems:#?}"));
 }
 
@@ -119,10 +119,10 @@ fn two_values(doc: &PdfDocument, command: &str, name: &str, node: &Value) -> Opt
         "values" => with(name, json!({ "F1": "v" }), json!({ "F2": "v" }), json!({})),
         "objects" => with(name, json!([{ "index": 1, "kind": "text" }]), json!([{ "index": 2, "kind": "text" }]), page_base),
         "parent" => with(name, json!([]), json!([1]), json!({})),
-        "from" if command == "page_number" => with(name, json!(1), json!(2), json!({"to":3})),
-        "to" if command == "page_number" => with(name, json!(1), json!(2), json!({"from":1})),
-        "to" if command == "page_move" => with(name, json!(1), json!(3), json!({ "pages": [2] })),
-        "at" if command == "page_insert_blank" => with(name, json!(1), json!(3), json!({})),
+        "from" if command == "page.number" => with(name, json!(1), json!(2), json!({"to":3})),
+        "to" if command == "page.number" => with(name, json!(1), json!(2), json!({"from":1})),
+        "to" if command == "page.move" => with(name, json!(1), json!(3), json!({ "pages": [2] })),
+        "at" if command == "page.insertBlank" => with(name, json!(1), json!(3), json!({})),
         "name" => with(name, json!("A"), json!("B"), json!({})),
         _ => match node["type"].as_str() {
             Some("integer") => with(name, json!(1), json!(2), page_base),
@@ -176,34 +176,34 @@ fn the_kit_keeps_no_editor_state_and_no_command_reads_one() {
 /// Writes with parameters valid on [`fixture`].
 fn writes() -> Vec<(&'static str, Value)> {
     vec![
-        ("comment_edit", json!({ "page": 2, "index": 1, "contents": "x" })),
-        ("comment_edit", json!({ "page": 2, "index": 1, "color": "blue" })),
-        ("comment_edit", json!({ "page": 2, "index": 1, "move": [10, 10] })),
-        ("comment_set_status", json!({ "page": 1, "index": 1, "status": "accepted" })),
-        ("comment_mark", json!({ "page": 1, "index": 1, "marked": true })),
-        ("comment_lock", json!({ "page": 3, "index": 1, "locked": true })),
-        ("comment_delete", json!({ "page": 3, "index": 1 })),
-        ("comment_reply", json!({ "page": 2, "index": 1, "text": "r" })),
-        ("form_fill", json!({ "values": { "F2": "x" } })),
-        ("form_set_props", json!({ "field": "F3", "tooltip": "t" })),
-        ("form_set_props", json!({ "field": "F1", "required": true })),
-        ("form_delete_field", json!({ "field": "F1" })),
-        ("page_rotate", json!({ "pages": [2], "degrees": 90 })),
-        ("page_delete", json!({ "pages": [1] })),
-        ("page_move", json!({ "pages": [3], "to": 1 })),
-        ("page_set_box", json!({ "pages": [2], "box": "crop", "margins": [10, 10, 10, 10] })),
-        ("page_duplicate", json!({ "pages": [2] })),
-        ("page_insert_blank", json!({ "at": 2 })),
-        ("content_update", json!({ "page": 1, "index": 1, "text": "y" })),
-        ("content_delete", json!({ "page": 2, "index": 1 })),
-        ("link_edit", json!({ "page": 1, "index": 3, "url": "https://example.com/z" })),
-        ("link_delete", json!({ "page": 2, "index": 3 })),
-        ("bookmark_add", json!({ "page": 1, "title": "New", "position": 1 })),
-        ("comment_add", json!({ "page": 2, "type": "note", "at": [300, 300], "contents": "n" })),
-        ("page_add_text", json!({ "page": 3, "at": [72, 200], "text": "t" })),
-        ("form_add_field", json!({ "page": 1, "type": "text", "rect": [72, 400, 300, 424], "name": "New" })),
-        ("doc_initial_view", json!({ "layout": "single" })),
-        ("page_number", json!({ "from": 1, "to": 2, "style": "upper-roman" })),
+        ("comment.edit", json!({ "page": 2, "index": 1, "contents": "x" })),
+        ("comment.edit", json!({ "page": 2, "index": 1, "color": "blue" })),
+        ("comment.edit", json!({ "page": 2, "index": 1, "move": [10, 10] })),
+        ("comment.setStatus", json!({ "page": 1, "index": 1, "status": "accepted" })),
+        ("comment.mark", json!({ "page": 1, "index": 1, "marked": true })),
+        ("comment.lock", json!({ "page": 3, "index": 1, "locked": true })),
+        ("comment.delete", json!({ "page": 3, "index": 1 })),
+        ("comment.reply", json!({ "page": 2, "index": 1, "text": "r" })),
+        ("form.fill", json!({ "values": { "F2": "x" } })),
+        ("form.setProps", json!({ "field": "F3", "tooltip": "t" })),
+        ("form.setProps", json!({ "field": "F1", "required": true })),
+        ("form.deleteField", json!({ "field": "F1" })),
+        ("page.rotate", json!({ "pages": [2], "degrees": 90 })),
+        ("page.delete", json!({ "pages": [1] })),
+        ("page.move", json!({ "pages": [3], "to": 1 })),
+        ("page.setBox", json!({ "pages": [2], "box": "crop", "margins": [10, 10, 10, 10] })),
+        ("page.duplicate", json!({ "pages": [2] })),
+        ("page.insertBlank", json!({ "at": 2 })),
+        ("content.set", json!({ "page": 1, "index": 1, "text": "y" })),
+        ("content.delete", json!({ "page": 2, "index": 1 })),
+        ("link.edit", json!({ "page": 1, "index": 3, "url": "https://example.com/z" })),
+        ("link.delete", json!({ "page": 2, "index": 3 })),
+        ("bookmark.add", json!({ "page": 1, "title": "New", "position": 1 })),
+        ("comment.add", json!({ "page": 2, "type": "note", "at": [300, 300], "contents": "n" })),
+        ("page.addText", json!({ "page": 3, "at": [72, 200], "text": "t" })),
+        ("form.addField", json!({ "page": 1, "type": "text", "rect": [72, 400, 300, 424], "name": "New" })),
+        ("file.setInitialView", json!({ "layout": "single" })),
+        ("page.number", json!({ "from": 1, "to": 2, "style": "upper-roman" })),
     ]
 }
 
@@ -261,7 +261,7 @@ fn a_seeded_sample_of_writes_holds_every_object_it_changes() {
         let mut params = params;
         if command.starts_with("link_") {
             // A link's index counts every annotation of its page: read it.
-            let links = doc.execute("link_list", json!({})).unwrap();
+            let links = doc.execute("link.list", json!({})).unwrap();
             let link = links["links"].as_array().unwrap().iter().find(|link| link["page"] == params["page"]).unwrap().clone();
             params["index"] = link["index"].clone();
         }
@@ -310,7 +310,7 @@ fn a_seeded_sample_of_writes_holds_every_object_it_changes() {
                     changed_any = true;
                     let holds = premise.and_then(|premise| premise.fields.clone());
                     // Check the supplied output as well as the hold on the value replaced.
-                    if command == "comment_edit"
+                    if command == "comment.edit"
                         && id
                             == before
                                 .comment_at(params["page"].as_u64().unwrap_or(0), params["index"].as_u64().unwrap_or(0))
@@ -357,37 +357,37 @@ fn expected() -> Vec<Expected> {
     const G: &[&str] = &["width", "height", "rotation", "boxes"];
     vec![
         // comments.rs comment_edit: comment_target (id, or page + index), then each set member.
-        ("comment_edit", json!({ "page": 2, "index": 1, "contents": "x" }), &[("page:2", &["*"]), ("comment:2/1", &["contents", "type"])], &[]),
-        ("comment_edit", json!({ "page": 2, "index": 1, "move": [5, 5] }), &[("page:2", G), ("comment:2/1", &["rect"])], &[]),
+        ("comment.edit", json!({ "page": 2, "index": 1, "contents": "x" }), &[("page:2", &["*"]), ("comment:2/1", &["contents", "type"])], &[]),
+        ("comment.edit", json!({ "page": 2, "index": 1, "move": [5, 5] }), &[("page:2", G), ("comment:2/1", &["rect"])], &[]),
         (
-            "comment_edit",
+            "comment.edit",
             json!({ "page": 1, "index": 1, "opacity": 0.5, "width": 2 }),
             &[("page:1", &["*"]), ("comment:1/1", &["opacity", "width"])],
             &[],
         ),
         (
-            "comment_set_status",
+            "comment.setStatus",
             json!({ "page": 1, "index": 1, "status": "accepted" }),
             &[("page:1", &["*"]), ("comment:1/1", &["status", "rect", "color"])],
             &[],
         ),
-        ("comment_mark", json!({ "page": 3, "index": 1, "marked": true }), &[("page:3", &["*"]), ("comment:3/1", &["marked", "rect"])], &[]),
-        ("comment_lock", json!({ "page": 3, "index": 1, "locked": true }), &[("page:3", &["*"]), ("comment:3/1", &["locked"])], &[]),
-        ("comment_delete", json!({ "page": 3, "index": 1 }), &[("page:3", &["*"]), ("comment:3/1", &["*"])], &[]),
-        ("comment_reply", json!({ "page": 2, "index": 1, "text": "r" }), &[("page:2", &["*"]), ("comment:2/1", &["rect", "color"])], &[]),
+        ("comment.mark", json!({ "page": 3, "index": 1, "marked": true }), &[("page:3", &["*"]), ("comment:3/1", &["marked", "rect"])], &[]),
+        ("comment.lock", json!({ "page": 3, "index": 1, "locked": true }), &[("page:3", &["*"]), ("comment:3/1", &["locked"])], &[]),
+        ("comment.delete", json!({ "page": 3, "index": 1 }), &[("page:3", &["*"]), ("comment:3/1", &["*"])], &[]),
+        ("comment.reply", json!({ "page": 2, "index": 1, "text": "r" }), &[("page:2", &["*"]), ("comment:2/1", &["rect", "color"])], &[]),
         // comments.rs comment_add: the page, a point converted through its geometry; `find` reads its text.
-        ("comment_add", json!({ "page": 2, "type": "note", "at": [300, 300], "contents": "n" }), &[("page:2", G)], &[]),
-        ("comment_add", json!({ "page": 1, "type": "highlight", "find": "Page" }), &[("page:1", G)], &["text"]),
+        ("comment.add", json!({ "page": 2, "type": "note", "at": [300, 300], "contents": "n" }), &[("page:2", G)], &[]),
+        ("comment.add", json!({ "page": 1, "type": "highlight", "find": "Page" }), &[("page:1", G)], &["text"]),
         // forms.rs form_fill: each named field's value (and the check box states showing it).
         (
-            "form_fill",
+            "form.fill",
             json!({ "values": { "F2": "x" } }),
             &[("field:F2", &["value", "type", "maxLength", "actions", "appearance", "align", "name"])],
             &["calculations", "fill-inputs"],
         ),
-        ("form_reset", json!({ "fields": ["F1"] }), &[("field:F1", &["value", "default", "widgets", "name"])], &["calculations"]),
+        ("form.reset", json!({ "fields": ["F1"] }), &[("field:F1", &["value", "default", "widgets", "name"])], &["calculations"]),
         (
-            "form_reset",
+            "form.reset",
             json!({}),
             &[
                 ("field:F1", &["value", "default", "widgets", "name"]),
@@ -396,48 +396,48 @@ fn expected() -> Vec<Expected> {
             ],
             &["calculations"],
         ),
-        ("form_set_props", json!({ "field": "F3", "tooltip": "t" }), &[("field:F3", &["tooltip", "name"])], &[]),
-        ("form_set_props", json!({ "field": "F1", "required": true }), &[("field:F1", &["flags", "name"])], &[]),
-        ("form_set_props", json!({ "field": "F2", "max_length": 5 }), &[("field:F2", &["maxLength", "name"])], &[]),
-        ("form_delete_field", json!({ "field": "F1" }), &[("field:F1", &["*"])], &[]),
-        ("form_add_field", json!({ "page": 1, "type": "text", "rect": [72, 400, 300, 424], "name": "New" }), &[("page:1", G)], &["field"]),
-        ("form_set_script", json!({ "field": "F1", "event": "calculate", "script": "1" }), &[("field:F1", &["actions", "name"])], &[]),
+        ("form.setProps", json!({ "field": "F3", "tooltip": "t" }), &[("field:F3", &["tooltip", "name"])], &[]),
+        ("form.setProps", json!({ "field": "F1", "required": true }), &[("field:F1", &["flags", "name"])], &[]),
+        ("form.setProps", json!({ "field": "F2", "max_length": 5 }), &[("field:F2", &["maxLength", "name"])], &[]),
+        ("form.deleteField", json!({ "field": "F1" }), &[("field:F1", &["*"])], &[]),
+        ("form.addField", json!({ "page": 1, "type": "text", "rect": [72, 400, 300, 424], "name": "New" }), &[("page:1", G)], &["field"]),
+        ("form.setScript", json!({ "field": "F1", "event": "calculate", "script": "1" }), &[("field:F1", &["actions", "name"])], &[]),
         // lib.rs page tools: the pages named by number.
-        ("page_rotate", json!({ "pages": [2], "degrees": 90 }), &[("page:2", &["rotation"])], &[]),
-        ("page_delete", json!({ "pages": [1] }), &[("page:1", &["*"])], &[]),
-        ("page_duplicate", json!({ "pages": [2] }), &[("page:2", &["*"])], &[]),
-        ("page_move", json!({ "pages": [3], "to": 1 }), &[("page:3", &["*"]), ("page:1", &["*"])], &[]),
+        ("page.rotate", json!({ "pages": [2], "degrees": 90 }), &[("page:2", &["rotation"])], &[]),
+        ("page.delete", json!({ "pages": [1] }), &[("page:1", &["*"])], &[]),
+        ("page.duplicate", json!({ "pages": [2] }), &[("page:2", &["*"])], &[]),
+        ("page.move", json!({ "pages": [3], "to": 1 }), &[("page:3", &["*"]), ("page:1", &["*"])], &[]),
         // lib.rs insert_blank: without a size, the page before's size.
-        ("page_insert_blank", json!({ "at": 2 }), &[("page:1", &["*", "width", "height"]), ("page:2", &["*"])], &[]),
-        ("page_set_box", json!({ "pages": [2], "box": "crop", "margins": [10, 10, 10, 10] }), &[("page:2", G)], &[]),
-        ("page_add_text", json!({ "page": 3, "at": [72, 200], "text": "t" }), &[("page:3", G)], &[]),
+        ("page.insertBlank", json!({ "at": 2 }), &[("page:1", &["*", "width", "height"]), ("page:2", &["*"])], &[]),
+        ("page.setBox", json!({ "pages": [2], "box": "crop", "margins": [10, 10, 10, 10] }), &[("page:2", G)], &[]),
+        ("page.addText", json!({ "page": 3, "at": [72, 200], "text": "t" }), &[("page:3", G)], &[]),
         (
-            "page_number",
+            "page.number",
             json!({ "from": 1, "to": 2, "style": "upper-roman" }),
             &[("page:1", &["*"]), ("page:2", &["*"]), ("page:3", &["label"])],
             &[],
         ),
-        ("doc_watermark", json!({ "text": "W", "pages": [1] }), &[("page:1", G)], &[]),
-        ("doc_header_footer", json!({ "header_left": "H" }), &[("page:1", G), ("page:2", G), ("page:3", G)], &[]),
+        ("file.setWatermark", json!({ "text": "W", "pages": [1] }), &[("page:1", G)], &[]),
+        ("file.setHeaderFooter", json!({ "header_left": "H" }), &[("page:1", G), ("page:2", G), ("page:3", G)], &[]),
         // content.rs / links.rs: items of a page by index, no id: the page and the entry.
-        ("content_update", json!({ "page": 1, "index": 1, "text": "y" }), &[("page:1", &["*"])], &["entry"]),
-        ("content_delete", json!({ "page": 2, "index": 1 }), &[("page:2", &["*"])], &["entry"]),
+        ("content.set", json!({ "page": 1, "index": 1, "text": "y" }), &[("page:1", &["*"])], &["entry"]),
+        ("content.delete", json!({ "page": 2, "index": 1 }), &[("page:2", &["*"])], &["entry"]),
         (
-            "link_edit",
+            "link.edit",
             json!({ "page": 1, "index": 4, "url": "https://example.com/z" }),
             &[("page:1", &["*"]), ("link:1/4", &["url", "toPage", "other"]), ("comment:1/1", &["*"])],
             &[],
         ),
-        ("link_delete", json!({ "page": 2, "index": 4 }), &[("page:2", &["*"]), ("link:2/4", &["*"]), ("comment:2/1", &["*"])], &[]),
-        ("link_add", json!({ "page": 1, "rect": [1, 1, 20, 20], "to_page": 2 }), &[("page:1", G), ("page:2", &["*"])], &[]),
-        ("bookmark_add", json!({ "page": 1, "title": "New", "position": 1 }), &[("page:1", &["*"]), ("bookmark:1", &["*"])], &[]),
-        ("measure_distance", json!({ "page": 2, "points": [[10, 10], [50, 50]] }), &[("page:2", G)], &["viewports"]),
-        ("redact_mark", json!({ "page": 1, "rect": [10, 10, 50, 50] }), &[("page:1", G)], &["covered"]),
-        ("redact_mark", json!({ "find": "Page" }), &[("page:1", &["*"]), ("page:2", &["*"]), ("page:3", &["*"])], &["text"]),
-        ("ocr_recognize", json!({ "pages": [2] }), &[("page:2", &["*"])], &["ocr-inputs"]),
+        ("link.delete", json!({ "page": 2, "index": 4 }), &[("page:2", &["*"]), ("link:2/4", &["*"]), ("comment:2/1", &["*"])], &[]),
+        ("link.add", json!({ "page": 1, "rect": [1, 1, 20, 20], "to_page": 2 }), &[("page:1", G), ("page:2", &["*"])], &[]),
+        ("bookmark.add", json!({ "page": 1, "title": "New", "position": 1 }), &[("page:1", &["*"]), ("bookmark:1", &["*"])], &[]),
+        ("measure.distance", json!({ "page": 2, "points": [[10, 10], [50, 50]] }), &[("page:2", G)], &["viewports"]),
+        ("redaction.mark", json!({ "page": 1, "rect": [10, 10, 50, 50] }), &[("page:1", G)], &["covered"]),
+        ("redaction.mark", json!({ "find": "Page" }), &[("page:1", &["*"]), ("page:2", &["*"]), ("page:3", &["*"])], &["text"]),
+        ("ocr.recognize", json!({ "pages": [2] }), &[("page:2", &["*"])], &["ocr-inputs"]),
         // Writes over the whole document.
-        ("doc_initial_view", json!({ "layout": "single" }), &[], &["view"]),
-        ("redact_apply", json!({}), &[], &["redaction-inputs"]),
+        ("file.setInitialView", json!({ "layout": "single" }), &[], &["view"]),
+        ("redaction.apply", json!({}), &[], &["redaction-inputs"]),
     ]
 }
 

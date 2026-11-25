@@ -32,7 +32,7 @@ export function FindBar({ document, revision, inputRef, onMatch, onClose }: Prop
 
   useLayoutEffect(() => {
     const search = new SearchSession(
-      (value) => query<{ matches: Match[] }>('text_find', { query: value }),
+      (value) => query<{ matches: Match[] }>('text.find', { query: value }),
       (found) => {
         selection.current = { matches: found, index: 0 }
         setMatches(found)

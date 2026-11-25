@@ -101,7 +101,7 @@ fn embedded_files_differ_between_parts() {
     assert!(r.remaining.is_empty(), "{:#?}", r.remaining);
 }
 
-/// A page that paints a DeviceCMYK image (as `doc_create` makes from a CMYK JPEG), with
+/// A page that paints a DeviceCMYK image (as `file.new` makes from a CMYK JPEG), with
 /// `intent` as the catalog's extra entries and `extra` as more objects (from object 6 on).
 fn cmyk_page(intent: &str, content: &str, extra: &[&str]) -> Document {
     let catalog = format!("<< /Type /Catalog /Pages 2 0 R {intent} >>");

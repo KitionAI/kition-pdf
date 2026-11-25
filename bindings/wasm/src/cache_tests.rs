@@ -8,10 +8,10 @@ const PAGE_BYTES: usize = WIDTH as usize * HEIGHT as usize * 4;
 
 fn document() -> PdfDocument {
     let mut doc = PdfDocument::create("Cache.pdf", WIDTH, HEIGHT).unwrap();
-    doc.execute("page_insert_blank", json!({ "at": 2 })).unwrap();
-    doc.execute("page_insert_blank", json!({ "at": 3 })).unwrap();
+    doc.execute("page.insertBlank", json!({ "at": 2 })).unwrap();
+    doc.execute("page.insertBlank", json!({ "at": 3 })).unwrap();
     for (index, color) in ["#d02040", "#2040d0", "#e0b030"].iter().enumerate() {
-        doc.execute("doc_background", json!({ "pages": [index + 1], "color": color })).unwrap();
+        doc.execute("file.setBackground", json!({ "pages": [index + 1], "color": color })).unwrap();
     }
     PdfDocument::open("Cache.pdf", &doc.save(None).unwrap()).unwrap()
 }
@@ -87,7 +87,7 @@ fn edits_undo_and_redo_replace_the_display_cache_and_never_reuse_old_pixels() {
     let before = page(&doc, 0);
     page(&doc, 1);
     let previous_display = doc.with_renderer(|renderer| renderer.display.clone()).unwrap();
-    doc.execute("doc_background", json!({ "pages": [1], "color": "#20c040", "replace": true })).unwrap();
+    doc.execute("file.setBackground", json!({ "pages": [1], "color": "#20c040", "replace": true })).unwrap();
     let changed = page(&doc, 0);
     assert_ne!(changed, before, "the edit must change visible page pixels");
     doc.with_renderer(|renderer| {
@@ -108,10 +108,10 @@ fn edits_undo_and_redo_replace_the_display_cache_and_never_reuse_old_pixels() {
 fn real_oversized_page_views_use_colored_tiles_without_retaining_a_full_raster() {
     // Use a real, valid PDF through the ordinary SDK/session path. No renderer replacement.
     let mut fixture = PdfDocument::create("RendererLimit.pdf", 9000, 300).unwrap();
-    fixture.execute("page_insert_blank", json!({ "at": 2, "width": 300, "height": 300 })).unwrap();
-    fixture.execute("doc_background", json!({ "color": "#20c040" })).unwrap();
+    fixture.execute("page.insertBlank", json!({ "at": 2, "width": 300, "height": 300 })).unwrap();
+    fixture.execute("file.setBackground", json!({ "color": "#20c040" })).unwrap();
     let mut doc = PdfDocument::open("RendererLimit.pdf", &fixture.save(None).unwrap()).unwrap();
-    doc.execute("comment_add", json!({ "page": 2, "type": "note", "contents": "Retained edit", "at": [80, 80] })).unwrap();
+    doc.execute("comment.add", json!({ "page": 2, "type": "note", "contents": "Retained edit", "at": [80, 80] })).unwrap();
     let before = doc.save(None).unwrap();
     // Observe the immutable display and prepared-save state rather than saving again.
     let display_before = doc.doc().unwrap().display.clone();

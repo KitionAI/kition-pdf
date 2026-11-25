@@ -70,7 +70,7 @@ fn the_state_follows_edits_not_the_clock() {
     let mut doc = PdfDocument::open("dated.pdf", &source()).unwrap().with_clock(|| CLOCK_A.load(Ordering::SeqCst));
     let opened = state(&doc);
     CLOCK_A.store(1_800_000_000, Ordering::SeqCst);
-    doc.execute("comment_add", json!({ "page": 1, "type": "note", "at": [100, 100], "contents": "first" })).unwrap();
+    doc.execute("comment.add", json!({ "page": 1, "type": "note", "at": [100, 100], "contents": "first" })).unwrap();
     let first = state(&doc);
     assert_ne!(first, opened, "an edit changes the state");
 
@@ -89,7 +89,7 @@ fn the_state_follows_edits_not_the_clock() {
 
     // (c) A later edit changes the state; its time is the new ModDate, not the save's.
     CLOCK_A.store(1_800_010_000, Ordering::SeqCst);
-    doc.execute("page_rotate", json!({ "pages": [1], "degrees": 90 })).unwrap();
+    doc.execute("page.rotate", json!({ "pages": [1], "degrees": 90 })).unwrap();
     let second = state(&doc);
     assert_ne!(second, first, "a second edit changes the state");
     CLOCK_A.store(1_800_020_000, Ordering::SeqCst);
@@ -132,10 +132,10 @@ fn undo_and_redo_bring_back_the_time_of_the_state() {
     let mut doc = PdfDocument::open("dated.pdf", &file).unwrap().with_clock(|| CLOCK_E.load(Ordering::SeqCst));
     let opened = state(&doc);
     CLOCK_E.store(1_800_000_100, Ordering::SeqCst);
-    doc.execute("page_rotate", json!({ "pages": [1], "degrees": 90 })).unwrap();
+    doc.execute("page.rotate", json!({ "pages": [1], "degrees": 90 })).unwrap();
     let first = state(&doc);
     CLOCK_E.store(1_800_000_200, Ordering::SeqCst);
-    doc.execute("comment_add", json!({ "page": 1, "type": "note", "at": [100, 100], "contents": "second" })).unwrap();
+    doc.execute("comment.add", json!({ "page": 1, "type": "note", "at": [100, 100], "contents": "second" })).unwrap();
     let second = state(&doc);
     assert_ne!(second, first);
 

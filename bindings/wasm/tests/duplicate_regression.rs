@@ -8,10 +8,10 @@ use serde_json::json;
 #[test]
 fn duplicated_pages_store_fresh_annotation_names() {
     let mut pdf = PdfDocument::create("copy.pdf", 612, 792).unwrap();
-    pdf.execute("comment_add", json!({"page": 1, "type": "note", "at": [100, 100], "contents": "original"})).unwrap();
-    let parent = pdf.execute("comment_list", json!({})).unwrap()["comments"][0]["id"].clone();
-    pdf.execute("comment_reply", json!({"id": parent, "text": "reply"})).unwrap();
-    pdf.execute("page_duplicate", json!({"pages": [1]})).unwrap();
+    pdf.execute("comment.add", json!({"page": 1, "type": "note", "at": [100, 100], "contents": "original"})).unwrap();
+    let parent = pdf.execute("comment.list", json!({})).unwrap()["comments"][0]["id"].clone();
+    pdf.execute("comment.reply", json!({"id": parent, "text": "reply"})).unwrap();
+    pdf.execute("page.duplicate", json!({"pages": [1]})).unwrap();
     let saved = pdf.save(None).unwrap();
     let cos = kition_pdf_cos::Document::open(std::sync::Arc::new(saved.clone())).unwrap();
     let mut names = std::collections::HashSet::new();
@@ -27,7 +27,7 @@ fn duplicated_pages_store_fresh_annotation_names() {
     }
     assert_eq!(names.len(), 4);
     let mut reopened = PdfDocument::open("copy.pdf", &saved).unwrap();
-    let comments = reopened.execute("comment_list", json!({})).unwrap();
+    let comments = reopened.execute("comment.list", json!({})).unwrap();
     let threads = comments["comments"].as_array().unwrap();
     assert_eq!(threads.len(), 2);
     for thread in threads {
@@ -35,7 +35,7 @@ fn duplicated_pages_store_fresh_annotation_names() {
         assert_eq!(thread["replies"][0]["page"], thread["page"]);
         assert_eq!(thread["replies"][0]["contents"], "reply");
     }
-    reopened.execute("comment_edit", json!({"id": parent, "contents": "changed original"})).unwrap();
-    let comments = reopened.execute("comment_list", json!({"page": 2})).unwrap();
+    reopened.execute("comment.edit", json!({"id": parent, "contents": "changed original"})).unwrap();
+    let comments = reopened.execute("comment.list", json!({"page": 2})).unwrap();
     assert!(comments["comments"].as_array().unwrap().iter().any(|c| c["contents"] == "original"));
 }

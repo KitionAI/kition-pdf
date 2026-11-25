@@ -4,13 +4,13 @@ use kition_kit::testing::check_contract;
 /// A two-page PDF.
 fn fixture() -> Vec<u8> {
     let mut doc = PdfDocument::create("Report.pdf", 612, 792).unwrap();
-    doc.execute("page_insert_blank", json!({ "at": 2 })).unwrap();
+    doc.execute("page.insertBlank", json!({ "at": 2 })).unwrap();
     doc.save(Some("Report.pdf")).unwrap()
 }
 
 #[test]
 fn keeps_the_kit_contract() {
-    check_contract::<PdfDocument>(&fixture(), "Report.pdf", |doc| doc.execute("page_rotate", json!({ "degrees": 90, "pages": [1] })).map(|_| ()))
+    check_contract::<PdfDocument>(&fixture(), "Report.pdf", |doc| doc.execute("page.rotate", json!({ "degrees": 90, "pages": [1] })).map(|_| ()))
         .unwrap();
 }
 
@@ -33,7 +33,7 @@ fn stacks_the_pages_on_a_pasteboard_and_renders_them_sharp() {
 #[test]
 fn failed_page_renders_return_errors_without_losing_edits_or_poisoning_other_pages() {
     let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
-    doc.execute("doc_watermark", json!({ "pages": [1], "text": "DRAFT", "opacity": 1.0 })).unwrap();
+    doc.execute("file.setWatermark", json!({ "pages": [1], "text": "DRAFT", "opacity": 1.0 })).unwrap();
     let saved = doc.save(None).unwrap();
     // Observe the immutable display and prepared-save state rather than saving again.
     let display_before = doc.doc().unwrap().display.clone();
@@ -75,10 +75,10 @@ fn edits_through_the_automation_tools_and_saves_incrementally() {
     let before = fixture().len();
     // A watermark drawn on the first page.
     let blank = marked_pixels(&doc.render(40.0, 40.0, 1.0, 612, 792).unwrap());
-    doc.execute("doc_watermark", json!({ "pages": [1], "text": "DRAFT", "opacity": 1.0 })).unwrap();
+    doc.execute("file.setWatermark", json!({ "pages": [1], "text": "DRAFT", "opacity": 1.0 })).unwrap();
     assert!(doc.dirty());
     assert!(marked_pixels(&doc.render(40.0, 40.0, 1.0, 612, 792).unwrap()) > blank + 50, "the watermark is drawn");
-    doc.execute("page_delete", json!({ "pages": [2] })).unwrap();
+    doc.execute("page.delete", json!({ "pages": [2] })).unwrap();
     assert_eq!(doc.inspect().unwrap()["pages"].as_array().map(Vec::len), Some(1));
     doc.execute("edit.undo", json!({})).unwrap();
     assert_eq!(doc.inspect().unwrap()["pages"].as_array().map(Vec::len), Some(2));
@@ -98,18 +98,18 @@ fn leaves_out_tools_that_reach_files_printers_or_any_command() {
     {
         assert!(!ids.iter().any(|id| id == left_out), "{left_out}");
     }
-    assert!(ids.iter().any(|id| id == "edit.undo") && ids.iter().any(|id| id == "page_rotate"));
+    assert!(ids.iter().any(|id| id == "edit.undo") && ids.iter().any(|id| id == "page.rotate"));
     let mut doc = doc;
     assert!(doc.execute("doc_save", json!({ "path": "/tmp/x.pdf" })).is_err());
-    assert!(doc.execute("doc_watermark", json!({ "file": "/etc/hosts" })).unwrap_err().contains("names a file"));
-    let watermark = doc.commands().into_iter().find(|command| command.id == "doc_watermark").unwrap();
+    assert!(doc.execute("file.setWatermark", json!({ "file": "/etc/hosts" })).unwrap_err().contains("names a file"));
+    let watermark = doc.commands().into_iter().find(|command| command.id == "file.setWatermark").unwrap();
     assert!(watermark.schema.unwrap().get("file").is_none(), "file parameters are not offered");
 }
 
 #[test]
 fn text_selection_is_exposed_as_a_read_only_sdk_command() {
     let mut doc = PdfDocument::open("Selection.pdf", &fixture()).unwrap();
-    let command = doc.commands().into_iter().find(|command| command.id == "text_select").unwrap();
+    let command = doc.commands().into_iter().find(|command| command.id == "text.select").unwrap();
     assert!(!command.mutates);
     let schema = command.schema.unwrap();
     assert!(schema.get("doc").is_none(), "the SDK supplies its active document");
@@ -118,7 +118,7 @@ fn text_selection_is_exposed_as_a_read_only_sdk_command() {
     }
     let revision = doc.revision();
     let bytes = doc.doc().unwrap().bytes.clone();
-    let result = doc.execute("text_select", json!({"page":1,"end_page":2,"anchor":[1,1],"focus":[2,2]})).unwrap();
+    let result = doc.execute("text.select", json!({"page":1,"end_page":2,"anchor":[1,1],"focus":[2,2]})).unwrap();
     assert_eq!(result["text"], "\n");
     assert_eq!(result["pages"].as_array().unwrap().len(), 2);
     assert_eq!(doc.revision(), revision);
@@ -145,32 +145,32 @@ fn run(doc: &mut PdfDocument, command: &str, params: Value) -> (String, bool) {
 fn asks_for_the_whole_documents_lease_exactly_when_an_edit_rewrites_the_file() {
     let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
     doc.version().unwrap();
-    assert_eq!(run(&mut doc, "page_rotate", json!({ "degrees": 90, "pages": [1] })), (String::new(), false));
-    assert_eq!(run(&mut doc, "doc_watermark", json!({ "pages": [1], "text": "DRAFT" })), (String::new(), false));
-    assert_eq!(run(&mut doc, "redact_mark", json!({ "page": 1, "rect": [72, 72, 200, 120] })), (String::new(), false));
+    assert_eq!(run(&mut doc, "page.rotate", json!({ "degrees": 90, "pages": [1] })), (String::new(), false));
+    assert_eq!(run(&mut doc, "file.setWatermark", json!({ "pages": [1], "text": "DRAFT" })), (String::new(), false));
+    assert_eq!(run(&mut doc, "redaction.mark", json!({ "page": 1, "rect": [72, 72, 200, 120] })), (String::new(), false));
     assert_eq!(doc.lease_scope("edit.undo"), "", "undoing an edit that merges");
 
-    assert_eq!(run(&mut doc, "redact_apply", json!({})), ("*".to_owned(), true));
+    assert_eq!(run(&mut doc, "redaction.apply", json!({})), ("*".to_owned(), true));
     assert_eq!(doc.lease_scope("edit.undo"), "*", "undoing the rewrite goes back to the old file");
     doc.execute("edit.undo", json!({})).unwrap();
     assert_eq!(doc.lease_scope("edit.redo"), "*", "redoing it rewrites again");
     doc.execute("edit.redo", json!({})).unwrap();
 
-    assert_eq!(doc.lease_scope("pdfa_convert"), "", "an unencrypted file converts in place");
-    assert_eq!(run(&mut doc, "doc_protect", json!({ "open_password": "open" })), ("*".to_owned(), true));
-    assert_eq!(doc.lease_scope("pdfa_convert"), "*", "converting removes the encryption");
-    assert_eq!(run(&mut doc, "doc_unprotect", json!({})), ("*".to_owned(), true));
-    assert_eq!(run(&mut doc, "page_insert_blank", json!({ "at": 1 })), (String::new(), false));
+    assert_eq!(doc.lease_scope("pdfa.convert"), "", "an unencrypted file converts in place");
+    assert_eq!(run(&mut doc, "file.protect", json!({ "open_password": "open" })), ("*".to_owned(), true));
+    assert_eq!(doc.lease_scope("pdfa.convert"), "*", "converting removes the encryption");
+    assert_eq!(run(&mut doc, "file.unprotect", json!({})), ("*".to_owned(), true));
+    assert_eq!(run(&mut doc, "page.insertBlank", json!({ "at": 1 })), (String::new(), false));
     assert_eq!(doc.lease_scope("no_such_command"), "");
 
     // Sanitizing rewrites the file too (on one with something to remove).
     let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
     doc.version().unwrap();
     assert_eq!(
-        run(&mut doc, "comment_add", json!({ "page": 1, "type": "rectangle", "rect": [72, 72, 96, 96], "contents": "Hidden?" })),
+        run(&mut doc, "comment.add", json!({ "page": 1, "type": "rectangle", "rect": [72, 72, 96, 96], "contents": "Hidden?" })),
         (String::new(), false)
     );
-    assert_eq!(run(&mut doc, "doc_remove_hidden", json!({})), ("*".to_owned(), true));
+    assert_eq!(run(&mut doc, "file.removeHidden", json!({})), ("*".to_owned(), true));
 }
 
 #[test]
@@ -222,10 +222,10 @@ fn takes_a_font_for_chinese_text_a_pdf_does_not_embed() {
 fn the_catalog_flags_as_mutating_exactly_what_changes_the_document() {
     let doc = PdfDocument::create("Flags.pdf", 0, 0).unwrap();
     let mutates = |id: &str| doc.commands().into_iter().find(|command| command.id == id).unwrap_or_else(|| panic!("no {id}")).mutates;
-    for id in ["edit.undo", "edit.redo", "doc_background", "doc_remove_hidden", "doc_flatten"] {
+    for id in ["edit.undo", "edit.redo", "file.setBackground", "file.removeHidden", "file.flatten"] {
         assert!(mutates(id), "{id} changes the document");
     }
-    for id in ["doc_info", "text_extract", "comment_list", "render_preview", "doc_inspect"] {
+    for id in ["file.getInfo", "text.extract", "comment.list", "file.render", "file.inspect"] {
         assert!(!mutates(id), "{id} does not change the document");
     }
 }

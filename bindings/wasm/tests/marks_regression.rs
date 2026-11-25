@@ -8,15 +8,15 @@ use serde_json::json;
 #[test]
 fn removing_marks_honors_the_page_list_after_reopen() {
     for (kind, tool, settings) in [
-        ("watermark", "doc_watermark", json!({"text": "Watermark"})),
-        ("header_footer", "doc_header_footer", json!({"header_left": "Header"})),
-        ("background", "doc_background", json!({"color": "yellow"})),
+        ("watermark", "file.setWatermark", json!({"text": "Watermark"})),
+        ("header_footer", "file.setHeaderFooter", json!({"header_left": "Header"})),
+        ("background", "file.setBackground", json!({"color": "yellow"})),
     ] {
         let mut doc = PdfDocument::create("marks.pdf", 612, 792).unwrap();
-        doc.execute("page_insert_blank", json!({"at": 2})).unwrap();
+        doc.execute("page.insertBlank", json!({"at": 2})).unwrap();
         doc.execute(tool, settings).unwrap();
         let bytes = doc.save(None).unwrap();
-        doc.execute("doc_remove_marks", json!({"kind": kind, "pages": [1]})).unwrap();
+        doc.execute("file.removeMarks", json!({"kind": kind, "pages": [1]})).unwrap();
         let saved = doc.save(None).unwrap();
         let before = kition_pdf_cos::Document::open(std::sync::Arc::new(bytes)).unwrap();
         let after = kition_pdf_cos::Document::open(std::sync::Arc::new(saved)).unwrap();

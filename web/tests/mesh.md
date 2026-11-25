@@ -25,7 +25,7 @@ reuses the exact `@kition/sdk` alias/request guard described in
 source SHA checks and before/after snapshots. Ordinary engine packages and live
 shared source remain untouched. Each fixture gets a fresh browser context,
 initially null host connection and unique filename. The test captures the
-existing editor engine via read-only `bookmark_list`, then uses that engine's
+existing editor engine via read-only `bookmark.list`, then uses that engine's
 real Worker to render from the inspected page origin. No page-thread WASM or
 second document engine is created. Automatic editor renders finish before direct
 raster sampling begins.

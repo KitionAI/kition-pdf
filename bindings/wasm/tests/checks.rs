@@ -51,7 +51,7 @@ fn bytes_that_do_not_parse_do_not_open() {
     assert!(PdfDocument::open("broken.pdf", b"not a pdf at all").is_err());
 }
 
-/// The fix of `pdf.broken-link` (`link_delete` with the link's page and number) takes the dead link
+/// The fix of `pdf.broken-link` (`link.delete` with the link's page and number) takes the dead link
 /// away and leaves the page's other links.
 #[test]
 fn the_broken_link_fix_deletes_the_dead_link() {

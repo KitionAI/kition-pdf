@@ -144,7 +144,7 @@ mod tests {
         let id = automation.session_mut().open("SelectionBudget.pdf", None, bytes, None).unwrap();
         let bytes = automation.session().get(id).unwrap().bytes.clone();
         automation.texts.insert(id, (bytes, vec![Some(Arc::new(text))]));
-        automation.call("text_select", &json!({"doc":id.0,"page":1,"anchor":[0,0],"focus":[0,1_000_000]}))
+        automation.call("text.select", &json!({"doc":id.0,"page":1,"anchor":[0,0],"focus":[0,1_000_000]}))
     }
 
     #[test]

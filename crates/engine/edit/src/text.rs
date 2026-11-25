@@ -118,7 +118,7 @@ pub struct TextBlock {
     /// The text fill colour as RGB, used by the visual editor and preserved when no colour
     /// override is requested.
     pub color: [f64; 3],
-    /// Indexes into [`text_lines`].
+    /// Indexes into [`text.listLines`].
     pub lines: Vec<usize>,
 }
 
@@ -656,7 +656,7 @@ pub(crate) fn form_call(
 }
 
 /// The lines a page shows as it reads, including text drawn by form XObjects (which
-/// [`text_lines`] leaves out because it can only rewrite the page's own streams). Lines from a
+/// [`text.listLines`] leaves out because it can only rewrite the page's own streams). Lines from a
 /// form carry a stream number past the page's streams, one per form drawn.
 fn reading_lines(doc: &Document, page: usize) -> Result<Vec<TextLine>, EditError> {
     struct Walk<'a> {
@@ -904,7 +904,7 @@ fn type3_encode(fallback: &Type3Fallback, text: &str) -> Option<Vec<u8>> {
     text.chars().map(|ch| fallback.codes.iter().find(|(c, _, _)| *c == ch).map(|(_, code, _)| *code)).collect()
 }
 
-/// Replace the text of line `line` (an index into [`text_lines`]) on `page` with `text`.
+/// Replace the text of line `line` (an index into [`text.listLines`]) on `page` with `text`.
 pub fn replace_line(doc: &mut Document, page: usize, line: usize, text: &str) -> Result<LineEdit, EditError> {
     let text = text.replace(['\n', '\r'], " ");
     let lines = text_lines(doc, page)?;

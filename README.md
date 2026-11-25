@@ -154,18 +154,18 @@ A real session on a copy of the showcase's reviewed quarterly report, abridged:
 Opened `report.pdf`: 692 × 872
 {…,"details":{"editable":true,"formFields":0,"name":"report.pdf","pages":[{…,"index":0,"label":"1"}],…},"revision":"wja0",…}
 
-> pdf_run {"path":"report.pdf","basis":"wja0","steps":[{"command":"comment_list","params":{"page":1}}]}
+> pdf_run {"path":"report.pdf","basis":"wja0","steps":[{"command":"comment.list","params":{"page":1}}]}
 Ran 1 commands on `report.pdf` (saved): 692 × 872 Changes: no object changed.
 {…"comments":[…,{"author":"Tomas Bekele","contents":"Say how many days the recall cost in total, not per bike.",
   "id":"3173ca78-99bf-4a3b-8384-ef4acf67217a","page":1,"replies":[],"status":null,"type":"Text",…}, …],"count":9…}
 
 > pdf_run {"path":"report.pdf","basis":"wja0","steps":[
-    {"command":"comment_reply","params":{"id":"3173ca78-99bf-4a3b-8384-ef4acf67217a","author":"Assistant",
+    {"command":"comment.reply","params":{"id":"3173ca78-99bf-4a3b-8384-ef4acf67217a","author":"Assistant",
       "text":"Forty bikes for nine days: 360 bike-days in total."}},
-    {"command":"comment_set_status","params":{"id":"3173ca78-99bf-4a3b-8384-ef4acf67217a","author":"Assistant","status":"accepted"}}]}
+    {"command":"comment.setStatus","params":{"id":"3173ca78-99bf-4a3b-8384-ef4acf67217a","author":"Assistant","status":"accepted"}}]}
 Ran 2 commands on `report.pdf` (saved): 692 × 872 Changes: objects 2 created, 2 changed.
 
-> pdf_run {"path":"report.pdf","steps":[{"command":"comment_list","params":{"page":1}}]}
+> pdf_run {"path":"report.pdf","steps":[{"command":"comment.list","params":{"page":1}}]}
 {…{"author":"Tomas Bekele","contents":"Say how many days the recall cost in total, not per bike.",…,
   "replies":[{"author":"Assistant","contents":"Forty bikes for nine days: 360 bike-days in total.",…}],"status":"Accepted",…}…}
 

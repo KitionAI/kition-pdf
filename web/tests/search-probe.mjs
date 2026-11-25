@@ -11,7 +11,7 @@ export async function installSearchProbe() {
   const execute = KitEngine.prototype.execute
   KitEngine.prototype.execute = async function (command, params = {}) {
     probe.engine = this
-    if (command !== 'text_find') return execute.call(this, command, params)
+    if (command !== 'text.find') return execute.call(this, command, params)
     const call = { query: params.query, started: performance.now(), status: 'pending' }
     probe.calls.push(call)
     try {

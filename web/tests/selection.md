@@ -1,7 +1,7 @@
 # PDF pointer selection browser checks
 
 Run from `web/`, serially, after the coordinator has built and fingerprinted a
-compatible editor engine exposing `text_select`:
+compatible editor engine exposing `text.select`:
 
 ```sh
 node --test tests/selection-support.test.mjs
@@ -55,7 +55,7 @@ full reverse, partial range, Alt column). All drags use real mouse events.
 Exact zoom and positioning call the existing editor viewport, captured through
 a temporary page probe; these are not tests of a zoom percentage input.
 
-Every case checks the real `text_select` result's plain text, page order, and
+Every case checks the real `text.select` result's plain text, page order, and
 rectangles against the authored expectations. It compares visible overlay
 bounds in CSS pixels using the current viewport and page origins, without
 multiplying CSS geometry by DPR. Each visible authored rectangle center must

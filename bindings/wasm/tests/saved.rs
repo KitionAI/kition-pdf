@@ -11,7 +11,7 @@ use kition_kit::KitDocument;
 use kition_pdf_kit::PdfDocument;
 use serde_json::{Value, json};
 
-const READERS: &[&str] = &["comment_list", "form_fields", "bookmark_list", "link_list", "content_list", "accessibility_figures"];
+const READERS: &[&str] = &["comment.list", "form.listFields", "bookmark.list", "link.list", "content.list", "accessibility.listFigures"];
 
 /// The fixture files: the conformance files that open and can be edited, and a built one with
 /// comments, fields, bookmarks and links on three pages.
@@ -33,14 +33,14 @@ fn fixtures() -> Vec<(String, Vec<u8>)> {
     }
     let mut doc = PdfDocument::create("built.pdf", 612, 792).unwrap();
     for at in 2..=3 {
-        doc.execute("page_insert_blank", json!({ "at": at })).unwrap();
+        doc.execute("page.insertBlank", json!({ "at": at })).unwrap();
     }
     for n in 1..=3 {
-        doc.execute("page_add_text", json!({ "page": n, "at": [72, 60], "text": format!("Page {n}") })).unwrap();
-        doc.execute("comment_add", json!({ "page": n, "type": "note", "at": [100, 100], "contents": format!("note {n}") })).unwrap();
-        doc.execute("form_add_field", json!({ "page": n, "type": "text", "rect": [72, 600, 300, 624], "name": format!("F{n}") })).unwrap();
-        doc.execute("bookmark_add", json!({ "page": n, "title": format!("B{n}") })).unwrap();
-        doc.execute("link_add", json!({ "page": n, "rect": [100, 300, 200, 320], "url": format!("https://example.com/{n}") })).unwrap();
+        doc.execute("page.addText", json!({ "page": n, "at": [72, 60], "text": format!("Page {n}") })).unwrap();
+        doc.execute("comment.add", json!({ "page": n, "type": "note", "at": [100, 100], "contents": format!("note {n}") })).unwrap();
+        doc.execute("form.addField", json!({ "page": n, "type": "text", "rect": [72, 600, 300, 624], "name": format!("F{n}") })).unwrap();
+        doc.execute("bookmark.add", json!({ "page": n, "title": format!("B{n}") })).unwrap();
+        doc.execute("link.add", json!({ "page": n, "rect": [100, 300, 200, 320], "url": format!("https://example.com/{n}") })).unwrap();
     }
     out.push(("built".into(), doc.save(None).unwrap()));
     out
@@ -49,22 +49,22 @@ fn fixtures() -> Vec<(String, Vec<u8>)> {
 /// Representative writes: a property, a move, a structural write, a creation of each kind, a value.
 fn writes() -> Vec<(&'static str, Value)> {
     vec![
-        ("comment_add", json!({ "page": 1, "type": "note", "at": [123.456, 77.7], "contents": "added" })),
-        ("comment_edit", json!({ "page": 1, "index": 1, "contents": "edited", "color": "blue" })),
-        ("comment_edit", json!({ "page": 1, "index": 1, "move": [33.333, 44.444] })),
-        ("comment_set_status", json!({ "page": 1, "index": 1, "status": "accepted" })),
-        ("form_fill", json!({ "values": { "F1": "filled" } })),
-        ("form_set_props", json!({ "field": "F1", "tooltip": "tip", "required": true })),
-        ("page_rotate", json!({ "pages": [1], "degrees": 90 })),
-        ("page_insert_blank", json!({ "at": 1 })),
-        ("page_move", json!({ "pages": [1], "to": 2 })),
-        ("page_delete", json!({ "pages": [1] })),
-        ("page_add_text", json!({ "page": 1, "at": [72.25, 300.125], "text": "text" })),
-        ("bookmark_add", json!({ "page": 1, "title": "Added", "position": 1 })),
-        ("link_add", json!({ "page": 1, "rect": [10.1, 10.2, 50.3, 30.4], "url": "https://example.com/x" })),
-        ("page_set_box", json!({ "pages": [1], "box": "crop", "margins": [10.5, 10.5, 10.5, 10.5] })),
-        ("content_update", json!({ "page": 1, "index": 1, "text": "updated" })),
-        ("page_number", json!({ "from": 1, "to": 1, "style": "upper-roman" })),
+        ("comment.add", json!({ "page": 1, "type": "note", "at": [123.456, 77.7], "contents": "added" })),
+        ("comment.edit", json!({ "page": 1, "index": 1, "contents": "edited", "color": "blue" })),
+        ("comment.edit", json!({ "page": 1, "index": 1, "move": [33.333, 44.444] })),
+        ("comment.setStatus", json!({ "page": 1, "index": 1, "status": "accepted" })),
+        ("form.fill", json!({ "values": { "F1": "filled" } })),
+        ("form.setProps", json!({ "field": "F1", "tooltip": "tip", "required": true })),
+        ("page.rotate", json!({ "pages": [1], "degrees": 90 })),
+        ("page.insertBlank", json!({ "at": 1 })),
+        ("page.move", json!({ "pages": [1], "to": 2 })),
+        ("page.delete", json!({ "pages": [1] })),
+        ("page.addText", json!({ "page": 1, "at": [72.25, 300.125], "text": "text" })),
+        ("bookmark.add", json!({ "page": 1, "title": "Added", "position": 1 })),
+        ("link.add", json!({ "page": 1, "rect": [10.1, 10.2, 50.3, 30.4], "url": "https://example.com/x" })),
+        ("page.setBox", json!({ "pages": [1], "box": "crop", "margins": [10.5, 10.5, 10.5, 10.5] })),
+        ("content.set", json!({ "page": 1, "index": 1, "text": "updated" })),
+        ("page.number", json!({ "from": 1, "to": 1, "style": "upper-roman" })),
     ]
 }
 
@@ -80,7 +80,7 @@ fn reads(doc: &mut PdfDocument) -> Value {
         }
         out.insert((*reader).to_owned(), answer);
     }
-    let pages = doc.execute("doc_inspect", json!({})).unwrap()["pages"].clone();
+    let pages = doc.execute("file.inspect", json!({})).unwrap()["pages"].clone();
     out.insert("pages".into(), pages);
     Value::Object(out)
 }

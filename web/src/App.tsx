@@ -98,7 +98,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const selectedMatch = finding && searchMatch?.doc === doc && searchMatch.revision === session.change.revision ? searchMatch.match : null
   const pages = state?.pages ?? []
   const panBounds = useMemo(() => pagesPanBounds((state?.pages ?? []).map((page) => page.area)), [state?.pages])
-  const selectText = useCallback(async (request: SelectionRequest) => doc ? JSON.parse(await doc.execute('text_select', request)) as SelectionResult : null, [doc])
+  const selectText = useCallback(async (request: SelectionRequest) => doc ? JSON.parse(await doc.execute('text.select', request)) as SelectionResult : null, [doc])
   const selection = useTextSelection({ document: doc, revision: session.change.revision, pages, execute: selectText, t,
     onStart: () => { setFinding(false); setSearchMatch(null); searchOpener.current = null },
   })

@@ -48,7 +48,7 @@ fn every_command_refuses_a_doc_parameter() {
 fn a_doc_parameter_does_not_rotate_the_open_document() {
     let mut doc = basic();
     let before = doc.revision();
-    let error = doc.execute("page_rotate", serde_json::json!({ "degrees": 90, "doc": "something-else" })).unwrap_err();
+    let error = doc.execute("page.rotate", serde_json::json!({ "degrees": 90, "doc": "something-else" })).unwrap_err();
     assert!(error.contains("\"doc\""), "the error names `doc`: {error}");
     assert!(error.contains("document"), "the error says how the document is chosen: {error}");
     assert_eq!(doc.revision(), before, "the open document is unchanged");

@@ -7,11 +7,11 @@ import { TesseraIcons, registerCommandIcons } from '@kition/sdk/editor'
 
 
 registerCommandIcons({
-  "accessibility_fix": TesseraIcons.AccessibilityIcon,
-  "doc_compare": TesseraIcons.GitCompareIcon,
-  "js_enabled": TesseraIcons.ToggleLeftIcon,
-  "js_run": TesseraIcons.FileCodeIcon,
-  "measure_scale": TesseraIcons.RulerIcon,
-  "ocr_status": TesseraIcons.ScanTextIcon,
-  "redact_mark": TesseraIcons.EyeOffIcon,
+  "accessibility.fix": TesseraIcons.AccessibilityIcon,
+  "file.compare": TesseraIcons.GitCompareIcon,
+  "script.enabled": TesseraIcons.ToggleLeftIcon,
+  "script.run": TesseraIcons.FileCodeIcon,
+  "measure.setScale": TesseraIcons.RulerIcon,
+  "ocr.status": TesseraIcons.ScanTextIcon,
+  "redaction.mark": TesseraIcons.EyeOffIcon,
 })

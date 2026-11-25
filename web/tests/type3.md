@@ -40,7 +40,7 @@ automatic retry. The clean second page must still render in the same Worker.
 Finally, a clean control document opens in the same browser context and must
 render without an error alert, with matching regions and full-RGBA control hash.
 
-The existing read-only `bookmark_list` capture obtains the editor's engine;
+The existing read-only `bookmark.list` capture obtains the editor's engine;
 initial rendering only needs to settle, not succeed, before expected-error
 checks. A fresh browser context and initially null host connection isolate each
 case. Initial fitted rendering is part of opening the real editor. Worker

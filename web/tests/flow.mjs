@@ -129,10 +129,10 @@ try {
   await kit.getByTestId('pdf-panel-fields').click()
   await kit.getByTestId('pdf-field-observer').fill('Ada')
   await kit.getByTestId('pdf-field-observer').press('Enter')
-  await until(async () => (await ask('form_fields')).fields[0].value === 'Ada')
-  step('fills a form field', (await ask('form_fields')).fields[0].value === 'Ada')
+  await until(async () => (await ask('form.listFields')).fields[0].value === 'Ada')
+  step('fills a form field', (await ask('form.listFields')).fields[0].value === 'Ada')
 
-  const run = await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'bookmark_add', params: { page: 1, title: 'Agent' } }], false))
+  const run = await page.evaluate(async () => window.devHost.connection().ai.run([{ command: 'bookmark.add', params: { page: 1, title: 'Agent' } }], false))
   await page.waitForTimeout(300)
   step('the agent edits the live document', run.completed[0].changed && (await page.evaluate(() => window.devHost.changes.at(-1).by)) === 'agent')
   await kit.getByTestId('pdf-save').click()

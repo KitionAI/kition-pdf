@@ -1,4 +1,4 @@
-//! Regression: `doc_flatten` flattens only what it names (naming
+//! Regression: `file.flatten` flattens only what it names (naming
 //! comments leaves the form fields alone, and naming fields leaves the comments), and a push
 //! button's caption takes the text colour, font and size its Appearance tab sets.
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::indexing_slicing)]
@@ -14,15 +14,15 @@ fn run(doc: &mut PdfDocument, command: &str, params: Value) -> Value {
 /// A page with a text field, a button and a rectangle comment.
 fn form() -> PdfDocument {
     let mut doc = PdfDocument::create("form.pdf", 612, 792).unwrap();
-    run(&mut doc, "form_add_field", json!({ "page": 1, "type": "text", "rect": [72, 100, 300, 124], "name": "member" }));
-    run(&mut doc, "form_add_field", json!({ "page": 1, "type": "button", "rect": [72, 200, 232, 240], "name": "send", "caption": "Send" }));
-    run(&mut doc, "comment_add", json!({ "page": 1, "type": "rectangle", "rect": [72, 300, 300, 360] }));
+    run(&mut doc, "form.addField", json!({ "page": 1, "type": "text", "rect": [72, 100, 300, 124], "name": "member" }));
+    run(&mut doc, "form.addField", json!({ "page": 1, "type": "button", "rect": [72, 200, 232, 240], "name": "send", "caption": "Send" }));
+    run(&mut doc, "comment.add", json!({ "page": 1, "type": "rectangle", "rect": [72, 300, 300, 360] }));
     doc
 }
 
 fn counts(doc: &mut PdfDocument) -> (usize, usize) {
-    let fields = run(doc, "form_fields", json!({}))["fields"].as_array().map_or(0, Vec::len);
-    let comments = run(doc, "comment_list", json!({}))["comments"].as_array().map_or(0, Vec::len);
+    let fields = run(doc, "form.listFields", json!({}))["fields"].as_array().map_or(0, Vec::len);
+    let comments = run(doc, "comment.list", json!({}))["comments"].as_array().map_or(0, Vec::len);
     (fields, comments)
 }
 
@@ -30,19 +30,19 @@ fn counts(doc: &mut PdfDocument) -> (usize, usize) {
 fn flatten_flattens_only_what_it_names() {
     let mut doc = form();
     assert_eq!(counts(&mut doc), (2, 1));
-    run(&mut doc, "doc_flatten", json!({ "comments": true }));
+    run(&mut doc, "file.flatten", json!({ "comments": true }));
     assert_eq!(counts(&mut doc), (2, 0), "naming comments keeps the fields");
 
     let mut doc = form();
-    run(&mut doc, "doc_flatten", json!({ "fields": true }));
+    run(&mut doc, "file.flatten", json!({ "fields": true }));
     assert_eq!(counts(&mut doc), (0, 1), "naming fields keeps the comments");
 
     let mut doc = form();
-    run(&mut doc, "doc_flatten", json!({ "comments": false }));
+    run(&mut doc, "file.flatten", json!({ "comments": false }));
     assert_eq!(counts(&mut doc), (0, 1), "comments: false flattens the fields");
 
     let mut doc = form();
-    run(&mut doc, "doc_flatten", json!({}));
+    run(&mut doc, "file.flatten", json!({}));
     assert_eq!(counts(&mut doc), (0, 0), "naming neither flattens both");
 }
 
@@ -75,7 +75,7 @@ fn a_button_caption_takes_its_text_colour() {
     let mut doc = form();
     let black_before = button_pixels(&doc, [0, 0, 0]);
     assert!(black_before > 20, "the caption draws in black at first ({black_before})");
-    run(&mut doc, "form_set_props", json!({ "field": "send", "appearance": { "fill": "#5645d4", "border": "none", "text_color": "#ffffff" } }));
+    run(&mut doc, "form.setProps", json!({ "field": "send", "appearance": { "fill": "#5645d4", "border": "none", "text_color": "#ffffff" } }));
     assert_eq!(button_pixels(&doc, [0, 0, 0]), 0, "no black caption is left");
     let white = button_pixels(&doc, [255, 255, 255]);
     assert!(white > 20, "the caption draws in white ({white})");
@@ -83,7 +83,7 @@ fn a_button_caption_takes_its_text_colour() {
     let mut again = PdfDocument::open("form.pdf", &doc.save(Some("form.pdf")).unwrap()).unwrap();
     assert!(button_pixels(&again, [255, 255, 255]) > 20);
     // Flattening comments keeps the button and its look.
-    run(&mut again, "doc_flatten", json!({ "comments": true }));
+    run(&mut again, "file.flatten", json!({ "comments": true }));
     assert_eq!(counts(&mut again).0, 2);
     assert!(button_pixels(&again, [255, 255, 255]) > 20);
 }

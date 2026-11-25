@@ -118,16 +118,16 @@ const INPUTS: [Input; 24] = [
 fn fixture() -> Vec<u8> {
     let mut doc = kition_pdf_kit::PdfDocument::open(FILE, &matrix::fixture()).unwrap();
     for (command, params) in [
-        ("form_fill", json!({"values":{"F2":"10","F3":"2"}})),
-        ("form_set_props", json!({"field":"F4","calculate":{"op":"sum","fields":["F2","F3"]}})),
-        ("form_set_props", json!({"field":"F2","format":{"type":"number","decimals":2}})),
-        ("form_add_field", json!({"page":2,"type":"radio","name":"R","rect":[320,600,338,618]})),
-        ("form_add_field", json!({"page":2,"type":"text","name":"S","rect":[350,600,400,618]})),
-        ("comment_add", json!({"page":2,"type":"textbox","rect":[300,400,460,450],"contents":"box"})),
-        ("measure_scale", json!({"page":2,"units_per_point":0.5,"unit":"m"})),
-        ("redact_mark", json!({"page":1,"rect":[60,40,260,90]})),
-        ("page_add_text", json!({"page":2,"at":[72,150],"text":"https://example.com/old"})),
-        ("page_add_text", json!({"page":2,"at":[80,62],"text":"overlap"})),
+        ("form.fill", json!({"values":{"F2":"10","F3":"2"}})),
+        ("form.setProps", json!({"field":"F4","calculate":{"op":"sum","fields":["F2","F3"]}})),
+        ("form.setProps", json!({"field":"F2","format":{"type":"number","decimals":2}})),
+        ("form.addField", json!({"page":2,"type":"radio","name":"R","rect":[320,600,338,618]})),
+        ("form.addField", json!({"page":2,"type":"text","name":"S","rect":[350,600,400,618]})),
+        ("comment.add", json!({"page":2,"type":"textbox","rect":[300,400,460,450],"contents":"box"})),
+        ("measure.setScale", json!({"page":2,"units_per_point":0.5,"unit":"m"})),
+        ("redaction.mark", json!({"page":1,"rect":[60,40,260,90]})),
+        ("page.addText", json!({"page":2,"at":[72,150],"text":"https://example.com/old"})),
+        ("page.addText", json!({"page":2,"at":[80,62],"text":"overlap"})),
     ] {
         doc.execute(command, params).unwrap_or_else(|e| panic!("fixture {command}: {e}"));
     }
@@ -302,34 +302,34 @@ fn mine(bytes: &[u8], d: Derived) -> Value {
     let note = dictionary(&cos, annot(&cos, 2, "Text")).get(b"NM").unwrap().as_string().unwrap().to_text();
     let textbox = dictionary(&cos, annot(&cos, 2, "FreeText")).get(b"NM").unwrap().as_string().unwrap().to_text();
     match d {
-        BlankSize => step("page_insert_blank", json!({"at":2})),
-        Labels => step("page_number", json!({"from":2,"to":2,"style":"upper-roman"})),
-        HeaderTotal => step("doc_header_footer", json!({"pages":[2],"footer_center":"<<1>> of <<n>>"})),
-        HeaderNumber => step("doc_header_footer", json!({"pages":[2],"header_center":"<<1>>"})),
-        Calculation => step("form_fill", json!({"values":{"F3":"15"}})),
-        Format => step("form_fill", json!({"values":{"F2":"15"}})),
-        DefaultName => step("form_add_field", json!({"page":2,"type":"text","rect":[20,300,100,320]})),
-        RadioGroup => step("form_add_field", json!({"page":2,"type":"radio","group":"R","name":"R","export":"next","rect":[400,600,420,620]})),
-        TabMove => step("form_tab_order", json!({"field":"F2","move":"later"})),
-        TabSet => step("form_tab_order", json!({"pages":[2],"order":"row"})),
-        Reply => step("comment_reply", json!({"id":note,"text":"mine"})),
-        Status => step("comment_set_status", json!({"id":note,"status":"accepted"})),
-        TextBox => step("comment_edit", json!({"id":textbox,"contents":"mine refits this text box"})),
+        BlankSize => step("page.insertBlank", json!({"at":2})),
+        Labels => step("page.number", json!({"from":2,"to":2,"style":"upper-roman"})),
+        HeaderTotal => step("file.setHeaderFooter", json!({"pages":[2],"footer_center":"<<1>> of <<n>>"})),
+        HeaderNumber => step("file.setHeaderFooter", json!({"pages":[2],"header_center":"<<1>>"})),
+        Calculation => step("form.fill", json!({"values":{"F3":"15"}})),
+        Format => step("form.fill", json!({"values":{"F2":"15"}})),
+        DefaultName => step("form.addField", json!({"page":2,"type":"text","rect":[20,300,100,320]})),
+        RadioGroup => step("form.addField", json!({"page":2,"type":"radio","group":"R","name":"R","export":"next","rect":[400,600,420,620]})),
+        TabMove => step("form.setTabOrder", json!({"field":"F2","move":"later"})),
+        TabSet => step("form.setTabOrder", json!({"pages":[2],"order":"row"})),
+        Reply => step("comment.reply", json!({"id":note,"text":"mine"})),
+        Status => step("comment.setStatus", json!({"id":note,"status":"accepted"})),
+        TextBox => step("comment.edit", json!({"id":textbox,"contents":"mine refits this text box"})),
         Distance | Perimeter | Area => step(
             match d {
-                Distance => "measure_distance",
-                Perimeter => "measure_perimeter",
-                _ => "measure_area",
+                Distance => "measure.distance",
+                Perimeter => "measure.perimeter",
+                _ => "measure.area",
             },
             json!({"page":2,"points":if d==Distance {json!([[100,200],[200,200]])} else {json!([[100,200],[200,200],[200,300]])}}),
         ),
-        Redact => step("redact_apply", json!({})),
-        Urls => step("links_from_urls", json!({})),
-        Structure => step("bookmark_from_structure", json!({})),
-        Ocr => step("ocr_recognize", json!({"pages":[2]})),
-        TextOverlap => step("text_edit", json!({"page":2,"line":1,"text":"Mine"})),
-        FlattenComments => step("doc_flatten", json!({"comments":true,"fields":false})),
-        FlattenFields => step("doc_flatten", json!({"comments":false,"fields":true})),
+        Redact => step("redaction.apply", json!({})),
+        Urls => step("link.addFromUrls", json!({})),
+        Structure => step("bookmark.addFromStructure", json!({})),
+        Ocr => step("ocr.recognize", json!({"pages":[2]})),
+        TextOverlap => step("text.edit", json!({"page":2,"line":1,"text":"Mine"})),
+        FlattenComments => step("file.flatten", json!({"comments":true,"fields":false})),
+        FlattenFields => step("file.flatten", json!({"comments":false,"fields":true})),
     }
 }
 
@@ -515,7 +515,7 @@ async fn original_whole_flatten_has_scoped_dependencies() {
     for writer in WRITERS {
         for (input, expected) in [(Input::Property, A), (Input::Pixels, A), (Input::BoxRect, C), (Input::Group, C)] {
             let theirs = mutate(&bytes, writer, input);
-            cell(&bytes, &theirs, step("doc_flatten", json!({})), expected, &format!("original-flatten/{writer:?}/{input:?}"), &mut totals).await;
+            cell(&bytes, &theirs, step("file.flatten", json!({})), expected, &format!("original-flatten/{writer:?}/{input:?}"), &mut totals).await;
         }
     }
     println!("original flatten supplement: {totals:?}");
@@ -534,7 +534,7 @@ async fn recognition_without_skipping_holds_its_image_inputs() {
             cell(
                 &bytes,
                 &theirs,
-                step("ocr_recognize", json!({"pages":[2],"skip_text_pages":false})),
+                step("ocr.recognize", json!({"pages":[2],"skip_text_pages":false})),
                 C,
                 &format!("recognition/{writer:?}/{input:?}"),
                 &mut totals,
@@ -566,9 +566,9 @@ async fn saved_calculated_merge_renders() {
     std::fs::write(f.file(), &theirs).unwrap();
     f.ok("run", json!({"basis":basis,"steps":[write.clone()]})).await;
     let mut actual = on_disk(&f.file());
-    let fields = actual.execute("form_fields", json!({})).unwrap();
+    let fields = actual.execute("form.listFields", json!({})).unwrap();
     assert!(fields["fields"].as_array().unwrap().iter().any(|v| v["name"] == "F4" && v["value"] == "17"), "{fields}");
-    assert_eq!(actual.execute("page_render", json!({"page":2,"dpi":72})).unwrap(), json!({"image":{"width":612,"height":792}}));
+    assert_eq!(actual.execute("page.render", json!({"page":2,"dpi":72})).unwrap(), json!({"image":{"width":612,"height":792}}));
     let area = actual.inspect().unwrap()["pages"][1]["area"].clone();
     let render = |doc: &kition_pdf_kit::PdfDocument| doc.render(area["x"].as_f64().unwrap(), area["y"].as_f64().unwrap(), 1.0, 612, 792).unwrap();
     let pixels = render(&actual);
@@ -588,7 +588,7 @@ fn outside_inputs_really_change_the_mark_and_widget() {
     let bytes = fixture();
     for writer in WRITERS {
         let changed = mutate(&bytes, writer, Input::Redaction);
-        let comments = kition_pdf_kit::PdfDocument::open(FILE, &changed).unwrap().execute("comment_list", json!({})).unwrap();
+        let comments = kition_pdf_kit::PdfDocument::open(FILE, &changed).unwrap().execute("comment.list", json!({})).unwrap();
         assert!(
             comments["comments"].as_array().unwrap().iter().any(|c| c["id"] == "colleague-redaction" && c["page"] == 3),
             "{writer:?}: {comments}"

@@ -38,7 +38,7 @@ const until = async (check, tries = 150) => {
   return false
 }
 const ask = (command, params = {}) => page.evaluate(async ([command, params]) => (await window.devHost.connection().ai.run([{ command, params }], false)).completed[0].result, [command, params])
-const titles = async () => (await ask('bookmark_list', { limit: 1000 })).bookmarks.map((item) => item.title)
+const titles = async () => (await ask('bookmark.list', { limit: 1000 })).bookmarks.map((item) => item.title)
 const docId = () => page.evaluate(() => window.devHost.connection().replica.info())
 const version = () => page.evaluate(() => window.devHost.connection().ai.version())
 // The kit's schema, as Kition sends it with `ai/changes` (the engine does not describe its own).
@@ -68,7 +68,7 @@ const storedReplica = async () => {
 function outsideChange(bytes) {
   const doc = sdk.PdfDocument.open(path, bytes)
   try {
-    doc.execute('bookmark_add', JSON.stringify({ page: 1, title: 'Outside' }))
+    doc.execute('bookmark.add', JSON.stringify({ page: 1, title: 'Outside' }))
     return doc.save()
   } finally {
     doc.free()
@@ -82,12 +82,12 @@ try {
   await until(async () => Array.isArray(await titles()))
 
   // Edit and save inside Kition: a bookmark, then a comment whose replica objects are tracked.
-  await ask('bookmark_add', { page: 1, title: 'Inside' })
+  await ask('bookmark.add', { page: 1, title: 'Inside' })
   const before = await version()
-  await ask('comment_add', { page: 1, type: 'note', at: [40, 40], contents: 'kept' })
+  await ask('comment.add', { page: 1, type: 'note', at: [40, 40], contents: 'kept' })
   const first = await changesSince(before)
   const made = createdIds(first.changes)
-  const keptId = async () => (await ask('comment_list')).comments.find((comment) => comment.contents === 'kept')?.id ?? null
+  const keptId = async () => (await ask('comment.list')).comments.find((comment) => comment.contents === 'kept')?.id ?? null
   const madeComment = await keptId()
   step('the comment makes replica objects', made.length > 0, made.join(' ') || why(first))
   const id = await docId()
@@ -105,12 +105,12 @@ try {
   const shows = await until(async () => (await titles()).includes('Outside'))
   step('the outside change shows', shows, (await titles()).join(', '))
   step('the edits saved before it are there', (await titles()).includes('Inside'))
-  const comments = (await ask('comment_list')).comments
+  const comments = (await ask('comment.list')).comments
   step('the comment is there', comments.some((comment) => comment.contents === 'kept'), JSON.stringify(comments))
   step('the document keeps its replica id', (await docId()) === id, String(await docId()))
   step('the outside change moved the replica on', (await version()) !== before)
   // Edited and saved again, the replica it reopened with holds the objects made before the change.
-  await ask('bookmark_add', { page: 1, title: 'After' })
+  await ask('bookmark.add', { page: 1, title: 'After' })
   const stamp = await fileVersion()
   await kit.getByTestId('pdf-save').click()
   await until(async () => (await fileVersion()) > stamp)
@@ -123,7 +123,7 @@ try {
   // The control: the same file opened alone starts another history, which does not hold it.
   await page.evaluate((bytes) => window.devHost.open('Sample.pdf', new Uint8Array(bytes).buffer), Array.from(changed))
   await until(async () => (await titles()).includes('Outside'))
-  await ask('bookmark_add', { page: 1, title: 'Alone' })
+  await ask('bookmark.add', { page: 1, title: 'Alone' })
   const alone = await changesSince(before)
   step('a file opened alone has another replica', (await docId()) !== id && alone.changes === null && !alone.error, `${await docId()} ${why(alone)}`)
 } catch (error) {

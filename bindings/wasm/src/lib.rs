@@ -135,7 +135,7 @@ fn mark_addresses(command: &mut KitCommand) {
     if !command.mutates {
         return;
     }
-    if id.starts_with("comment_") && id != "comment_add" {
+    if id.starts_with("comment_") && id != "comment.add" {
         command.targets = Some("id");
         command.object_types = &[("id", &["Comment"])];
         command.places = COMMENT;
@@ -143,11 +143,11 @@ fn mark_addresses(command: &mut KitCommand) {
     }
     let has = |key: &str| command.schema.as_ref().and_then(|schema| schema.get(key)).is_some();
     command.places = match id {
-        "page_move" => MOVE,
-        "page_insert_blank" => INSERT,
-        "link_edit" | "link_delete" => LINK,
-        "link_add" => LINK_ADD,
-        "content_update" | "content_delete" => PAGE_INDEX,
+        "page.move" => MOVE,
+        "page.insertBlank" => INSERT,
+        "link.edit" | "link.delete" => LINK,
+        "link.add" => LINK_ADD,
+        "content.set" | "content.delete" => PAGE_INDEX,
         _ if has("page") && has("pages") => PAGE_AND_PAGES,
         _ if has("page") => PAGE,
         _ if has("pages") => PAGES,
@@ -161,9 +161,9 @@ const FILE_PARAMS: &[&str] = &["path", "paths", "out", "output", "file", "files"
 
 /// Parameters of single tools that name files although their names do not say so (elsewhere the
 /// same name is no file): dropped from the tool's schema and refused like [`FILE_PARAMS`] (KHP
-/// A28). `content_update`'s `image` is the file of a replacement picture; in `image_edit` and
+/// A28). `content.set`'s `image` is the file of a replacement picture; in `image.edit` and
 /// `image_export` an `image` is a number.
-const FILE_ARGS: &[(&str, &str)] = &[("content_update", "image")];
+const FILE_ARGS: &[(&str, &str)] = &[("content.set", "image")];
 
 /// Whether `key` of `tool`'s arguments names a file ([`FILE_PARAMS`], [`FILE_ARGS`]).
 fn names_a_file(tool: &str, key: &str) -> bool {
@@ -489,7 +489,7 @@ impl KitDocument for PdfDocument {
 
     /// The words of every page in reading order, one part per page (`Page N`), for hosts that
     /// index them (`KitText 1.0`, `document.text`). The engine's text extraction of the working
-    /// file, as `text_extract` reads it: no OCR, so a scanned page without a text layer has no
+    /// file, as `text.extract` reads it: no OCR, so a scanned page without a text layer has no
     /// words, and display-only comment appearances are not text. A page the engine cannot read
     /// is left out rather than failing the whole document.
     fn text(&self, limit: usize) -> Result<kition_kit::text::DocumentText, String> {
@@ -706,9 +706,9 @@ kition_kit::export_kit_document!(PdfDocument as "PdfDocument");
 /// The tools whose edit rewrites the whole file: applying redactions, sanitizing (removing
 /// hidden information), and adding or removing security renumber every object, so the replica
 /// records them as a rebase, which drops the overlay entries collaborators write against the old
-/// base meanwhile (`kdm-model`'s `validate`). `pdfa_convert` rewrites only an encrypted file (it
+/// base meanwhile (`kdm-model`'s `validate`). `pdfa.convert` rewrites only an encrypted file (it
 /// removes the encryption).
-const REWRITES_IN_FULL: &[&str] = &["redact_apply", "doc_remove_hidden", "doc_protect", "doc_unprotect"];
+const REWRITES_IN_FULL: &[&str] = &["redaction.apply", "file.removeHidden", "file.protect", "file.unprotect"];
 
 /// The lease scope of the whole document (Kition platform rule M21).
 pub const WHOLE_DOCUMENT: &str = "*";
@@ -723,7 +723,7 @@ impl PdfDocument {
         let rewrites = match tool_name(command) {
             "edit_undo" => doc.history_rewrites(true, self.auto.session().undo_scope()),
             "edit_redo" => doc.history_rewrites(false, self.auto.session().undo_scope()),
-            "pdfa_convert" => doc.info.encrypted,
+            "pdfa.convert" => doc.info.encrypted,
             name => REWRITES_IN_FULL.contains(&name),
         };
         if rewrites { WHOLE_DOCUMENT.to_owned() } else { String::new() }
@@ -746,7 +746,7 @@ impl PdfDocument {
 /// PDF's own additions to the exported class, for its embedded editor.
 /// Adds a font file (standard E9: a web build has no system fonts, so its editor gives it its
 /// faces before any document opens): a document face that added text is drawn from
-/// (`page_add_text`), and the face for CID fonts a PDF names but does not embed, for the CJK
+/// (`page.addText`), and the face for CID fonts a PDF names but does not embed, for the CJK
 /// scripts it covers (common in Chinese PDFs). Returns how many faces or CID collections it
 /// serves: 0 for bytes that are no font, or a face added before.
 pub fn add_font(bytes: &[u8]) -> usize {

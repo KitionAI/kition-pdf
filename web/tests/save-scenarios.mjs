@@ -27,11 +27,11 @@ export async function saveScenarios({ page, kit, bytes, manifest, result, snapsh
     assert.equal(answer.completed.length, 1, 'One requested command must complete')
     return answer.completed[0]
   }
-  const outline = async () => (await ask('bookmark_list', { limit: 1000 })).result.bookmarks.map(item => ({ title: item.title, page: item.page, children: item.children ?? [] }))
+  const outline = async () => (await ask('bookmark.list', { limit: 1000 })).result.bookmarks.map(item => ({ title: item.title, page: item.page, children: item.children ?? [] }))
   const expected = count => Array.from({ length: count }, (_, index) => ({ title: `Original save bookmark ${index + 1}`, page: index + 1, children: [] }))
   const bookmarks = async count => assert.deepEqual(await outline(), expected(count))
   const add = async count => {
-    assert.equal((await ask('bookmark_add', { title: expected(count).at(-1).title, page: count })).changed, true)
+    assert.equal((await ask('bookmark.add', { title: expected(count).at(-1).title, page: count })).changed, true)
     assert.equal((await inspect()).dirty, true)
     await bookmarks(count)
   }
@@ -84,7 +84,7 @@ export async function saveScenarios({ page, kit, bytes, manifest, result, snapsh
     try { const evidence = await action(); Object.assign(check, { status: 'passed', ...(evidence ?? {}) }) }
     catch (error) { Object.assign(check, { status: 'failed', error: safe(error) }); throw error }
   }
-  await run(0, async () => { await open(bytes); await bookmarks(0); assert.equal((await ask('comment_list')).result.comments.length, 0) })
+  await run(0, async () => { await open(bytes); await bookmarks(0); assert.equal((await ask('comment.list')).result.comments.length, 0) })
   await run(1, async () => {
     // The bookmark is the agent's step (ai.run), so it is in the agent's undo scope (KitModel M12a,
     // engine rule E14a): the person's history, which inspect's canUndo and canRedo describe, has
@@ -151,7 +151,7 @@ export async function saveScenarios({ page, kit, bytes, manifest, result, snapsh
   await run(11, async () => { await open(latest.data); await bookmarks(4) })
   const annotation = { page: 1, rect: [170, 150, 210, 180], width: 2, color: '#ff0000', contents: 'Original save rectangle' }
   const comment = async () => {
-    const comments = (await ask('comment_list')).result.comments
+    const comments = (await ask('comment.list')).result.comments
     assert.equal(comments.length, 1)
     const item = comments[0]
     assert.equal(item.page, annotation.page); assert.equal(item.contents, annotation.contents)
@@ -159,7 +159,7 @@ export async function saveScenarios({ page, kit, bytes, manifest, result, snapsh
     return { page: item.page, rect: item.rect, type: item.type, contents: item.contents }
   }
   await run(12, async () => {
-    assert.equal((await ask('comment_add', { ...annotation, type: 'rectangle' })).changed, true)
+    assert.equal((await ask('comment.add', { ...annotation, type: 'rectangle' })).changed, true)
     const observed = await comment(); await toolbarSave()
     annotated = await exported('annotation-rectangle', 4, latest, annotation)
     return { annotation: observed }

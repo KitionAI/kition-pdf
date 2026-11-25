@@ -66,7 +66,7 @@ struct Snapshot {
 }
 
 fn snapshot(a: &mut Automation, id: DocId) -> Snapshot {
-    let comments = ok(a, "comment_list", json!({ "doc": id.0 }));
+    let comments = ok(a, "comment.list", json!({ "doc": id.0 }));
     // Ensure the replica exists before recording identity and counters.
     let version = format!("{:?}", a.session_mut().version(id).unwrap());
     let state_hash = a.session_mut().state_hash(id).unwrap();
@@ -113,13 +113,13 @@ fn prepared(dir: &Workdir, extension: &str) -> (Automation, DocId) {
     std::fs::write(dir.0.join("input.pdf"), fixture(extension)).unwrap();
     let mut a = Automation::new().with_root(&dir.0).unwrap().with_clock(|| 1_700_000_000);
     let id = DocId(ok(&mut a, "doc_open", json!({ "path": "input.pdf" }))["doc"].as_u64().unwrap());
-    ok(&mut a, "fill_sign_add", json!({ "doc": id.0, "page": 1, "type": "check", "at": [20, 40] }));
-    ok(&mut a, "comment_add", json!({ "doc": id.0, "page": 1, "type": "note", "at": [80, 40], "contents": "Retained prior annotation" }));
-    ok(&mut a, "comment_add", json!({ "doc": id.0, "page": 1, "type": "note", "at": [100, 40], "contents": "Redo branch annotation" }));
+    ok(&mut a, "fillSign.add", json!({ "doc": id.0, "page": 1, "type": "check", "at": [20, 40] }));
+    ok(&mut a, "comment.add", json!({ "doc": id.0, "page": 1, "type": "note", "at": [80, 40], "contents": "Retained prior annotation" }));
+    ok(&mut a, "comment.add", json!({ "doc": id.0, "page": 1, "type": "note", "at": [100, 40], "contents": "Redo branch annotation" }));
     ok(&mut a, "edit_undo", json!({ "doc": id.0 }));
     let current = a.session().get(id).unwrap();
     assert!(current.dirty && current.can_undo().is_some() && current.can_redo().is_some());
-    let comments = ok(&mut a, "comment_list", json!({ "doc": id.0 }));
+    let comments = ok(&mut a, "comment.list", json!({ "doc": id.0 }));
     assert_eq!(comments["count"], 2);
     assert!(comments["comments"].as_array().unwrap().iter().any(|note| note["contents"] == "Retained prior annotation"));
     (a, id)
@@ -127,11 +127,11 @@ fn prepared(dir: &Workdir, extension: &str) -> (Automation, DocId) {
 
 fn assert_redo_contents(a: &mut Automation, id: DocId) {
     ok(a, "edit_redo", json!({ "doc": id.0 }));
-    let comments = ok(a, "comment_list", json!({ "doc": id.0 }));
+    let comments = ok(a, "comment.list", json!({ "doc": id.0 }));
     assert_eq!(comments["count"], 3);
     assert!(comments["comments"].as_array().unwrap().iter().any(|note| note["contents"] == "Redo branch annotation"));
     ok(a, "edit_undo", json!({ "doc": id.0 }));
-    assert_eq!(ok(a, "comment_list", json!({ "doc": id.0 }))["count"], 2);
+    assert_eq!(ok(a, "comment.list", json!({ "doc": id.0 }))["count"], 2);
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -230,9 +230,9 @@ fn staged_default_save_as_full_and_incremental_commit_exact_bytes() {
         assert_eq!(a.session().doc_id(id), before.replica_id);
         assert_eq!(a.session().kdm_resets(id), before.resets);
         assert_eq!(a.session().kdm_dropped(id), before.dropped);
-        assert_eq!(ok(&mut a, "comment_list", json!({ "doc": id.0 }))["count"], 1);
+        assert_eq!(ok(&mut a, "comment.list", json!({ "doc": id.0 }))["count"], 1);
         let reopened = ok(&mut a, "doc_open", json!({ "path": "output.pdf" }));
-        assert_eq!(ok(&mut a, "comment_list", json!({ "doc": reopened["doc"] }))["count"], 1);
+        assert_eq!(ok(&mut a, "comment.list", json!({ "doc": reopened["doc"] }))["count"], 1);
     }
 }
 
@@ -241,9 +241,9 @@ fn staged_incremental_save_preserves_actual_undo_and_redo() {
     let dir = Workdir::new("staged-incremental-history");
     let (mut a, id) = prepared(&dir, "");
     ok(&mut a, "doc_save", json!({ "doc": id.0, "path": "output.pdf", "full": false, "flatten_fill_sign": true }));
-    assert_eq!(ok(&mut a, "comment_list", json!({ "doc": id.0 }))["count"], 1);
+    assert_eq!(ok(&mut a, "comment.list", json!({ "doc": id.0 }))["count"], 1);
     ok(&mut a, "edit_undo", json!({ "doc": id.0 }));
-    assert_eq!(ok(&mut a, "comment_list", json!({ "doc": id.0 }))["count"], 2);
+    assert_eq!(ok(&mut a, "comment.list", json!({ "doc": id.0 }))["count"], 2);
     ok(&mut a, "edit_redo", json!({ "doc": id.0 }));
-    assert_eq!(ok(&mut a, "comment_list", json!({ "doc": id.0 }))["count"], 1);
+    assert_eq!(ok(&mut a, "comment.list", json!({ "doc": id.0 }))["count"], 1);
 }

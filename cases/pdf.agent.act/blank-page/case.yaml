@@ -16,7 +16,7 @@ steps:
         Insert one blank page into report.pdf between the Overview page and the Budget page.
         Keep every other page as it is.
       max_turns: 20
-  - run: { path: report.pdf, args: { save: false }, steps: [{ command: text_extract }], as: text }
+  - run: { path: report.pdf, args: { save: false }, steps: [{ command: text.extract }], as: text }
 expected:
   - actual: out:text
     compare: values
@@ -32,6 +32,6 @@ expected:
       completed.0.result.pages.3.text: "Appendix\nFigures are in thousands."
 solution:
   - tool: pdf_run
-    args: { path: report.pdf, steps: [{ command: page_insert_blank, params: { at: 2 } }] }
+    args: { path: report.pdf, steps: [{ command: page.insertBlank, params: { at: 2 } }] }
 since: "2026-11-17"
 timeout_s: 600

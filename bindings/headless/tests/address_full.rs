@@ -32,32 +32,32 @@ fn mine(bytes: &[u8], address: Address) -> Value {
     let mut doc = kition_pdf_kit::PdfDocument::open(FILE, bytes).unwrap();
     let cos = open(bytes);
     match address {
-        PageNumber => step("page_rotate", json!({"pages":[2],"degrees":180})),
-        PageRange => step("page_rotate", json!({"pages":[2,3],"degrees":180})),
+        PageNumber => step("page.rotate", json!({"pages":[2],"degrees":180})),
+        PageRange => step("page.rotate", json!({"pages":[2,3],"degrees":180})),
         CommentNm | CommentIndex => {
-            let notes = doc.execute("comment_list", json!({"page":2})).unwrap();
+            let notes = doc.execute("comment.list", json!({"page":2})).unwrap();
             let note = notes["comments"].as_array().unwrap().iter().find(|n| n["contents"] == "note 2").unwrap();
             if address == CommentNm {
-                step("comment_edit", json!({"id":note["id"],"contents":"mine"}))
+                step("comment.edit", json!({"id":note["id"],"contents":"mine"}))
             } else {
-                step("comment_edit", json!({"page":2,"index":note["index"],"contents":"mine"}))
+                step("comment.edit", json!({"page":2,"index":note["index"],"contents":"mine"}))
             }
         }
-        FieldName => step("form_fill", json!({"values":{"F2":"mine"}})),
+        FieldName => step("form.fill", json!({"values":{"F2":"mine"}})),
         LinkIndex => {
-            let links = doc.execute("link_list", json!({})).unwrap();
+            let links = doc.execute("link.list", json!({})).unwrap();
             let l = links["links"].as_array().unwrap().iter().find(|l| l["page"] == 2).unwrap();
-            step("link_edit", json!({"page":2,"index":l["index"],"url":"https://example.com/mine"}))
+            step("link.edit", json!({"page":2,"index":l["index"],"url":"https://example.com/mine"}))
         }
-        BookmarkPath => step("bookmark_add", json!({"page":2,"parent":[2],"title":"Mine"})),
-        BookmarkIndex => step("bookmark_add", json!({"page":2,"position":2,"title":"Mine"})),
-        ContentIndex => step("content_update", json!({"page":2,"index":1,"text":"Mine"})),
-        ImageIndex => step("image_edit", json!({"page":2,"image":1,"action":"rotate"})),
-        ParagraphIndex => step("text_edit", json!({"page":2,"paragraph":1,"text":"Mine"})),
-        FigureNumber => step("accessibility_set_alt", json!({"figure":figure(&cos,2).num,"alt":"Mine"})),
-        Point => step("comment_add", json!({"page":2,"type":"note","at":[220,180],"contents":"mine"})),
-        Rectangle => step("redact_mark", json!({"page":2,"rect":[60,40,260,90]})),
-        Whole => step("doc_protect", json!({"open_password":"matrix-password"})),
+        BookmarkPath => step("bookmark.add", json!({"page":2,"parent":[2],"title":"Mine"})),
+        BookmarkIndex => step("bookmark.add", json!({"page":2,"position":2,"title":"Mine"})),
+        ContentIndex => step("content.set", json!({"page":2,"index":1,"text":"Mine"})),
+        ImageIndex => step("image.edit", json!({"page":2,"image":1,"action":"rotate"})),
+        ParagraphIndex => step("text.edit", json!({"page":2,"paragraph":1,"text":"Mine"})),
+        FigureNumber => step("accessibility.setAlt", json!({"figure":figure(&cos,2).num,"alt":"Mine"})),
+        Point => step("comment.add", json!({"page":2,"type":"note","at":[220,180],"contents":"mine"})),
+        Rectangle => step("redaction.mark", json!({"page":2,"rect":[60,40,260,90]})),
+        Whole => step("file.protect", json!({"open_password":"matrix-password"})),
     }
 }
 
@@ -289,8 +289,8 @@ async fn drawing_stream_edits_without_private_metadata() {
     for writer in WRITERS {
         for page in 1..=4 {
             let theirs = mutate(&bytes, writer, Change { kind: Kind::DrawingText, page });
-            for command in ["content_update", "content_delete"] {
-                let params = if command == "content_update" { json!({"page":2,"index":1,"text":"Mine"}) } else { json!({"page":2,"index":1}) };
+            for command in ["content.set", "content.delete"] {
+                let params = if command == "content.set" { json!({"page":2,"index":1,"text":"Mine"}) } else { json!({"page":2,"index":1}) };
                 cell(
                     &bytes,
                     &theirs,
@@ -356,10 +356,10 @@ async fn unavailable_stored_id_addresses_are_rejected() {
     let objects = doc.objects();
     let p = &objects.pages[1];
     for (command, params, id) in [
-        ("page_rotate", json!({"degrees":90}), format!("page:{}", p.id)),
-        ("form_set_props", json!({"tooltip":"mine"}), format!("field:{}", objects.fields[1].id)),
-        ("link_edit", json!({"url":"https://example.org/mine"}), p.links[0].id.clone()),
-        ("bookmark_add", json!({"page":2,"title":"Mine"}), "bookmark:B2".into()),
+        ("page.rotate", json!({"degrees":90}), format!("page:{}", p.id)),
+        ("form.setProps", json!({"tooltip":"mine"}), format!("field:{}", objects.fields[1].id)),
+        ("link.edit", json!({"url":"https://example.org/mine"}), p.links[0].id.clone()),
+        ("bookmark.add", json!({"page":2,"title":"Mine"}), "bookmark:B2".into()),
     ] {
         let f = Fixture::from_bytes(&bytes, Default::default());
         let (_, basis) = f.inspect().await;

@@ -38,7 +38,7 @@ fn run(doc: &mut PdfDocument, command: &str, params: Value) -> Value {
 }
 
 fn page_text(doc: &mut PdfDocument) -> String {
-    let pages = run(doc, "text_extract", json!({}));
+    let pages = run(doc, "text.extract", json!({}));
     pages["pages"][0]["text"].as_str().unwrap_or_default().to_owned()
 }
 
@@ -46,7 +46,7 @@ fn page_text(doc: &mut PdfDocument) -> String {
 fn added_text_uses_the_hosts_fonts() {
     let mut doc = PdfDocument::create("notice.pdf", 612, 792).unwrap();
     // Before any font is added, Chinese is refused as before.
-    let refused = doc.execute("page_add_text", json!({ "page": 1, "at": [72, 72], "text": "冬季开放时间" }));
+    let refused = doc.execute("page.addText", json!({ "page": 1, "at": [72, 72], "text": "冬季开放时间" }));
     assert!(refused.is_err(), "{refused:?}");
 
     for file in [
@@ -60,16 +60,16 @@ fn added_text_uses_the_hosts_fonts() {
         add(file);
     }
     // A background draws no text, so it brings no font.
-    run(&mut doc, "doc_background", json!({ "color": "#fffdf7" }));
-    run(&mut doc, "page_add_text", json!({ "page": 1, "at": [72, 72], "width": 460, "text": "图书馆冬季开放时间 Winter hours", "size": 20 }));
+    run(&mut doc, "file.setBackground", json!({ "color": "#fffdf7" }));
+    run(&mut doc, "page.addText", json!({ "page": 1, "at": [72, 72], "width": 460, "text": "图书馆冬季开放时间 Winter hours", "size": 20 }));
     run(
         &mut doc,
-        "page_add_text",
+        "page.addText",
         json!({ "page": 1, "at": [72, 120], "width": 460, "text": "Saltmarsh Branch Library", "font": "Lora", "size": 18 }),
     );
-    run(&mut doc, "page_add_text", json!({ "page": 1, "at": [72, 160], "width": 460, "text": "Monday to Friday", "font": "times", "bold": true }));
-    run(&mut doc, "page_add_text", json!({ "page": 1, "at": [72, 200], "width": 460, "text": "10:00 to 18:00", "font": "courier" }));
-    run(&mut doc, "page_add_text", json!({ "page": 1, "at": [72, 240], "width": 460, "text": "Book returns stay open." }));
+    run(&mut doc, "page.addText", json!({ "page": 1, "at": [72, 160], "width": 460, "text": "Monday to Friday", "font": "times", "bold": true }));
+    run(&mut doc, "page.addText", json!({ "page": 1, "at": [72, 200], "width": 460, "text": "10:00 to 18:00", "font": "courier" }));
+    run(&mut doc, "page.addText", json!({ "page": 1, "at": [72, 240], "width": 460, "text": "Book returns stay open." }));
 
     // Every character can be copied and searched.
     let text = page_text(&mut doc);
@@ -78,9 +78,9 @@ fn added_text_uses_the_hosts_fonts() {
         assert!(text.contains(expected), "{expected:?} in {text:?}");
     }
     // The items keep their faces through an edit.
-    let list = run(&mut doc, "content_list", json!({}));
+    let list = run(&mut doc, "content.list", json!({}));
     assert_eq!(list["items"][1]["font"], json!("Lora"), "{list}");
-    run(&mut doc, "content_update", json!({ "page": 1, "index": 2, "text": "Saltmarsh Library" }));
+    run(&mut doc, "content.set", json!({ "page": 1, "index": 2, "text": "Saltmarsh Library" }));
     assert!(page_text(&mut doc).contains("Saltmarsh Library"));
     // The page embeds every font it uses.
     let unembedded: Vec<String> = doc.check().into_iter().filter(|d| d.code == "pdf.font-not-embedded").map(|d| d.message).collect();

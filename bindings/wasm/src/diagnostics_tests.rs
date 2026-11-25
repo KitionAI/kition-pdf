@@ -70,7 +70,7 @@ fn observing_real_document_does_not_make_renderer_and_invalidations_keep_lifetim
     assert_eq!(doc.render(area.x, area.y, 1.0, 8, 8).unwrap(), first);
     assert_eq!((snapshot().unwrap().hits, snapshot().unwrap().full_render_requests), (1, 1));
 
-    doc.execute("doc_background", json!({ "color": "#20c040" })).unwrap();
+    doc.execute("file.setBackground", json!({ "color": "#20c040" })).unwrap();
     let before_render = snapshot().unwrap();
     assert_eq!(before_render.display_invalidations, 0, "snapshot observes existing state; only rendering replaces the old display cache");
     let saved = doc.save(None).unwrap();

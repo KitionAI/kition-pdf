@@ -60,7 +60,7 @@ fn callout_leaders_stay_outside_the_box_and_land_square() {
         if let Some(knee) = knee {
             params["knee"] = json!(knee);
         }
-        run(&mut doc, "comment_add", params);
+        run(&mut doc, "comment.add", params);
     }
     let bytes = doc.save(Some("callouts.pdf")).unwrap();
     let (leaders, outers, insets) = (arrays(&bytes, "CL"), arrays(&bytes, "Rect"), arrays(&bytes, "RD"));
@@ -98,17 +98,17 @@ fn callout_leaders_stay_outside_the_box_and_land_square() {
 #[test]
 fn measurements_read_square_units_and_draw_their_labels() {
     let mut doc = PdfDocument::create("plot.pdf", 612, 792).unwrap();
-    run(&mut doc, "measure_scale", json!({ "page": 1, "rect": [86, 140, 526, 500], "units_per_point": 0.05, "unit": "m", "name": "Site plan" }));
-    run(&mut doc, "measure_distance", json!({ "page": 1, "points": [[106, 494], [506, 494]], "label": "Frontage" }));
-    run(&mut doc, "measure_area", json!({ "page": 1, "points": [[126, 180], [256, 180], [256, 280], [126, 280]], "label": "Brassica bed" }));
-    let list = run(&mut doc, "measure_list", json!({ "page": 1 }));
+    run(&mut doc, "measure.setScale", json!({ "page": 1, "rect": [86, 140, 526, 500], "units_per_point": 0.05, "unit": "m", "name": "Site plan" }));
+    run(&mut doc, "measure.distance", json!({ "page": 1, "points": [[106, 494], [506, 494]], "label": "Frontage" }));
+    run(&mut doc, "measure.area", json!({ "page": 1, "points": [[126, 180], [256, 180], [256, 280], [126, 280]], "label": "Brassica bed" }));
+    let list = run(&mut doc, "measure.list", json!({ "page": 1 }));
     let area = &list["measurements"][1]["reading"];
     assert_eq!(area["unit"], json!("m²"), "{area}");
     assert_eq!(area["label"], json!("32.50 m²"), "{area}");
     assert_eq!(list["measurements"][0]["reading"]["label"], json!("20.00 m"));
     // The captions show the label with the reading: flattened into the page, they are its text.
-    run(&mut doc, "doc_flatten", json!({ "comments": true }));
-    let text = run(&mut doc, "text_extract", json!({}))["pages"][0]["text"].as_str().unwrap_or_default().to_owned();
+    run(&mut doc, "file.flatten", json!({ "comments": true }));
+    let text = run(&mut doc, "text.extract", json!({}))["pages"][0]["text"].as_str().unwrap_or_default().to_owned();
     for caption in ["Frontage: 20.00 m", "Brassica bed: 32.50 m²"] {
         assert!(text.contains(caption), "{caption:?} in {text:?}");
     }

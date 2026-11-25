@@ -4,8 +4,8 @@
 //! opened, read, changed or fetched, no program is started, no answer tells whether a file outside
 //! exists or where the kit is installed, and no connection is made. A workspace-escape audit
 //! found by reading code that
-//! `content_update`'s `image` (a parameter the kit's file check did not know) read any file by
-//! path into the page, and that `ocr_status` answered folders of the machine (beside the
+//! `content.set`'s `image` (a parameter the kit's file check did not know) read any file by
+//! path into the page, and that `ocr.status` answered folders of the machine (beside the
 //! executable, the source tree).
 //!
 //! The test runs itself again as a child process whose current folder, `HOME` and `TMPDIR` are
@@ -146,7 +146,7 @@ fn referring(outside: &Path, port: u16) -> Vec<u8> {
     ])
 }
 
-/// A one-page PDF with a picture added the way `page_add_image` adds one (so `content_update`
+/// A one-page PDF with a picture added the way `page_add_image` adds one (so `content.set`
 /// edits it), made by the engine outside the kit.
 fn with_picture() -> Vec<u8> {
     let mut session = kition_pdf_engine::Session::new();
@@ -319,20 +319,20 @@ fn act(root: &Path) {
 
     // A picture added to the page: content_update's `image` replaces it by a file's bytes.
     let id = agent.open("picture.pdf");
-    let listed = agent.run(&id, "content_list", json!({}));
+    let listed = agent.run(&id, "content.list", json!({}));
     if !listed.contains("index") {
         agent.problems.push(format!("picture.pdf should list its added picture: {listed}"));
     }
     let probe = |name: &str| json!({ "page": 1, "index": 1, "image": at(&outside, name) });
-    let there = agent.every_way(&id, "content_update", &probe("secret.bmp"));
-    let absent = agent.every_way(&id, "content_update", &probe("absent.bmp"));
+    let there = agent.every_way(&id, "content.set", &probe("secret.bmp"));
+    let absent = agent.every_way(&id, "content.set", &probe("absent.bmp"));
     no_existence_oracle(&mut agent, "content_update image", &there, &absent);
-    agent.every_way(&id, "content_update", &probe("pipe.bmp"));
+    agent.every_way(&id, "content.set", &probe("pipe.bmp"));
     for (command, value) in [
         ("page_add_image", json!({ "page": 1, "path": at(&outside, "pipe.bmp") })),
-        ("comment_add", json!({ "page": 1, "type": "attachment", "at": [10, 10], "path": at(&outside, "secret.txt") })),
+        ("comment.add", json!({ "page": 1, "type": "attachment", "at": [10, 10], "path": at(&outside, "secret.txt") })),
         ("doc_import_data", json!({ "path": at(&outside, "pipe.fdf") })),
-        ("ocr_status", json!({})),
+        ("ocr.status", json!({})),
         ("printers", json!({})),
         ("doc_print", json!({})),
         ("sign_document", json!({ "id": at(&outside, "pipe.bin"), "out": at(&outside, "signed.pdf") })),
@@ -353,12 +353,12 @@ fn act(root: &Path) {
         agent.problems.push(format!("the check should report {wanted} as pdf.external-reference: {checked}"));
     }
     for (command, value) in [
-        ("js_document_scripts", json!({})),
-        ("js_run", json!({ "script": format!("app.launchURL('http://127.0.0.1:{port}/run'); this.submitForm('http://127.0.0.1:{port}/run');") })),
-        ("link_list", json!({})),
+        ("script.list", json!({})),
+        ("script.run", json!({ "script": format!("app.launchURL('http://127.0.0.1:{port}/run'); this.submitForm('http://127.0.0.1:{port}/run');") })),
+        ("link.list", json!({})),
         ("attachments", json!({})),
-        ("form_fields", json!({})),
-        ("page_render", json!({ "page": 1 })),
+        ("form.listFields", json!({})),
+        ("page.render", json!({ "page": 1 })),
     ] {
         agent.run(&refers, command, value);
     }

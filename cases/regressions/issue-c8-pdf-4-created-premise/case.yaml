@@ -6,7 +6,7 @@ layer: gate
 source: { kind: synthetic, from: "C8-pdf-4 address matrix", license: owned }
 input: []
 steps:
-  - cargo-test: { package: kition-pdf, test: address_full, filter: page_number }
+  - cargo-test: { package: kition-pdf, test: address_full, filter: page.number }
 expected:
   - { actual: "out:exit", compare: exit }
 since: "2026-11-17"

@@ -78,7 +78,7 @@ next/previous and keyboard wrapping,
 current-revision cache reuse, clearing and no-results, 200 ms debounce, IME
 composition suppression, stale async replies, edit revision invalidation,
 close/focus restoration, Escape, keyboard reopening, and document replacement.
-The stale-reply test holds actual completed `text_find` replies in a temporary
+The stale-reply test holds actual completed `text.find` replies in a temporary
 page wrapper while allowing a newer request to complete; it does not replace
 engine output with invented match geometry.
 

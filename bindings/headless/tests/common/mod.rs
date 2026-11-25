@@ -28,13 +28,13 @@ pub fn kit() -> &'static KitDefinition {
 pub fn fixture_doc(pages: usize) -> PdfDocument {
     let mut doc = PdfDocument::create(FILE, 612, 792).unwrap();
     for at in 2..=pages {
-        doc.execute("page_insert_blank", json!({ "at": at })).unwrap();
+        doc.execute("page.insertBlank", json!({ "at": at })).unwrap();
     }
     for n in 1..=pages {
-        doc.execute("page_add_text", json!({ "page": n, "at": [72, 60], "text": format!("Page {n}") })).unwrap();
-        doc.execute("comment_add", json!({ "page": n, "type": "note", "at": [100, 100 + n], "contents": format!("note {n}") })).unwrap();
-        doc.execute("form_add_field", json!({ "page": n, "type": "text", "rect": [72, 600, 300, 624], "name": format!("F{n}") })).unwrap();
-        doc.execute("bookmark_add", json!({ "page": n, "title": format!("B{n}") })).unwrap();
+        doc.execute("page.addText", json!({ "page": n, "at": [72, 60], "text": format!("Page {n}") })).unwrap();
+        doc.execute("comment.add", json!({ "page": n, "type": "note", "at": [100, 100 + n], "contents": format!("note {n}") })).unwrap();
+        doc.execute("form.addField", json!({ "page": n, "type": "text", "rect": [72, 600, 300, 624], "name": format!("F{n}") })).unwrap();
+        doc.execute("bookmark.add", json!({ "page": n, "title": format!("B{n}") })).unwrap();
     }
     doc
 }

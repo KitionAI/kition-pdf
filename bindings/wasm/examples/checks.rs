@@ -3,7 +3,7 @@
 //! code, and `expected/` (the expected previews of `basic.pdf`).
 //! `cargo run -p kition-pdf-kit --example checks -- conformance`. The files are written object by
 //! object (the same bytes on every run); the restricted one goes through the kit's own
-//! `doc_protect` tool.
+//! `file.protect` tool.
 
 use std::path::Path;
 
@@ -141,7 +141,7 @@ fn fixtures() -> Vec<(&'static str, Vec<u8>)> {
 }
 
 /// `check-restricted.pdf`: `basic.pdf` with a permissions password that denies printing and
-/// copying, written by the kit's own `doc_protect` and `doc_save` tools.
+/// copying, written by the kit's own `file.protect` and `doc_save` tools.
 fn restricted(dir: &Path) -> Result<(), String> {
     let mut tools = kition_pdf_automation::Automation::new().with_root(dir).map_err(|error| error.to_string())?;
     let opened = tools.call("doc_open", &json!({ "path": "basic.pdf" })).map_err(|error| format!("{error:?}"))?;
@@ -150,7 +150,7 @@ fn restricted(dir: &Path) -> Result<(), String> {
         _ => return Err("doc_open answered no document".into()),
     };
     tools
-        .call("doc_protect", &json!({ "doc": doc, "permissions_password": "owner", "printing": "none", "copy": false }))
+        .call("file.protect", &json!({ "doc": doc, "permissions_password": "owner", "printing": "none", "copy": false }))
         .map_err(|error| format!("{error:?}"))?;
     tools.call("doc_save", &json!({ "doc": doc, "path": "check-restricted.pdf" })).map_err(|error| format!("{error:?}"))?;
     println!("wrote check-restricted.pdf");

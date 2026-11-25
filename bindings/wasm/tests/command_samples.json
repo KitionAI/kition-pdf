@@ -1,21 +1,21 @@
 {
- "page_render": {
+ "page.render": {
   "params": {
    "page": 1,
    "dpi": 36
   }
  },
- "object_list": {
+ "object.list": {
   "params": {
    "page": 1
   }
  },
- "text_find": {
+ "text.find": {
   "params": {
    "query": "a"
   }
  },
- "text_select": {
+ "text.select": {
   "params": {
    "page": 1,
    "anchor": [
@@ -28,7 +28,7 @@
    ]
   }
  },
- "measure_info": {
+ "measure.getInfo": {
   "params": {
    "page": 1,
    "type": "distance",
@@ -44,7 +44,7 @@
    ]
   }
  },
- "measure_snap": {
+ "measure.setSnap": {
   "params": {
    "page": 1,
    "at": [
@@ -53,32 +53,32 @@
    ]
   }
  },
- "comment_image_preview": {
+ "comment.previewImage": {
   "skip": "needs a comment with an image appearance"
  },
- "action_list": {
+ "action.list": {
   "params": {}
  },
- "doc_compare": {
+ "file.compare": {
   "skip": "needs a second open PDF to compare against"
  },
- "form_actions": {
+ "form.listActions": {
   "skip": "needs a form field"
  },
- "ocr_status": {
+ "ocr.status": {
   "params": {}
  },
- "text_lines": {
+ "text.listLines": {
   "params": {
    "page": 1
   }
  },
- "page_images": {
+ "page.listImages": {
   "params": {
    "page": 1
   }
  },
- "text_paragraphs": {
+ "text.listParagraphs": {
   "params": {
    "page": 1
   }

@@ -46,7 +46,7 @@ The engine override is mandatory. Its JS and WASM bytes are hash-recorded and
 served before Vite's static middleware, including Worker requests. Each file
 gets a fresh browser context, initially null host connection, and unique name.
 The test waits for that filename's completed host open before capturing the
-existing editor `KitEngine` using a read-only `bookmark_list` command (the class
+existing editor `KitEngine` using a read-only `bookmark.list` command (the class
 comes from `@kition/sdk/editor` through `tests/sdk-editor.mjs`, which the page
 imports through Vite, so it is the class the editor runs). It checks
 one clean 128-by-128 page and DPR 1. Raster calls use the inspected page origin,

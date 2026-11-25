@@ -8,7 +8,7 @@
 //!
 //! Each sequence runs on a fresh document with the same fixed clock (the session's clock seam),
 //! so `/ModDate` and the ids new comments get follow from the edits alone. The edit after an undo
-//! is `page_add_text`, which adds objects and mints no ids (a comment's `/NM` also follows from
+//! is `page.addText`, which adds objects and mints no ids (a comment's `/NM` also follows from
 //! how many changes the session made, so a new comment after an undo has another name than in a
 //! session without the undone edit, as it should).
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
@@ -49,17 +49,17 @@ fn open() -> PdfDocument {
 
 /// A: a note (an annotation and the objects drawing it).
 fn a(doc: &mut PdfDocument) {
-    doc.execute("comment_add", json!({ "page": 1, "type": "note", "at": [100, 100], "contents": "first" })).unwrap();
+    doc.execute("comment.add", json!({ "page": 1, "type": "note", "at": [100, 100], "contents": "first" })).unwrap();
 }
 
 /// B: a rectangle comment (more new objects, after A's).
 fn b(doc: &mut PdfDocument) {
-    doc.execute("comment_add", json!({ "page": 1, "type": "rectangle", "rect": [72, 300, 300, 360], "contents": "second" })).unwrap();
+    doc.execute("comment.add", json!({ "page": 1, "type": "rectangle", "rect": [72, 300, 300, 360], "contents": "second" })).unwrap();
 }
 
 /// C: text on the page (a new content stream and its font), no new ids.
 fn c(doc: &mut PdfDocument) {
-    doc.execute("page_add_text", json!({ "page": 1, "at": [72, 500], "width": 400, "text": "Third" })).unwrap();
+    doc.execute("page.addText", json!({ "page": 1, "at": [72, 500], "width": 400, "text": "Third" })).unwrap();
 }
 
 fn undo(doc: &mut PdfDocument) {

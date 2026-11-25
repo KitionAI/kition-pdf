@@ -39,7 +39,7 @@ fn decode(text: &str) -> Vec<u8> {
 }
 
 fn notes(doc: &mut PdfDocument) -> Vec<String> {
-    let listed = doc.execute("comment_list", json!({})).unwrap();
+    let listed = doc.execute("comment.list", json!({})).unwrap();
     listed["comments"].as_array().unwrap().iter().filter_map(|comment| comment["contents"].as_str().map(str::to_owned)).collect()
 }
 
@@ -50,7 +50,7 @@ fn note(page: u32, text: &str) -> Value {
 /// The room's document, as a collaborator holds it.
 fn peer() -> PdfDocument {
     let mut doc = PdfDocument::create("Report.pdf", 612, 792).unwrap();
-    doc.execute("page_insert_blank", json!({ "at": 2 })).unwrap();
+    doc.execute("page.insertBlank", json!({ "at": 2 })).unwrap();
     let bytes = doc.save(None).unwrap();
     let mut doc = PdfDocument::open("Report.pdf", &bytes).unwrap();
     doc.version().unwrap();
@@ -73,12 +73,12 @@ fn opens_a_room_without_a_file_and_imports_exports_and_saves_it() {
 
     // A collaborator's change comes in.
     let since = peer.version().unwrap();
-    peer.execute("comment_add", note(1, "from a person")).unwrap();
+    peer.execute("comment.add", note(1, "from a person")).unwrap();
     let change = peer.export_changes(&since).unwrap();
     kit.model("model.import", json!({ "documentId": id, "changes": encode(&change) })).unwrap();
 
     // The kit edits on top of it, and the collaborator takes what it exports.
-    let batch = json!({ "documentId": id, "ops": [{ "op": "command", "id": "comment_add", "params": note(2, "from the server") }] });
+    let batch = json!({ "documentId": id, "ops": [{ "op": "command", "id": "comment.add", "params": note(2, "from the server") }] });
     kit.model("model.batch", batch).unwrap();
     let exported = kit.model("model.export", json!({ "documentId": id, "since": encode(&peer.version().unwrap()) })).unwrap();
     peer.import_changes(&decode(exported["changes"].as_str().unwrap())).unwrap();
@@ -128,15 +128,15 @@ fn a_pdf_opens_from_its_exported_replica_with_its_base() {
     std::fs::create_dir_all(&root).unwrap();
     let root = std::fs::canonicalize(root).unwrap();
     let mut file = PdfDocument::create("Report.pdf", 612, 792).unwrap();
-    file.execute("page_insert_blank", json!({ "at": 2 })).unwrap();
-    file.execute("form_add_field", json!({ "page": 1, "type": "text", "rect": [72, 600, 300, 624], "name": "Name" })).unwrap();
+    file.execute("page.insertBlank", json!({ "at": 2 })).unwrap();
+    file.execute("form.addField", json!({ "page": 1, "type": "text", "rect": [72, 600, 300, 624], "name": "Name" })).unwrap();
     std::fs::write(root.join("Report.pdf"), file.save(None).unwrap()).unwrap();
 
     let mut kit = kit();
     let folder = HostFolder::new(&root).unwrap();
     kit.set_host(folder.host());
     let opened = kit.open(OpenRequest { file: &folder.file("Report.pdf").unwrap(), read_only: false, create: None }).unwrap().id;
-    kit.execute(&opened, "comment_add", params(note(1, "from the agent")), Origin::Agent).unwrap();
+    kit.execute(&opened, "comment.add", params(note(1, "from the agent")), Origin::Agent).unwrap();
 
     let exported = kit.model("model.export", json!({ "documentId": opened })).unwrap();
     assert!(exported["blobs"].is_string(), "the base PDF travels with the changes: {exported}");
@@ -153,7 +153,7 @@ fn a_pdf_opens_from_its_exported_replica_with_its_base() {
     let (mut original, mut copy) = (saved(&mut kit, &opened), saved(&mut kit, &replica));
     assert_eq!(notes(&mut copy), ["from the agent"], "the annotation came with the replica");
     assert_eq!(copy.inspect().unwrap()["pages"], original.inspect().unwrap()["pages"], "the same pages");
-    let fields = |doc: &mut PdfDocument| doc.execute("form_fields", json!({})).unwrap()["fields"].clone();
+    let fields = |doc: &mut PdfDocument| doc.execute("form.listFields", json!({})).unwrap()["fields"].clone();
     assert_eq!(fields(&mut copy), fields(&mut original), "the same form fields");
     assert_eq!(
         copy.render(0.0, 0.0, 1.0, copy.width(), 300).unwrap(),
@@ -162,7 +162,7 @@ fn a_pdf_opens_from_its_exported_replica_with_its_base() {
     );
 
     // The replica takes edits of its own and leaves the file's document alone.
-    kit.execute(&replica, "comment_add", params(note(2, "in the draft")), Origin::Agent).unwrap();
+    kit.execute(&replica, "comment.add", params(note(2, "in the draft")), Origin::Agent).unwrap();
     let mut draft = notes(&mut saved(&mut kit, &replica));
     draft.sort();
     assert_eq!(draft, ["from the agent", "in the draft"]);

@@ -71,9 +71,9 @@ fn text_find_returns_independent_multiline_and_partial_rects_for_every_page_tran
     let id = automation.session_mut().open("SearchGeometry.pdf", None, Arc::new(fixture::pdf()), None).unwrap();
     for (query, partial, matched_text) in [("AB CD", false, "AB\nCD"), ("ab \t cd", false, "AB\nCD"), ("B C", true, "B\nC")] {
         let args = json!({"doc":id.0,"query":query});
-        let result = call(&mut automation, "text_find", args.clone());
+        let result = call(&mut automation, "text.find", args.clone());
         assert_eq!(result["count"], 8, "query {query}");
-        assert_eq!(call(&mut automation, "text_find", args), result, "cached lookup preserves geometry");
+        assert_eq!(call(&mut automation, "text.find", args), result, "cached lookup preserves geometry");
         for (index, (found, page)) in result["matches"].as_array().unwrap().iter().zip(fixture::pages()).enumerate() {
             assert_eq!(found["page"], index + 1);
             assert_eq!(found["text"], matched_text);
@@ -82,5 +82,5 @@ fn text_find_returns_independent_multiline_and_partial_rects_for_every_page_tran
         }
         println!("search tool query={query:?} pages=8 repeated_cache_result=identical");
     }
-    assert_eq!(call(&mut automation, "text_find", json!({"doc":id.0,"query":"AB EF"}))["count"], 0);
+    assert_eq!(call(&mut automation, "text.find", json!({"doc":id.0,"query":"AB EF"}))["count"], 0);
 }

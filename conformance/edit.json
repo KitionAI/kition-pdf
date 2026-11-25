@@ -1,5 +1,5 @@
 {
   "steps": [
-    { "command": "page_rotate", "params": { "pages": [1], "degrees": 90 } }
+    { "command": "page.rotate", "params": { "pages": [1], "degrees": 90 } }
   ]
 }

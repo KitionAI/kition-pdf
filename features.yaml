@@ -92,7 +92,7 @@ features:
     dimension: [function, data-safety]
     priority: P0
     status: has
-    commands: [comment_list, comment_add, comment_reply, comment_set_status, comment_mark, comment_lock, comment_edit, comment_image_preview, comment_delete, comments_hide]
+    commands: [comment.list, comment.add, comment.reply, comment.setStatus, comment.mark, comment.lock, comment.edit, comment.previewImage, comment.delete, comment.hide]
     paths: [bindings/wasm/src/collab.rs]
     target: "Adobe Acrobat Pro 26.002.21931"
     cases: [pdf.comments/incremental-save-reopen, pdf.comments/save-reopen, regressions/issue-2, regressions/issue-4, regressions/issue-pdf-random-ids]
@@ -102,7 +102,7 @@ features:
     dimension: [function, conversion, data-safety]
     priority: P0
     status: has
-    commands: [page_insert_blank, page_duplicate, page_rotate, page_move, page_set_box, page_number]
+    commands: [page.insertBlank, page.duplicate, page.rotate, page.move, page.setBox, page.number]
     paths: [bindings/wasm/tests/round_trip.rs, bindings/wasm/tests/duplicate_regression.rs]
     target: "Adobe Acrobat Pro 26.002.21931"
     cases: [pdf.pages.organize/save-reopen, regressions/issue-c8-pdf-4-duplicate]
@@ -112,7 +112,7 @@ features:
     dimension: [function, conversion, data-safety]
     priority: P0
     status: has
-    commands: [bookmark_add, bookmark_list]
+    commands: [bookmark.add, bookmark.list]
     paths: [bindings/wasm/tests/round_trip.rs]
     target: "Adobe Acrobat Pro 26.002.21931"
     cases: [pdf.bookmarks.edit/save-reopen]
@@ -122,7 +122,7 @@ features:
     dimension: [function, conversion, data-safety]
     priority: P0
     status: has
-    commands: [form_add_field, form_fill, form_fields]
+    commands: [form.addField, form.fill, form.listFields]
     paths: [bindings/wasm/tests/round_trip.rs]
     target: "Adobe Acrobat Pro 26.002.21931"
     cases: [pdf.forms.fill/save-reopen]
@@ -132,7 +132,7 @@ features:
     dimension: [function, conversion, data-safety]
     priority: P0
     status: has
-    commands: [link_add, link_list]
+    commands: [link.add, link.list]
     paths: [bindings/wasm/tests/round_trip.rs]
     target: "Adobe Acrobat Pro 26.002.21931"
     cases: [pdf.links.edit/save-reopen]
@@ -142,7 +142,7 @@ features:
     dimension: [function, conversion, data-safety]
     priority: P0
     status: has
-    commands: [page_add_text, text_edit, text_extract]
+    commands: [page.addText, text.edit, text.extract]
     paths: [bindings/wasm/tests/round_trip.rs]
     target: "Adobe Acrobat Pro 26.002.21931"
     cases: [pdf.text.edit/save-reopen]
@@ -152,7 +152,7 @@ features:
     dimension: [function, conversion, data-safety]
     priority: P0
     status: has
-    commands: [redact_mark, redact_apply]
+    commands: [redaction.mark, redaction.apply]
     paths: [bindings/wasm/tests/round_trip.rs]
     target: "Adobe Acrobat Pro 26.002.21931"
     cases: [pdf.redact.apply/save-reopen]
@@ -162,7 +162,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [bookmark_from_structure]
+    commands: [bookmark.addFromStructure]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
     cases: [pdf.bookmarks/save-reopen]
@@ -172,7 +172,7 @@ features:
     dimension: [function, data-safety]
     priority: P1
     status: partial
-    commands: [doc_info, doc_inspect, doc_create, doc_initial_view, doc_audit_space, doc_revisions, doc_hidden_info, doc_remove_hidden, doc_flatten, doc_remove_marks, action_list]
+    commands: [file.getInfo, file.inspect, file.new, file.setInitialView, file.auditSpace, file.listRevisions, file.getHiddenInfo, file.removeHidden, file.flatten, file.removeMarks, action.list]
     cases: [regressions/issue-c8-pdf-4-marks]
     paths: [bindings/wasm/src/lib.rs, bindings/wasm/tests/marks_regression.rs]
     target: "Adobe Acrobat Pro 26.002.21931"
@@ -230,7 +230,7 @@ features:
     dimension: [function, fidelity]
     priority: P1
     status: partial
-    commands: [page_render, render_preview, object_list, object_move]
+    commands: [page.render, file.render, object.list, object.move]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
     since: "2026-11-17"
@@ -239,7 +239,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [text_find, text_select, text_lines, text_paragraphs]
+    commands: [text.find, text.select, text.listLines, text.listParagraphs]
     paths: [crates/engine/automation/src/text_selection.rs]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -249,7 +249,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [page_delete]
+    commands: [page.delete]
     paths: [bindings/wasm/src/collab.rs]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -259,7 +259,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [page_images, image_edit]
+    commands: [page.listImages, image.edit]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
     since: "2026-11-17"
@@ -268,7 +268,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [content_list, content_update, content_delete]
+    commands: [content.list, content.set, content.delete]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
     cases: [regressions/issue-1, regressions/issue-pdf-fonts-build-input, regressions/issue-japanese-faces-for-japanese-text, regressions/issue-control-characters-from-faces]
@@ -278,7 +278,7 @@ features:
     dimension: [function, data-safety]
     priority: P1
     status: partial
-    commands: [form_reset, form_set_props, form_tab_order, form_delete_field, form_set_script, form_detect_fields, form_actions, form_set_actions]
+    commands: [form.reset, form.setProps, form.setTabOrder, form.deleteField, form.setScript, form.detectFields, form.listActions, form.setActions]
     paths: [bindings/wasm/src/collab.rs, crates/engine/automation/src/signing.rs, crates/engine/forms/src/author.rs, bindings/wasm/tests/engine_regressions.rs]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -289,7 +289,7 @@ features:
     dimension: [function, security]
     priority: P1
     status: partial
-    commands: [redact_clear]
+    commands: [redaction.clear]
     paths: [web/src/commandIcons.ts, bindings/wasm/src/lib.rs]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -299,7 +299,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [link_edit, link_delete, links_from_urls, links_remove]
+    commands: [link.edit, link.delete, link.addFromUrls, link.removeAll]
     paths: [bindings/wasm/src/check.rs]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -309,7 +309,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [measure_distance, measure_perimeter, measure_area, measure_info, measure_list, measure_scale, measure_snap]
+    commands: [measure.distance, measure.perimeter, measure.area, measure.getInfo, measure.list, measure.setScale, measure.setSnap]
     paths: [web/src/commandIcons.ts]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -319,7 +319,7 @@ features:
     dimension: [security, function]
     priority: P1
     status: partial
-    commands: [doc_protect, doc_unprotect, sign_list]
+    commands: [file.protect, file.unprotect, signature.list]
     paths: [bindings/wasm/src/lib.rs, bindings/wasm/examples/checks.rs, bindings/wasm/src/hosting.rs, bindings/wasm/src/check.rs, crates/engine/automation/src/lib.rs]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -330,7 +330,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [doc_header_footer, doc_watermark, doc_background, doc_remove_marks]
+    commands: [file.setHeaderFooter, file.setWatermark, file.setBackground, file.removeMarks]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
     since: "2026-11-17"
@@ -339,7 +339,7 @@ features:
     dimension: [function, compat]
     priority: P1
     status: partial
-    commands: [accessibility_check, accessibility_fix, accessibility_figures, accessibility_set_alt]
+    commands: [accessibility.check, accessibility.fix, accessibility.listFigures, accessibility.setAlt]
     paths: [web/src/commandIcons.ts]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -349,7 +349,7 @@ features:
     dimension: [function, security]
     priority: P2
     status: partial
-    commands: [js_run, js_document_scripts, js_set_document_script, js_enabled]
+    commands: [script.run, script.list, script.set, script.enabled]
     paths: [web/src/commandIcons.ts]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -359,7 +359,7 @@ features:
     dimension: [conversion, compat]
     priority: P1
     status: partial
-    commands: [pdfa_verify, pdfa_convert]
+    commands: [pdfa.verify, pdfa.convert]
     paths: [bindings/wasm/src/lib.rs]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -369,7 +369,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [doc_compare, doc_compare_mark]
+    commands: [file.compare, file.compareMark]
     paths: [web/src/commandIcons.ts]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -379,7 +379,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [ocr_recognize, ocr_status]
+    commands: [ocr.recognize, ocr.status]
     paths: [web/src/commandIcons.ts]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
@@ -389,7 +389,7 @@ features:
     dimension: [function]
     priority: P1
     status: partial
-    commands: [fill_sign_add, fill_sign_date_format]
+    commands: [fillSign.add, fillSign.setDateFormat]
     target: "Adobe Acrobat Pro 26.002.21931"
     gap: "The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen."
     since: "2026-11-17"

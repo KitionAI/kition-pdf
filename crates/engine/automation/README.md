@@ -3,7 +3,7 @@
 Agent control for Kition PDF: a headless tool table over the engine. The kit's SDK (`kition-pdf-kit`) offers it to agents as commands, which reach them as the KHP `pdf_*` tools of Kition's kits MCP server.
 
 - **Layer:** L7 (architecture §13), but headless. It depends on `engine`, `render` and `organize`, never on a UI toolkit.
-- **Status:** over a hundred tools; `tools::tools()` lists the current set with their schemas (the count isn't repeated here, so it can't go stale). They cover inspection, rendering, text, page edits and organizing, page labels, bookmarks, comments and their review, form filling and authoring (fields, properties, scripts, data exchange, detection), redaction and sanitizing, password protection and signatures, calibrated 2D measurements and CSV export, adding text, images, links and stamps, optimizing, OCR, printing, export, metadata, undo/redo, save, combine, extract and split. Comment tools take geometry in the same top-left-origin points as everything else, and `comment_add` can mark text by searching for it (`find`).
+- **Status:** over a hundred tools; `tools::tools()` lists the current set with their schemas (the count isn't repeated here, so it can't go stale). They cover inspection, rendering, text, page edits and organizing, page labels, bookmarks, comments and their review, form filling and authoring (fields, properties, scripts, data exchange, detection), redaction and sanitizing, password protection and signatures, calibrated 2D measurements and CSV export, adding text, images, links and stamps, optimizing, OCR, printing, export, metadata, undo/redo, save, combine, extract and split. Comment tools take geometry in the same top-left-origin points as everything else, and `comment.add` can mark text by searching for it (`find`).
 
 ## API
 
@@ -18,12 +18,12 @@ tools() -> Vec<ToolDef>                                  // name, title, descrip
 
 ## Conventions
 
-- Tool names are `snake_case` (`page_rotate`): tool names with dots are not valid in every model provider's namespace. `ToolDef::command` links a tool to the registry id it automates (`page.rotate`), and `command_list` reports the link.
+- Tool names are `snake_case` (`page.rotate`): tool names with dots are not valid in every model provider's namespace. `ToolDef::command` links a tool to the registry id it automates (`page.rotate`), and `command_list` reports the link.
 - Pages and positions are **1-based**. Rectangles are PDF points with the origin at the top-left of the displayed page.
 - Unknown arguments are rejected, so typos fail loudly.
 - Tools that change a document return its summary (`doc`, `pages`, `dirty`, `undo`, `redo`, …).
-- `comment_image_preview` returns JSON and a PNG: `layer: "background"` (the default) gives the page without the selected image signature/initials; `layer: "image"` gives its embedded image with alpha. The metadata supplies its displayed rectangle, document rotation, `image_rotation` (how far clockwise the image is shown turned: 0 for one placed by Kition PDF, which keeps it upright as displayed) and annotation opacity. Each result can be saved with the CLI's `--out`. Cache the background and transform the image for live movement/resizing; `comment_edit` commits the final geometry in one undo step. Previewing never changes the document.
-- For proportional image signature resizing, use the embedded image layer's width/height ratio rather than a previously stretched annotation rectangle. The GUI preserves this ratio at corners with the opposite corner anchored; edge midpoint handles change only their own axis. `comment_edit` accepts the resulting rectangle.
+- `comment.previewImage` returns JSON and a PNG: `layer: "background"` (the default) gives the page without the selected image signature/initials; `layer: "image"` gives its embedded image with alpha. The metadata supplies its displayed rectangle, document rotation, `image_rotation` (how far clockwise the image is shown turned: 0 for one placed by Kition PDF, which keeps it upright as displayed) and annotation opacity. Each result can be saved with the CLI's `--out`. Cache the background and transform the image for live movement/resizing; `comment.edit` commits the final geometry in one undo step. Previewing never changes the document.
+- For proportional image signature resizing, use the embedded image layer's width/height ratio rather than a previously stretched annotation rectangle. The GUI preserves this ratio at corners with the opposite corner anchored; edge midpoint handles change only their own axis. `comment.edit` accepts the resulting rectangle.
 - `doc_close` refuses to drop unsaved changes unless `discard_changes: true`. `doc_save` writes atomically, incrementally in place, and in full for a new path.
 - `doc_save` with `flatten_fill_sign: true` prepares the edit, exact saved bytes,
   reopened graph and derived view before the atomic filesystem write. Returned
@@ -36,7 +36,7 @@ tools() -> Vec<ToolDef>                                  // name, title, descrip
 
 ## Text selection
 
-`text_select {doc, page, anchor: [x,y], focus: [x,y], end_page?, mode?}` reads
+`text.select {doc, page, anchor: [x,y], focus: [x,y], end_page?, mode?}` reads
 selection text and geometry without editing. Pages are 1-based; both points and
 returned rectangles use displayed page-local points with top-left origin, crop
 and rotation already applied. `mode` defaults to `range`: endpoints select their
@@ -55,7 +55,7 @@ Tests: `cargo test -p kition-pdf-automation --test text_selection`.
 
 ## Shared field properties
 
-`form_set_props` accepts either `field` (one name) or `fields` (1–1000 unique names):
+`form.setProps` accepts either `field` (one name) or `fields` (1–1000 unique names):
 
 ```json
 {"doc": 1, "fields": ["first_name", "last_name"], "required": true,
@@ -79,8 +79,8 @@ or fill colour. Names, rectangles and rotations require the single-field form. R
 
 ## Moving several page objects
 
-`object_list {doc, page}` inventories recognised paragraphs, Image/Form artwork and added items
-with generation-scoped kind/index references. `object_move {doc, page, objects, offset, generation?}`
+`object.list {doc, page}` inventories recognised paragraphs, Image/Form artwork and added items
+with generation-scoped kind/index references. `object.move {doc, page, objects, offset, generation?}`
 moves 1–1000 references atomically in displayed points (right/down), preserving source glyph bytes
 and fonts. A refusal changes nothing; success is one undo step. See
 [the selection and movement guide](../../../docs/features/editing-multiple-objects.md) for limits and examples.
@@ -95,8 +95,8 @@ ignored with a `warnings` array; required values and paths still go through the 
 
 `command_batch {steps: [{id, params?}], stop_on_error?}` returns `completed`, `failed`, and per-step
 `{ok, result?, error?}` entries. The default is to stop at the first error; earlier edits remain.
-`doc_inspect {doc?}` returns one document's info, or `{documents: [...]}` for all open documents.
-`render_preview {doc?, page?, max_side?}` returns a PNG (page defaults to 1, maximum side defaults
+`file.inspect {doc?}` returns one document's info, or `{documents: [...]}` for all open documents.
+`file.render {doc?, page?, max_side?}` returns a PNG (page defaults to 1, maximum side defaults
 to 1024, allowed 1–4096). Omit `doc` only when exactly one document is open.
 
 Exports complete synchronously.

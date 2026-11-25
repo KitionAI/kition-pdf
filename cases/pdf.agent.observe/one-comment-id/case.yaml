@@ -2,7 +2,7 @@ format: 1
 id: pdf.agent.observe/one-comment-id
 feature: pdf.agent.observe
 intent: >-
-  A comment has one id at the tool interface, its tool id (its `/NM`): the id `comment_list` gives is
+  A comment has one id at the tool interface, its tool id (its `/NM`): the id `comment.list` gives is
   the one the receipt (`changesSince`) names and the one `modelBatch` loads it by, `modelReply` names
   the comment's KDM object by it, and after a save and a reopen with the stored replica it still names
   the same comment, behind which the replica keeps the same KDM object.

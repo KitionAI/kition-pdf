@@ -5,7 +5,7 @@ use kition_pdf_engine::{DocId, Edit, FieldFont, FieldProps, FieldValue, NewField
 use serde_json::{Value, json};
 
 fn call(a: &mut Automation, args: Value) -> Value {
-    match a.call("form_set_props", &args).unwrap().remove(0) {
+    match a.call("form.setProps", &args).unwrap().remove(0) {
         Content::Json(v) => v,
         other => panic!("expected JSON: {other:?}"),
     }
@@ -98,7 +98,7 @@ fn bulk_properties_are_one_undo_step_preserve_other_looks_and_survive_save() {
     assert_eq!(doc.field_look("beta").unwrap().font, original[1].font);
     assert_eq!(doc.field_look("beta").unwrap().width, 4.0);
     assert_eq!(doc.form.iter().find(|f| f.name == "beta").unwrap().value, ["beta"]);
-    let image = a.call("page_render", &json!({"doc": reopened, "page": 2, "dpi": 72})).unwrap();
+    let image = a.call("page.render", &json!({"doc": reopened, "page": 2, "dpi": 72})).unwrap();
     assert!(image.iter().any(|c| matches!(c, Content::Png { width: 300, height: 400, .. })));
     std::fs::remove_dir_all(dir).unwrap();
 }
@@ -128,10 +128,10 @@ fn bulk_property_arguments_are_strict_and_fail_without_any_edit() {
         json!({"doc": id, "fields": vec!["alpha"; 1001], "required": true}),
     ];
     for args in cases {
-        assert!(matches!(a.call("form_set_props", &args), Err(ToolError::InvalidArgs(_))), "{args}");
+        assert!(matches!(a.call("form.setProps", &args), Err(ToolError::InvalidArgs(_))), "{args}");
         assert_eq!(bytes(&a, id), before, "{args}");
     }
-    assert!(matches!(a.call("form_set_props", &json!({"doc": id, "fields": ["alpha", "missing"], "required": true})), Err(ToolError::Failed(_))));
+    assert!(matches!(a.call("form.setProps", &json!({"doc": id, "fields": ["alpha", "missing"], "required": true})), Err(ToolError::Failed(_))));
     assert_eq!(bytes(&a, id), before);
     assert!(a.session().get(DocId(id)).unwrap().can_undo().is_none());
     std::fs::remove_dir_all(dir).unwrap();
@@ -143,10 +143,7 @@ fn a_locked_last_field_rolls_back_earlier_changes_and_unlocks_with_the_batch() {
     call(&mut a, json!({"doc": id, "field": "beta", "locked": true}));
     let before = bytes(&a, id);
     let form_before = saved_form(&a, id);
-    assert!(matches!(
-        a.call("form_set_props", &json!({"doc": id, "fields": ["alpha", "beta"], "tooltip": "Shared help"})),
-        Err(ToolError::Failed(_))
-    ));
+    assert!(matches!(a.call("form.setProps", &json!({"doc": id, "fields": ["alpha", "beta"], "tooltip": "Shared help"})), Err(ToolError::Failed(_))));
     assert_eq!(bytes(&a, id), before);
     assert_eq!(a.session().get(DocId(id)).unwrap().can_undo(), Some("Change field properties"));
     call(&mut a, json!({"doc": id, "fields": ["alpha", "beta"], "locked": false, "tooltip": "Shared help"}));
@@ -160,7 +157,7 @@ fn a_locked_last_field_rolls_back_earlier_changes_and_unlocks_with_the_batch() {
 fn bulk_options_apply_per_field_and_refuse_an_invalid_comb_atomically() {
     let (mut a, id, dir) = setup("options");
     let before = bytes(&a, id);
-    assert!(matches!(a.call("form_set_props", &json!({"doc": id, "fields": ["alpha", "beta"], "flags": {"comb": true}})), Err(ToolError::Failed(_))));
+    assert!(matches!(a.call("form.setProps", &json!({"doc": id, "fields": ["alpha", "beta"], "flags": {"comb": true}})), Err(ToolError::Failed(_))));
     assert_eq!(bytes(&a, id), before);
     call(&mut a, json!({"doc": id, "fields": ["alpha", "beta"], "max_length": 20, "align": "center", "flags": {"comb": true, "spell_check": false}}));
     let doc = a.session().get(DocId(id)).unwrap();

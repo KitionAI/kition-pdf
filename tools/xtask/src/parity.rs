@@ -263,10 +263,10 @@ mod tests {
     fn validation_catches_false_claims() {
         let repo = root();
         let cmds = HashSet::from(["page.rotate".to_string()]);
-        let tools = HashSet::from(["page_rotate".to_string()]);
+        let tools = HashSet::from(["page.rotate".to_string()]);
         let mut ok = f("organize.rotate", "shipped");
         ok.commands = vec!["page.rotate".into()];
-        ok.tools = vec!["page_rotate".into()];
+        ok.tools = vec!["page.rotate".into()];
         ok.evidence = vec!["tools/xtask/src/parity.rs::validation_catches_false_claims".into()];
         assert!(validate(&[ok], &cmds, &tools, &repo).is_empty());
 

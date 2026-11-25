@@ -59,9 +59,9 @@ export function commandDefaults(current: number) {
     const values: Record<string, unknown> = {}
     if ('page' in schema) values.page = current + 1
     if ('pages' in schema) values.pages = [current + 1]
-    if ('from' in schema && command.id === 'page_number') values.from = 1
-    if ('at' in schema) values.at = command.id === 'page_insert_blank' ? current + 2 : [72, 72]
-    if (command.id === 'comment_add') Object.assign(values, { type: 'note', contents: '' })
+    if ('from' in schema && command.id === 'page.number') values.from = 1
+    if ('at' in schema) values.at = command.id === 'page.insertBlank' ? current + 2 : [72, 72]
+    if (command.id === 'comment.add') Object.assign(values, { type: 'note', contents: '' })
     return values
   }
 }
@@ -73,10 +73,10 @@ export function commandDefaults(current: number) {
  */
 export const TABS: Array<{ id: string; label: string; menus: string[]; primary: readonly string[] }> = [
   { id: 'home', label: 'Home', menus: [], primary: [] },
-  { id: 'comment', label: 'Comments', menus: ['Comment'], primary: ['comment_add', 'comment_reply', 'comment_edit', 'comment_delete', 'comment_set_status', 'comments_hide'] },
-  { id: 'edit', label: 'Edit', menus: ['Edit PDF', 'Text', 'Links'], primary: ['content_update', 'image_edit', 'object_move', 'text_find', 'text_select', 'text_edit', 'link_add', 'link_edit', 'link_delete'] },
-  { id: 'pages', label: 'Pages', menus: ['Pages', 'Bookmarks'], primary: ['page_insert_blank', 'page_duplicate', 'page_delete', 'page_rotate', 'page_move', 'page_number', 'page_add_text', 'bookmark_add', 'bookmark_rename', 'bookmark_delete'] },
-  { id: 'forms', label: 'Forms', menus: ['Forms'], primary: ['form_add_field', 'form_fill', 'form_reset', 'form_detect_fields', 'form_set_props', 'form_delete_field', 'fill_sign_add'] },
-  { id: 'protect', label: 'Protect', menus: ['Protect', 'Redact'], primary: ['sign_list', 'redact_mark', 'redact_apply', 'redact_clear'] },
-  { id: 'document', label: 'Document', menus: ['Document', 'Measure', 'Accessibility', 'Tools'], primary: ['doc_info', 'doc_set_info', 'doc_watermark', 'doc_header_footer', 'doc_protect', 'doc_optimize', 'measure_distance', 'measure_area', 'accessibility_check', 'ocr_recognize'] },
+  { id: 'comment', label: 'Comments', menus: ['Comment'], primary: ['comment.add', 'comment.reply', 'comment.edit', 'comment.delete', 'comment.setStatus', 'comment.hide'] },
+  { id: 'edit', label: 'Edit', menus: ['Edit PDF', 'Text', 'Links'], primary: ['content.set', 'image.edit', 'object.move', 'text.find', 'text.select', 'text.edit', 'link.add', 'link.edit', 'link.delete'] },
+  { id: 'pages', label: 'Pages', menus: ['Pages', 'Bookmarks'], primary: ['page.insertBlank', 'page.duplicate', 'page.delete', 'page.rotate', 'page.move', 'page.number', 'page.addText', 'bookmark.add', 'bookmark_rename', 'bookmark_delete'] },
+  { id: 'forms', label: 'Forms', menus: ['Forms'], primary: ['form.addField', 'form.fill', 'form.reset', 'form.detectFields', 'form.setProps', 'form.deleteField', 'fillSign.add'] },
+  { id: 'protect', label: 'Protect', menus: ['Protect', 'Redact'], primary: ['signature.list', 'redaction.mark', 'redaction.apply', 'redaction.clear'] },
+  { id: 'document', label: 'Document', menus: ['Document', 'Measure', 'Accessibility', 'Tools'], primary: ['file.getInfo', 'doc_set_info', 'file.setWatermark', 'file.setHeaderFooter', 'file.protect', 'doc_optimize', 'measure.distance', 'measure.area', 'accessibility.check', 'ocr.recognize'] },
 ]

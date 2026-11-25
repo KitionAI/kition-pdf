@@ -90,10 +90,10 @@ fn cuts_at_the_limit_and_says_so() {
 #[test]
 fn pages_without_words_have_no_part_and_edits_are_read() {
     let mut doc = PdfDocument::create("notes.pdf", 612, 792).unwrap();
-    doc.execute("page_insert_blank", json!({ "at": 2 })).unwrap();
-    doc.execute("page_insert_blank", json!({ "at": 3 })).unwrap();
-    doc.execute("page_add_text", json!({ "page": 1, "text": "First", "at": [72, 100] })).unwrap();
-    doc.execute("page_add_text", json!({ "page": 3, "text": "Third", "at": [72, 100] })).unwrap();
+    doc.execute("page.insertBlank", json!({ "at": 2 })).unwrap();
+    doc.execute("page.insertBlank", json!({ "at": 3 })).unwrap();
+    doc.execute("page.addText", json!({ "page": 1, "text": "First", "at": [72, 100] })).unwrap();
+    doc.execute("page.addText", json!({ "page": 3, "text": "Third", "at": [72, 100] })).unwrap();
     let text = check_text(&doc).unwrap();
     assert_eq!(text.text, "First\nThird");
     assert_eq!(text.parts, [part("Page 1", 0, 5), part("Page 3", 6, 11)]);

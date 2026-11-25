@@ -20,7 +20,7 @@ export async function installSelectionProbe() {
   }
   const execute = KitEngine.prototype.execute
   KitEngine.prototype.execute = async function (command, params = {}) {
-    if (command !== 'text_select') return execute.call(this, command, params)
+    if (command !== 'text.select') return execute.call(this, command, params)
     const call = { params: { ...params }, status: 'pending' }
     probe.calls.push(call); probe.active++; probe.maxActive = Math.max(probe.maxActive, probe.active)
     const hold = probe.holdNext

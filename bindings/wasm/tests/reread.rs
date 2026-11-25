@@ -15,22 +15,22 @@ const NAME: &str = "Reread.pdf";
 
 fn fixture() -> Vec<u8> {
     let mut doc = PdfDocument::create(NAME, 612, 792).unwrap();
-    doc.execute("page_insert_blank", json!({ "at": 2 })).unwrap();
-    doc.execute("form_add_field", json!({ "page": 1, "type": "text", "rect": [72, 600, 300, 624], "name": "Name" })).unwrap();
+    doc.execute("page.insertBlank", json!({ "at": 2 })).unwrap();
+    doc.execute("form.addField", json!({ "page": 1, "type": "text", "rect": [72, 600, 300, 624], "name": "Name" })).unwrap();
     doc.save(None).unwrap()
 }
 
 fn note(doc: &mut PdfDocument, page: u32, text: &str) {
-    doc.execute("comment_add", json!({ "page": page, "type": "note", "at": [100, 100], "contents": text })).unwrap();
+    doc.execute("comment.add", json!({ "page": page, "type": "note", "at": [100, 100], "contents": text })).unwrap();
 }
 
 fn notes(doc: &mut PdfDocument, page: u32) -> Vec<String> {
-    let listed = doc.execute("comment_list", json!({ "page": page })).unwrap();
+    let listed = doc.execute("comment.list", json!({ "page": page })).unwrap();
     listed["comments"].as_array().unwrap().iter().filter_map(|c| c["contents"].as_str().map(str::to_owned)).collect()
 }
 
 fn field(doc: &mut PdfDocument) -> serde_json::Value {
-    doc.execute("form_fields", json!({})).unwrap()["fields"][0]["value"].clone()
+    doc.execute("form.listFields", json!({})).unwrap()["fields"][0]["value"].clone()
 }
 
 /// The live session's saved file, with `edit` run on it by another instance of the engine and
@@ -74,11 +74,11 @@ fn a_reread_keeps_the_sessions_undo_and_the_files_edit() {
 fn an_agents_undo_after_a_reread_keeps_the_other_programs_fill() {
     let mut live = PdfDocument::open(NAME, &fixture()).unwrap();
     let agent = Origin::agent("agent:test");
-    live.execute_as("comment_add", json!({ "page": 2, "type": "note", "at": [10, 10], "contents": "agent" }), &agent).unwrap();
+    live.execute_as("comment.add", json!({ "page": 2, "type": "note", "at": [10, 10], "contents": "agent" }), &agent).unwrap();
     let saved = live.save(None).unwrap();
     live.mark_saved();
     let (_, fresh) = reread(&saved, |other| {
-        other.execute("form_fill", json!({ "values": { "Name": "Bob" } })).unwrap();
+        other.execute("form.fill", json!({ "values": { "Name": "Bob" } })).unwrap();
     });
 
     assert_eq!(live.reconcile_reread(&fresh), Ok(true));

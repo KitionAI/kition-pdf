@@ -134,7 +134,7 @@ try {
     if (step.action === 'zoom') await kit.getByTestId('pdf-actual-size').click()
     else if (step.action === 'edit') {
       await frame.evaluate(() => window.__kitionPerf.start())
-      const response = await bounded(page.evaluate(() => window.devHost.connection().ai.run([{ command: 'comment_add', params: { page: 1, type: 'note', contents: 'Cache invalidation probe', at: [80, 80] } }], false)), 'Comment edit')
+      const response = await bounded(page.evaluate(() => window.devHost.connection().ai.run([{ command: 'comment.add', params: { page: 1, type: 'note', contents: 'Cache invalidation probe', at: [80, 80] } }], false)), 'Comment edit')
       assert.equal(response.completed?.length, 1, 'Comment command must complete')
     } else {
       await kit.getByTestId('pdf-page-field').fill(String(step.page))

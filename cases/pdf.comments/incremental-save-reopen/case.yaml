@@ -2,7 +2,7 @@ format: 1
 id: pdf.comments/incremental-save-reopen
 feature: pdf.comments
 intent: >-
-  Three notes added with comment_add, each followed by a save, append to the original bytes; every
+  Three notes added with comment.add, each followed by a save, append to the original bytes; every
   reopened copy lists all the notes so far with the same document id and version, and undo and redo
   still work after the saves.
 layer: unit

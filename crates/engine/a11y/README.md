@@ -19,6 +19,6 @@ let html = report_html(&report, "file.pdf", "2026-10-02");
 - **Structure checks** read the structure tree through the role map; table regularity counts
   `ColSpan`/`RowSpan` attributes.
 - The report is a self-contained HTML page. Fixes that edit the document (language, title, tab
-  order) live in the engine (`Document::accessibility_fix`).
+  order) live in the engine (`Document::accessibility.fix`).
 
 Not yet: autotagging, the Tags/Order/Content panels, the Reading Order tool (M12.1–M12.2).

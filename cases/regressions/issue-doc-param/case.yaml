@@ -5,7 +5,7 @@ intent: >-
   Every command refuses a caller-supplied `doc` and says the document is the one the call is made
   on, like any other key its schema does not name, so a model that passes `doc` to pick another
   document is told instead of the edit landing on this one. Before, the binding replaced
-  the given `doc` with its own and `page_rotate {degrees: 90, doc: "something-else"}` rotated the
+  the given `doc` with its own and `page.rotate {degrees: 90, doc: "something-else"}` rotated the
   open document without an error.
 layer: gate
 source:

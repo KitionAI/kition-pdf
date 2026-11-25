@@ -240,7 +240,7 @@ pub struct Document {
     pub path: Option<String>,
     /// The working file: what Save writes.
     pub bytes: Arc<Vec<u8>>,
-    /// What is displayed (the page view, `page_render`, page images): `bytes`, plus appearances
+    /// What is displayed (the page view, `page.render`, page images): `bytes`, plus appearances
     /// drawn for display only for comments that have none ([`display_bytes`]). Never saved.
     pub display: Arc<Vec<u8>>,
     pub info: DocInfo,

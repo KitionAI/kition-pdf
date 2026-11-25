@@ -17,11 +17,11 @@ const OUT: &str = "KITION_PDF_DETERMINISM_OUT";
 
 fn build() -> Vec<u8> {
     let mut doc = PdfDocument::create("review.pdf", 612, 792).unwrap();
-    doc.execute("page_add_text", json!({ "page": 1, "at": [72, 72], "width": 400, "text": "Quarterly report", "size": 24 })).unwrap();
-    doc.execute("comment_add", json!({ "page": 1, "type": "note", "at": [400, 80], "contents": "Check the totals" })).unwrap();
-    doc.execute("comment_add", json!({ "page": 1, "type": "rectangle", "rect": [72, 300, 300, 360], "color": "#dd3333" })).unwrap();
-    doc.execute("comment_add", json!({ "page": 1, "type": "highlight", "find": "Quarterly" })).unwrap();
-    doc.execute("comment_add", json!({ "page": 1, "type": "stamp", "stamp": "approved", "dynamic": true, "at": [300, 600] })).unwrap();
+    doc.execute("page.addText", json!({ "page": 1, "at": [72, 72], "width": 400, "text": "Quarterly report", "size": 24 })).unwrap();
+    doc.execute("comment.add", json!({ "page": 1, "type": "note", "at": [400, 80], "contents": "Check the totals" })).unwrap();
+    doc.execute("comment.add", json!({ "page": 1, "type": "rectangle", "rect": [72, 300, 300, 360], "color": "#dd3333" })).unwrap();
+    doc.execute("comment.add", json!({ "page": 1, "type": "highlight", "find": "Quarterly" })).unwrap();
+    doc.execute("comment.add", json!({ "page": 1, "type": "stamp", "stamp": "approved", "dynamic": true, "at": [300, 600] })).unwrap();
     doc.save(Some("review.pdf")).unwrap()
 }
 
