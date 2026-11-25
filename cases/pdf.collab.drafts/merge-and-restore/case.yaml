@@ -5,9 +5,11 @@ intent: >-
   A draft forked from the document's replica, with a comment added, merges into the document as one
   undo step of the person: the comparison beforehand names what the merge does and changes nothing,
   the engine's document shows the draft's comment, one Undo takes the draft back and Redo brings it
-  again. A draft made while the document edited too is refused (every PDF edit writes the one overlay
-  map, which the merge compares as one field), as are bytes that are no changes, and a refused merge
-  changes nothing. An earlier snapshot restored over the document brings back its objects under their
+  again. A draft made while the document edited too merges key by key of the overlay map (data model
+  6.6, D3): the draft's comment on page 2 and the document's later one on page 1 both stay, and one
+  Undo takes the draft's back. A draft and a later document edit that both rewrite one overlay entry
+  (a comment each on page 1) are refused, the refusal naming the key, as are bytes that are no
+  changes, and a refused merge changes nothing. An earlier snapshot restored over the document brings back its objects under their
   ids as one undo step; the same snapshot again changes nothing, and another document's is refused.
 layer: unit
 source:

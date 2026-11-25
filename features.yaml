@@ -193,7 +193,7 @@ features:
     status: partial
     paths: [bindings/wasm/src/collab.rs, bindings/wasm/src/lib.rs, crates/engine/engine/src/kdm_bridge.rs, crates/kdm/kdm-model/src/session.rs]
     cases: [pdf.collab.drafts/merge-and-restore]
-    gap: Engine tests merge a draft, compare it first and restore a version; no case drives a draft or a restore in the editor yet.
+    gap: "Engine tests merge a draft, compare it first and restore a version. A draft merges with later edits of the document object by object (overlay key); a draft and a later edit that both rewrite one object (comments on one page, which both write the page) are refused, not merged. No case drives a draft or a restore in the editor yet."
     since: "2026-11-25"
   - id: pdf.editor.replica-merges-file
     title: "A PDF changed outside Kition opens with its stored replica: the change shows, recorded as one import, and the document keeps its replica id and object ids (Kit UI protocol UI-R1)"

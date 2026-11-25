@@ -542,20 +542,22 @@ mod tests {
     /// A draft (a replica forked from the document's) merges in as one step of the person's Undo:
     /// the comparison beforehand names what the merge does and changes nothing, the engine's
     /// document follows the merge, and Undo and Redo take the whole draft back and again. A draft
-    /// made while the document changed its overlay too (every PDF edit writes the one `overlay`
-    /// map, which the KDM's merge compares as one field) is refused, as are bytes that are no
-    /// changes, and a refused merge changes nothing.
+    /// made while the document edited too merges key by key (data model 6.6, D3): a draft's
+    /// comment on page 2 and the document's later one on page 1 write different `overlay` keys,
+    /// and both stay. A draft and a later document edit that both rewrite one key (a comment each
+    /// on page 1, which writes that page's object) are refused, the refusal naming the key, as are
+    /// bytes that are no changes, and a refused merge changes nothing.
     #[test]
     fn a_draft_merges_in_as_one_undo_step_and_the_document_follows() {
         let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
         note(&mut doc, 1, "before");
-        let draft_of = |doc: &mut PdfDocument, text: &str| -> (Vec<u8>, Vec<u8>) {
+        let draft_of = |doc: &mut PdfDocument, page: u32, text: &str| -> (Vec<u8>, Vec<u8>) {
             let base = doc.version().unwrap();
             let mut draft = PdfDocument::open_with_replica("Report.pdf", &[], &doc.snapshot().unwrap(), &doc.blobs().unwrap()).unwrap();
-            note(&mut draft, 2, text);
+            note(&mut draft, page, text);
             (draft.export_changes(&base).unwrap(), draft.blobs_since(&base).unwrap())
         };
-        let (changes, blobs) = draft_of(&mut doc, "from the draft");
+        let (changes, blobs) = draft_of(&mut doc, 2, "from the draft");
         doc.add_blobs(&blobs).unwrap();
         let version = doc.version().unwrap();
         let preview = doc.compare_changes(&changes).unwrap();
@@ -573,16 +575,39 @@ mod tests {
         assert!(doc.undo().unwrap().0);
         assert_eq!(contents(&mut doc), ["before"], "the person's earlier step is still below it");
 
-        let (changes, blobs) = draft_of(&mut doc, "late");
+        let (changes, blobs) = draft_of(&mut doc, 2, "late");
         doc.add_blobs(&blobs).unwrap();
         note(&mut doc, 1, "meanwhile");
+        let answer = doc.merge_changes(&changes, &person()).unwrap();
+        assert_ne!(answer["damage"], json!({ "kind": "none" }), "{answer}");
+        assert_eq!(contents(&mut doc), ["before", "late", "meanwhile"], "a draft and a later edit of other overlay keys both stay");
+        assert!(doc.undo().unwrap().0);
+        assert_eq!(contents(&mut doc), ["before", "meanwhile"], "one undo takes the draft back and leaves the document's edit");
+
+        let keys = overlay_keys(&mut doc);
+        assert!(!keys.is_empty(), "the page 1 comments rewrote page 1's objects");
+        let (changes, blobs) = draft_of(&mut doc, 1, "same page");
+        doc.add_blobs(&blobs).unwrap();
+        note(&mut doc, 1, "also meanwhile");
         let at = doc.version().unwrap();
         let refused = doc.merge_changes(&changes, &person()).unwrap_err();
         assert!(refused.contains("stale"), "{refused}");
+        assert!(
+            keys.iter().any(|key| refused.contains(&format!("overlay[\"{key}\"]"))),
+            "the refusal names the overlay key both wrote ({keys:?}): {refused}"
+        );
         assert!(doc.compare_changes(&changes).is_err());
         assert!(doc.merge_changes(b"not changes", &person()).is_err());
         assert_eq!(doc.version().unwrap(), at, "a refused merge changes nothing");
-        assert_eq!(contents(&mut doc), ["before", "meanwhile"]);
+        assert_eq!(contents(&mut doc), ["also meanwhile", "before", "meanwhile"]);
+    }
+
+    /// The keys of the document's replica's `overlay` map (the objects its edits wrote).
+    fn overlay_keys(doc: &mut PdfDocument) -> Vec<String> {
+        let state = doc.replicated_state().unwrap();
+        let pdf = state["objects"].as_object().unwrap().values().find(|object| object["$type"] == "Pdf").cloned();
+        let overlay = pdf.and_then(|pdf| pdf["overlay"].as_object().cloned()).unwrap_or_else(|| panic!("no overlay map: {state}"));
+        overlay.keys().cloned().collect()
     }
 
     /// An earlier state (a checkpoint's snapshot) is written over the document by object id as one
