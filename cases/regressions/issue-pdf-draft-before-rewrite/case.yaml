@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-pdf-draft-before-rewrite
+feature: pdf.collab.drafts
+intent: >-
+  A draft made before the document was rewritten in full (a new base, its overlay cleared) is
+  refused by the comparison and by the merge with the reason the editor shows ("the document was
+  rewritten since this draft was made"), and changes nothing. The KDM's rules alone take it in, and
+  the repair then deleted the draft's entries of the old base without a word. A draft that rewrote
+  the file while the document was edited is refused the same way, since the document's edits would
+  be lost; a draft made after the rewrite merges.
+layer: unit
+source:
+  kind: synthetic
+  from: bindings/wasm/src/collab.rs (the collaboration fixture)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, filter: "collab::tests::a_draft_made_before_a_full_rewrite_is_refused_saying_so" }
+  - cargo-test: { package: kition-pdf-kit, filter: "collab::tests::a_draft_that_rewrote_the_file_while_the_document_was_edited_is_refused_saying_so" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-25"

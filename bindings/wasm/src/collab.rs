@@ -164,10 +164,11 @@ impl PdfDocument {
         u32::try_from(self.auto.session().kdm_resets(self.id)).unwrap_or(u32::MAX)
     }
 
-    /// How many edits a collaborator made against the file while another rewrote it in full
-    /// (applying redactions, changing security, sanitizing, signing) were dropped when they
-    /// merged (overlay entries). Hosts show it; Kition Server's lease for full-save operations
-    /// keeps it at zero.
+    /// How many edits (overlay entries) were dropped because an undo or redo of a full rewrite
+    /// (applying redactions, changing security, sanitizing, signing) brought back another base
+    /// than the one they were made against: the person undoes a sanitize after an agent's
+    /// comment, which goes with it. The editor tells the person when it grows
+    /// (`web/src/droppedEdits.ts`).
     pub fn kdm_dropped(&self) -> u32 {
         u32::try_from(self.auto.session().kdm_dropped(self.id)).unwrap_or(u32::MAX)
     }
@@ -179,11 +180,14 @@ impl PdfDocument {
         kdm.replica().state_json().map_err(engine_error)
     }
 
-    /// Takes a draft's changes (from a replica forked from this one) in as one undo step of
-    /// `origin`'s scope (`mergeChanges`, as `kition-sdk`'s `export_kit_session!` answers it): the
-    /// engine's document follows, and one Undo takes the whole draft back. Add the draft's blobs
-    /// first. Answers `{"damage", "summary"}`, `summary` the `StateDiff` of the replicated state
-    /// before and after. A refused merge changes nothing and fails with the KDM's message.
+    /// Takes a draft's changes (from a replica forked from this one) in as one undo step of the
+    /// person who accepts it, whoever made the draft (`mergeChanges`, as `kition-sdk`'s
+    /// `export_kit_session!` answers it; KitModel M12a: `origin` is who the change is recorded
+    /// as, the host passes the agent's): the engine's document follows, and the person's Undo
+    /// takes the whole draft back. Add the draft's blobs first. Answers `{"damage", "summary"}`,
+    /// `summary` the `StateDiff` of the replicated state before and after. A refused merge
+    /// changes nothing and fails with its reason: the KDM's, or that the document was rewritten
+    /// since the draft was made ([`kdm_model::REWRITTEN_SINCE`]), which the editor shows.
     pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<Value, String> {
         let before = self.replicated_state()?;
         let damage = self.auto.session_mut().merge_changes(self.id, bytes, origin).map_err(engine_error)?;
@@ -192,7 +196,8 @@ impl PdfDocument {
     }
 
     /// What merging a draft's changes would change in the document now, as `StateDiff` JSON;
-    /// nothing changes. Refuses what [`PdfDocument::merge_changes`] refuses.
+    /// nothing changes. Refuses what [`PdfDocument::merge_changes`] refuses, with the same
+    /// reason, so the editor knows before the person accepts.
     pub fn compare_changes(&mut self, bytes: &[u8]) -> Result<Value, String> {
         Ok(self.auto.session_mut().compare_changes(self.id, bytes).map_err(engine_error)?.to_json())
     }
@@ -209,11 +214,15 @@ impl PdfDocument {
     /// the tool interface names the object (its tool id, KitObjectModel OM9: a comment's `/NM`, a
     /// page's `page:<id>`, a field's `field:<id>`); unchanged without a replica. Text that merely
     /// holds an id stays. The document keeps its own ids.
+    ///
+    /// The editor sends every `ai/inspect`, `document/check` and `ai/run` reply through this, so
+    /// it reads the tool ids of the objects the reply names alone (`ToolIds::show_reply`, through
+    /// `Replica::tool_ids_of`), never the whole document's; a reply naming no object is answered
+    /// as it is.
     pub fn model_reply(&self, value: &str) -> Result<String, String> {
         let value: Value = serde_json::from_str(value).map_err(|error| format!("the reply is not JSON: {error}"))?;
         let Some(kdm) = self.auto.session().kdm(self.id) else { return Ok(value.to_string()) };
-        let ids = kition_kit::kdm::tool_ids::ToolIds::of_replica(kdm.replica());
-        Ok(if ids.is_active() { ids.show_json(&value) } else { value }.to_string())
+        Ok(kition_kit::kdm::tool_ids::ToolIds::show_reply(kdm.replica(), &value).to_string())
     }
 
     /// `model/describe` (`KitObjectModel 1.0`), through the document's change exchange
@@ -742,5 +751,182 @@ mod tests {
         let remove: Vec<Value> = keys.iter().map(|key| json!({ "op": "map.delete", "target": "root", "field": "overlay", "key": key })).collect();
         exchange.batch(&mut doc, &json!({ "ops": remove }), false).unwrap();
         assert_eq!(comment_count(&mut doc), 0);
+    }
+
+    /// What the person sees of the document and what the replica holds: the replica's state hash,
+    /// every comment and form field as the kit lists them, and the pixels of the first page.
+    fn view(doc: &mut PdfDocument) -> (String, Value, Value, Vec<u8>) {
+        let hash = doc.auto.session_mut().state_hash(doc.id).unwrap();
+        let comments = doc.execute("comment_list", json!({})).unwrap();
+        let fields = doc.execute("form_fields", json!({})).unwrap();
+        let pixels = doc.render(0.0, 0.0, 1.0, doc.width(), 300).unwrap();
+        (hash, comments, fields, pixels)
+    }
+
+    /// A draft of `doc` as it is now, `edit` run on it: its changes and the blobs they need.
+    fn draft_with(doc: &mut PdfDocument, edit: impl FnOnce(&mut PdfDocument)) -> (Vec<u8>, Vec<u8>) {
+        let base = doc.version().unwrap();
+        let mut draft = PdfDocument::open_with_replica("Report.pdf", &[], &doc.snapshot().unwrap(), &doc.blobs().unwrap()).unwrap();
+        edit(&mut draft);
+        (draft.export_changes(&base).unwrap(), draft.blobs_since(&base).unwrap())
+    }
+
+    /// The `overlay` map of the replicated state `state`, and its `epoch`.
+    fn overlay_of(state: &Value) -> (serde_json::Map<String, Value>, String) {
+        let pdf = &state["objects"]["pdf"];
+        (pdf["overlay"].as_object().cloned().unwrap_or_default(), pdf["epoch"].as_str().unwrap_or_default().to_owned())
+    }
+
+    /// KitModel M12a: a draft an agent made (the host passes the agent's origin to `mergeChanges`)
+    /// is one undo step of the person who accepts it, in the engine's history as in the
+    /// replica's: the person's Undo takes it back and the agent's has nothing to take. With the
+    /// person's own comment made meanwhile (another page: another overlay key and another page's
+    /// comment list), one Undo gives back the exact state before the merge (the replica's state
+    /// hash, every comment and field the kit lists, the pixels) and Redo the merged one.
+    #[test]
+    fn an_agents_draft_merges_as_the_persons_undo_step_and_undo_and_redo_are_exact() {
+        use kition_kit::kdm::UndoScope;
+        let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
+        note(&mut doc, 1, "before");
+        let agent = Origin::agent("agent:drafter");
+        let (changes, blobs) = draft_with(&mut doc, |draft| note(draft, 2, "from the agent"));
+        note(&mut doc, 1, "meanwhile");
+        doc.add_blobs(&blobs).unwrap();
+        let before = view(&mut doc);
+        let answer = doc.merge_changes(&changes, &agent).unwrap();
+        assert_ne!(answer["damage"], json!({ "kind": "none" }), "{answer}");
+        assert_eq!(contents(&mut doc), ["before", "from the agent", "meanwhile"], "both sides' comments are there");
+        let merged = view(&mut doc);
+        let kdm = doc.auto.session().kdm(doc.id).unwrap();
+        assert!(!kdm.can_undo_in(UndoScope::Agent), "the replica holds the merge in the person's history, none in the agent's");
+        assert!(kdm.can_undo_in(UndoScope::Person));
+        assert!(doc.can_undo(), "and so does the engine's");
+        assert!(doc.execute_as("edit.undo", json!({}), &agent).is_err(), "the agent has no step to undo");
+        assert_eq!(view(&mut doc), merged, "the agent's Undo changed nothing");
+        assert!(doc.undo().unwrap().0);
+        assert_eq!(view(&mut doc), before, "the person's one Undo gives back the exact state before the merge");
+        assert_eq!(contents(&mut doc), ["before", "meanwhile"]);
+        assert!(doc.redo().unwrap().0);
+        assert_eq!(view(&mut doc), merged, "Redo gives back the merged state exactly");
+        assert_eq!(doc.kdm_resets(), 0, "the engine's and the replica's histories stayed in step");
+    }
+
+    /// A restored version undoes and redoes exactly: one Undo gives back the state before the
+    /// restore and Redo the restored one (the replica's state hash, the kit's comments and fields,
+    /// the pixels).
+    #[test]
+    fn a_restore_undoes_and_redoes_exactly() {
+        let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
+        note(&mut doc, 1, "kept");
+        let checkpoint = doc.snapshot().unwrap();
+        note(&mut doc, 2, "later");
+        doc.execute("form_fill", json!({ "values": { "Name": "Ada" } })).unwrap();
+        let before = view(&mut doc);
+        assert_ne!(doc.restore_state(&checkpoint, &person()).unwrap(), Damage::None);
+        let restored = view(&mut doc);
+        assert_eq!(contents(&mut doc), ["kept"]);
+        assert!(doc.undo().unwrap().0);
+        assert_eq!(view(&mut doc), before, "one Undo gives back the exact state before the restore");
+        assert!(doc.redo().unwrap().0);
+        assert_eq!(view(&mut doc), restored, "Redo gives back the restored state exactly");
+        assert_eq!(doc.kdm_resets(), 0);
+    }
+
+    /// A draft made before the document was rewritten in full (here its comments removed, which
+    /// writes the file anew: a new base, its overlay cleared) is refused, saying so, by the
+    /// comparison and by the merge, and changes nothing. The KDM's rules alone would take it in:
+    /// the draft wrote only overlay keys the rewrite did not touch, so its entries, of the old
+    /// base, would land beside the new one, and the repair would delete them without a word.
+    /// A draft made after the rewrite merges.
+    #[test]
+    fn a_draft_made_before_a_full_rewrite_is_refused_saying_so() {
+        let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
+        note(&mut doc, 1, "before");
+        let forked = overlay_of(&doc.replicated_state().unwrap()).0;
+        let base = doc.version().unwrap();
+        let mut draft = PdfDocument::open_with_replica("Report.pdf", &[], &doc.snapshot().unwrap(), &doc.blobs().unwrap()).unwrap();
+        note(&mut draft, 2, "from the draft");
+        let drafted = overlay_of(&draft.replicated_state().unwrap()).0;
+        let mut wrote: Vec<String> = drafted.iter().filter(|(key, value)| forked.get(*key) != Some(value)).map(|(key, _)| key.clone()).collect();
+        wrote.sort();
+        assert!(!wrote.is_empty(), "the draft's comment wrote overlay entries");
+        let (changes, blobs) = (draft.export_changes(&base).unwrap(), draft.blobs_since(&base).unwrap());
+        doc.execute("doc_remove_hidden", json!({ "categories": ["comments"] })).unwrap();
+        assert!(contents(&mut doc).is_empty(), "the rewrite removed the comments");
+        doc.add_blobs(&blobs).unwrap();
+
+        // The KDM's rules alone, the kit's check aside.
+        let kdm = doc.auto.session().kdm(doc.id).unwrap();
+        let alone = kdm.replica().merged_state(&changes).unwrap_or_else(|error| panic!("the KDM refuses it by itself: {error}"));
+        let (overlay, epoch) = overlay_of(&alone);
+        let mut stale: Vec<String> = overlay.iter().filter(|(_, entry)| entry["epoch"] != json!(epoch)).map(|(key, _)| key.clone()).collect();
+        stale.sort();
+        assert_eq!(stale, wrote, "every entry the draft wrote would be of the old base");
+
+        let at = (doc.version().unwrap(), view(&mut doc));
+        let refused = doc.compare_changes(&changes).unwrap_err();
+        assert!(refused.contains(kdm_model::REWRITTEN_SINCE), "the comparison says why: {refused}");
+        let refused = doc.merge_changes(&changes, &Origin::agent("agent:drafter")).unwrap_err();
+        assert!(refused.contains(kdm_model::REWRITTEN_SINCE), "the merge says why: {refused}");
+        assert_eq!((doc.version().unwrap(), view(&mut doc)), at, "a refused merge changes nothing");
+        assert_eq!(doc.kdm_dropped(), 0);
+
+        let (changes, blobs) = draft_with(&mut doc, |draft| note(draft, 2, "after the rewrite"));
+        doc.add_blobs(&blobs).unwrap();
+        doc.merge_changes(&changes, &person()).unwrap();
+        assert_eq!(contents(&mut doc), ["after the rewrite"], "a draft of the rewritten document merges");
+        assert_eq!(doc.kdm_dropped(), 0);
+    }
+
+    /// A draft that rewrote the file in full while the document was edited is refused, saying so:
+    /// the KDM's rules alone would take it in (the document's comment wrote overlay keys the
+    /// draft's rewrite did not touch), and the document's comment, of the old base, would go.
+    #[test]
+    fn a_draft_that_rewrote_the_file_while_the_document_was_edited_is_refused_saying_so() {
+        let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
+        note(&mut doc, 1, "before");
+        let (changes, blobs) = draft_with(&mut doc, |draft| {
+            draft.execute("doc_remove_hidden", json!({ "categories": ["comments"] })).unwrap();
+        });
+        note(&mut doc, 2, "meanwhile");
+        doc.add_blobs(&blobs).unwrap();
+        let kdm = doc.auto.session().kdm(doc.id).unwrap();
+        let alone = kdm.replica().merged_state(&changes).unwrap_or_else(|error| panic!("the KDM refuses it by itself: {error}"));
+        let (overlay, epoch) = overlay_of(&alone);
+        assert!(overlay.values().any(|entry| entry["epoch"] != json!(epoch)), "the document's entries would be of the old base: {overlay:?}");
+        let at = (doc.version().unwrap(), view(&mut doc));
+        let refused = doc.compare_changes(&changes).unwrap_err();
+        assert!(refused.contains(kdm_model::REWRITE_LOSES_EDITS), "{refused}");
+        let refused = doc.merge_changes(&changes, &person()).unwrap_err();
+        assert!(refused.contains(kdm_model::REWRITE_LOSES_EDITS), "{refused}");
+        assert_eq!((doc.version().unwrap(), view(&mut doc)), at, "a refused merge changes nothing");
+        assert_eq!(contents(&mut doc), ["before", "meanwhile"]);
+    }
+
+    /// `modelReply` reads the tool ids of the objects a reply names alone: in a document of many
+    /// comments, a reply naming one (or every object) gives the ids the whole document's tool ids
+    /// give, and a reply naming none comes back unchanged.
+    #[test]
+    fn a_reply_reads_the_tool_ids_of_the_objects_it_names() {
+        use kition_kit::kdm::tool_ids::ToolIds;
+        let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
+        for n in 0..40 {
+            note(&mut doc, 1 + n % 2, &format!("comment {n}"));
+        }
+        let tool = listed_id(&mut doc, "comment 17");
+        let object = comment_object(&mut doc, &tool);
+        let state = doc.replicated_state().unwrap();
+        let every: Vec<String> = state["objects"].as_object().unwrap().keys().cloned().collect();
+        assert!(every.len() > 40, "{}", every.len());
+        let full = |doc: &PdfDocument, reply: &Value| ToolIds::of_replica(doc.auto.session().kdm(doc.id).unwrap().replica()).show_json(reply);
+        let keyed: serde_json::Map<String, Value> = [(object.clone(), json!(1))].into_iter().collect();
+        for reply in [json!({ "target": object, "note": format!("about {object}") }), json!({ "objects": every, "by": keyed })] {
+            let shown: Value = serde_json::from_str(&doc.model_reply(&reply.to_string()).unwrap()).unwrap();
+            assert_eq!(shown, full(&doc, &reply), "the same ids as the whole document's");
+        }
+        let shown: Value = serde_json::from_str(&doc.model_reply(&json!({ "target": object }).to_string()).unwrap()).unwrap();
+        assert_eq!(shown["target"], json!(tool));
+        let plain = json!({ "summary": "two pages", "pages": [1, 2], "note": "page:1" });
+        assert_eq!(doc.model_reply(&plain.to_string()).unwrap(), plain.to_string(), "a reply naming no object comes back unchanged");
     }
 }

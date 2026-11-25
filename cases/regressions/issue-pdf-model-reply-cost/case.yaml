@@ -1,0 +1,20 @@
+format: 1
+id: regressions/issue-pdf-model-reply-cost
+feature: pdf.agent.observe
+intent: >-
+  modelReply, which the editor runs on every ai/inspect, document/check and ai/run reply, reads the
+  tool ids of the objects the reply names alone, not the whole document's each call: in a document
+  of many comments a reply naming one (or every object) gives the ids the whole document's give,
+  and a reply naming none comes back unchanged.
+layer: unit
+source:
+  kind: synthetic
+  from: bindings/wasm/src/collab.rs (the collaboration fixture)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, filter: "collab::tests::a_reply_reads_the_tool_ids_of_the_objects_it_names" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-25"

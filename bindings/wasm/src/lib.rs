@@ -865,14 +865,16 @@ pub mod web {
             self.0.kdm_resets()
         }
 
-        /// Collaborators' edits dropped because another peer rewrote the file in full meanwhile.
+        /// Edits dropped because an undo or redo of a full rewrite brought back another base than
+        /// the one they were made against (the editor tells the person when it grows).
         #[wasm_bindgen(js_name = kdmDropped)]
         pub fn kdm_dropped(&self) -> u32 {
             self.0.kdm_dropped()
         }
 
-        /// A draft's changes taken in as one undo step, recorded with `origin` (`[kind, principal,
-        /// label]`): `{"damage", "summary"}`. A refusal fails with the KDM's message.
+        /// A draft's changes taken in as one undo step of the person, recorded with `origin`
+        /// (`[kind, principal, label]`): `{"damage", "summary"}`. A refusal fails with its reason
+        /// (the KDM's, or that the document was rewritten since the draft was made).
         #[wasm_bindgen(js_name = mergeChanges)]
         pub fn merge_changes(&mut self, changes: &[u8], origin: &str) -> Result<String, JsError> {
             let origin = origin_of(origin)?;

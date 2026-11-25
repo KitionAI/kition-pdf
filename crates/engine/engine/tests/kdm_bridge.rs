@@ -217,6 +217,28 @@ fn a_full_rewrite_is_a_rebase_the_other_session_follows_and_its_undo_brings_the_
     assert_eq!(field(&a, aid).as_deref(), Some(""));
 }
 
+/// The one way edits of another base still reach the replica: the person undoes a full rewrite
+/// (sanitizing) under an agent's later comment. The undo brings the old base back and keeps the
+/// agent's entries, written against the rewritten one, so the repair deletes them: the agent's
+/// comment goes with the rewrite, and the document counts every entry it wrote
+/// (`kdm_dropped`, which the editor shows).
+#[test]
+fn the_persons_undo_of_a_full_rewrite_drops_the_agents_later_comment_and_counts_it() {
+    let (mut s, id) = open(fixture(2));
+    let agent = Origin::agent("agent:test");
+    s.apply(id, note(0, "before")).unwrap_or_else(|e| panic!("{e}"));
+    s.apply(id, Edit::Sanitize).unwrap_or_else(|e| panic!("{e}"));
+    assert!(comments(&s, id).is_empty(), "sanitizing removes the comments");
+    s.apply_as(id, note(1, "the agent's"), &agent).unwrap_or_else(|e| panic!("{e}"));
+    let written = s.kdm(id).map_or(0, |k| k.last_written().keys.len());
+    assert!(written > 0, "the agent's comment wrote overlay entries");
+    assert_eq!(s.kdm_dropped(id), 0);
+    s.undo(id).unwrap_or_else(|e| panic!("{e}"));
+    assert_eq!(comments(&s, id), [(0, "before".to_string())], "the old base and the person's comment are back; the agent's comment is gone");
+    assert_eq!(s.kdm_dropped(id), written as u64, "every entry the agent's comment wrote was dropped and counted");
+    assert_eq!(s.kdm_resets(id), 0);
+}
+
 #[test]
 fn saving_keeps_the_replica_and_the_next_save_appends() {
     let (mut s, id) = open(fixture(2));

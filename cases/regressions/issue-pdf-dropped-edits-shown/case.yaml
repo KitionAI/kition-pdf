@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-pdf-dropped-edits-shown
+feature: pdf.collab.drafts
+intent: >-
+  The one way edits of another base still reach the replica: the person undoes a full rewrite
+  (sanitizing) under an agent's later comment. The old base comes back with the person's comment,
+  the agent's comment goes, and the document counts every entry it wrote (kdmDropped); the editor
+  tells the person when that count grows, which it never read before (case
+  regressions/issue-pdf-dropped-edits-notice).
+layer: unit
+source:
+  kind: synthetic
+  from: crates/engine/engine/tests/kdm_bridge.rs (the bridge fixture)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-engine, test: kdm_bridge, filter: "the_persons_undo_of_a_full_rewrite_drops_the_agents_later_comment_and_counts_it" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-25"

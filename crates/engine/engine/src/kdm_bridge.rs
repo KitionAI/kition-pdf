@@ -28,9 +28,10 @@
 //!
 //! A replica that refuses a write or an undo is left ([`Session::kdm_resets`]): the document keeps
 //! working from its own history snapshots, and the next edit makes a fresh replica. Changes reach
-//! a replica in one order (an import that does not follow on is refused); a draft forked before a
-//! full rewrite and merged after it ([`Session::merge_changes`]) brings edits of the old base,
-//! which are dropped and counted ([`Session::kdm_dropped`]).
+//! a replica in one order (an import that does not follow on is refused), and a draft made
+//! against an older base than the document's is refused ([`Session::merge_changes`]). Only one
+//! scope's undo (or redo) of a full rewrite under the other scope's later edits leaves edits of
+//! another base, which the repair drops and counts ([`Session::kdm_dropped`]).
 
 use std::sync::Arc;
 
@@ -303,8 +304,8 @@ impl Document {
         self.link.resets
     }
 
-    /// How many edits made against a base a concurrent rebase replaced were dropped (overlay
-    /// entries). See [`kdm_model::PdfSession::dropped`].
+    /// How many edits (overlay entries) were dropped because an undo or redo brought back another
+    /// base than the one they were made against. See [`kdm_model::PdfSession::dropped`].
     pub fn kdm_dropped(&self) -> u64 {
         self.link.dropped()
     }
@@ -379,8 +380,9 @@ impl Session {
         self.get(id).map_or(0, Document::kdm_resets)
     }
 
-    /// How many edits of collaborators (overlay entries) were dropped because a concurrent full
-    /// rewrite replaced the base they were made against. Hosts show it.
+    /// How many edits (overlay entries) were dropped because one scope's undo or redo of a full
+    /// rewrite brought back another base than the one they were made against (the person undoes
+    /// a sanitize after an agent's comment). The editor shows it.
     pub fn kdm_dropped(&self, id: DocId) -> u64 {
         self.get(id).map_or(0, Document::kdm_dropped)
     }
@@ -460,11 +462,14 @@ impl Session {
     }
 
     /// Takes a draft's changes (made on a replica forked from this one, `mergeChanges`) into the
-    /// document as one undo step of `origin`'s scope, as a command's edit is: the document follows
-    /// the replica, and the step's undo takes the whole draft back. Add the draft's blobs first
-    /// ([`Session::add_blobs`]). A refused merge changes nothing.
+    /// document as one undo step of the person who accepts it, even when an agent made the draft
+    /// (KitModel M12a: the KDM records it in the person's history, and so does the document's):
+    /// the document follows the replica, and the person's undo takes the whole draft back. Add the
+    /// draft's blobs first ([`Session::add_blobs`]). A draft made against an older base than the
+    /// document's (a full rewrite since) is refused, saying so ([`kdm_model::PdfSession::merged_state`]).
+    /// A refused merge changes nothing.
     pub fn merge_changes(&mut self, id: DocId, bytes: &[u8], origin: &Origin) -> Result<Damage, EditError> {
-        self.take_in(id, origin, "Merge Draft", |kdm| kdm.merge_changes(bytes, origin))
+        self.take_in(id, UndoScope::Person, "Merge Draft", |kdm| kdm.merge_changes(bytes, origin))
     }
 
     /// What merging a draft's changes would change in the document now (a `StateDiff`);
@@ -477,25 +482,29 @@ impl Session {
     }
 
     /// Writes the state a snapshot holds (a checkpoint of this document, `replica/restore`) over
-    /// the document by object id, as one undo step of `origin`'s scope, taken in as a merged draft
-    /// is ([`Session::merge_changes`]). Add the blobs it references first. Nothing changes when the
+    /// the document by object id, as one undo step of `origin`'s scope (the replica records the
+    /// restore as `origin`'s transaction), taken in as a merged draft is ([`Session::merge_changes`]). Add the blobs it references first. Nothing changes when the
     /// states are equal; another document's snapshot is refused.
     pub fn restore_state(&mut self, id: DocId, snapshot: &[u8], origin: &Origin) -> Result<Damage, EditError> {
-        self.take_in(id, origin, "Restore Version", |kdm| kdm.restore_state(snapshot, origin))
+        let history = UndoScope::of(origin.kind).unwrap_or(UndoScope::Person);
+        self.take_in(id, history, "Restore Version", |kdm| kdm.restore_state(snapshot, origin))
     }
 
     /// One transaction `write` makes on the document's replica, taken into the document as a
     /// command's step: the document follows the replica, and its history gets the step (whose
-    /// undo steps the replica back) when the transaction is one.
+    /// undo steps the replica back) when the transaction is one, in `history`: the scope the
+    /// replica recorded it in. A merged draft is the person's whatever its origin (the KDM records
+    /// it in the person's history, `Replica::merge_changes`, M12a), so the document's history must
+    /// put it there too, or the person's Undo would not find it and an agent's would step the
+    /// replica's person history.
     fn take_in(
         &mut self,
         id: DocId,
-        origin: &Origin,
+        history: UndoScope,
         label: &str,
         write: impl FnOnce(&mut PdfSession) -> kdm_model::kition_kit::session::Result<(u32, Damage)>,
     ) -> Result<Damage, EditError> {
         let now = self.now();
-        let history = UndoScope::of(origin.kind).unwrap_or(UndoScope::Person);
         let kdm = self.active_kdm(id)?;
         let before = kdm.version();
         let result = write(&mut *kdm);

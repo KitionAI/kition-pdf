@@ -1,0 +1,24 @@
+format: 1
+id: regressions/issue-pdf-agent-draft-undo-scope
+feature: pdf.collab.drafts
+intent: >-
+  A draft an agent made (the host passes the agent's origin to mergeChanges) is one undo step of the
+  person who accepts it (KitModel M12a), in the engine's history as in the replica's: the person's
+  Undo takes it back and the agent's has nothing to take. The engine had put it in the agent's
+  history while the KDM records it in the person's. With the person's own comment made meanwhile
+  on another page, one Undo gives back the exact state before the merge (the replica's state hash,
+  the kit's comments and fields, the pixels) and Redo the merged one; a restored version undoes and
+  redoes exactly too.
+layer: unit
+source:
+  kind: synthetic
+  from: bindings/wasm/src/collab.rs (the collaboration fixture)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, filter: "collab::tests::an_agents_draft_merges_as_the_persons_undo_step_and_undo_and_redo_are_exact" }
+  - cargo-test: { package: kition-pdf-kit, filter: "collab::tests::a_restore_undoes_and_redoes_exactly" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-25"

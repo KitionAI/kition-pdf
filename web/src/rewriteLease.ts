@@ -2,12 +2,14 @@ import type { KitLeases } from '@kition/sdk/editor'
 
 /**
  * An edit that rewrites the whole file (applying redactions, sanitizing, adding or removing
- * security) renumbers every object, so the replica records it as a rebase, and edits someone else
- * makes against the old file meanwhile are dropped when the two merge (Kition platform,
- * M21 and M22). So the editor takes the lease on the whole document (`*`) through its host before
- * such an edit and lets it go when the edit ends; the engine says which commands need it
- * (`leaseScope`). While someone else holds it, this editor runs no edit at all: each would be
- * dropped. Without co-editing every edit goes ahead as before, and an offline edit is allowed.
+ * security) renumbers every object, so the replica records it as a rebase onto a new file. An
+ * edit made on the old file cannot apply to the new one: the document's changes apply in one
+ * order, and a draft made before the rewrite is refused when it would merge, saying why (Kition
+ * platform, M21 and M22). So the editor takes the lease on the whole document (`*`) through its
+ * host before such an edit and lets it go when the edit ends; the engine says which commands need
+ * it (`leaseScope`). While someone else holds it, this editor runs no edit at all: each would be
+ * made on the file being replaced. Without co-editing every edit goes ahead as before, and an
+ * offline edit is allowed.
  */
 
 /** The lease scope of the whole document. */

@@ -30,6 +30,7 @@ const enUS: Catalog = {
   noFields: 'No form fields',
   rewriting: '{name} is rewriting this document (applying redactions, sanitizing, or changing its security). Try again when they are done.',
   someone: 'Someone',
+  droppedEdits: 'Undoing or redoing a rewrite of the whole file lost {count} later edits: they were made on the other version of the file.',
   verticalScroll: 'Vertical page scroll',
   horizontalScroll: 'Horizontal page scroll',
 }
@@ -63,6 +64,7 @@ const zhCN: Catalog = {
   noFields: '没有表单域',
   rewriting: '{name} 正在重写此文档（应用密文、清理文档或更改安全性）。请等其完成后再试。',
   someone: '有人',
+  droppedEdits: '撤销或重做整个文件的重写时丢失了 {count} 处后来的编辑：它们是在另一版本的文件上所做的。',
   verticalScroll: '页面纵向滚动',
   horizontalScroll: '页面横向滚动',
 }

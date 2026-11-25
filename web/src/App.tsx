@@ -1,4 +1,4 @@
-import { useCallback, useId, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from 'react'
 import { Scrollbar } from '@kition/tessera/ui'
 import {
   CommandTab,
@@ -33,6 +33,7 @@ import { SelectionHighlights } from './SelectionHighlights'
 import { useTextSelection } from './useTextSelection'
 import type { SelectionRequest, SelectionResult } from './textSelection'
 import { withRewriteLease } from './rewriteLease'
+import { newlyDropped } from './droppedEdits'
 
 export function App({ host, phrase }: { host: HostConnection; phrase: Phrases }) {
   const t = useMemo(() => createKitStrings(CATALOGS, host.init.locale), [host])
@@ -65,6 +66,20 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     }),
     [doc, editor, leases, t],
   )
+  // Edits an undo or redo of a whole-file rewrite dropped (`droppedEdits.ts`): the person is told.
+  const dropped = useRef<{ doc: unknown; count: number }>({ doc: null, count: 0 })
+  useEffect(() => {
+    if (!doc) return
+    let live = true
+    doc.invoke<number>('kdmDropped').then((now) => {
+      if (!live) return
+      const seen = dropped.current.doc === doc ? dropped.current.count : 0
+      dropped.current = { doc, count: now }
+      const lost = newlyDropped(seen, now)
+      if (lost > 0) toast('warning', t('droppedEdits', { count: String(lost) }))
+    }).catch(() => undefined)
+    return () => { live = false }
+  }, [doc, session.change.revision, t])
   // The one tool, text selection, named in the Focus bar (the editor has no engine tools).
   const selectTool = useMemo(() => ({ label: phrase('Select text'), icon: SelectTool }), [phrase])
   const canvas = useRef<KitCanvasHandle>(null)

@@ -21,9 +21,11 @@
 //! **Rebases.** An edit that rewrites the file in full (applying redactions, changing security,
 //! sanitizing, repairing, a signature) renumbers every object, so it becomes a *rebase*
 //! ([`rebase`]): the rewritten bytes are a new base of a new epoch, and the overlay is cleared.
-//! The replica's changes apply in one order; only a draft forked before a full rewrite and merged
-//! after it ([`PdfSession::merge_changes`]) brings edits of the old base, and the repair
-//! ([`KitModel::validate`]) deletes them, counted ([`PdfSession::dropped`]).
+//! The replica's changes apply in one order, and a draft made against an older base (or one that
+//! rewrote the file while the document was edited) is refused ([`PdfSession::merged_state`]);
+//! only an undo or redo of one scope's full rewrite under the other scope's later edits leaves
+//! entries of another base, which the repair ([`KitModel::validate`]) deletes, counted
+//! ([`PdfSession::dropped`]).
 //!
 //! **What is not replicated.** Saving incrementally appends the overlay to the file, but the
 //! replica keeps its base: the saved file is the same document, and an undo past the save still
@@ -57,7 +59,7 @@ use kition_pdf_cos::Document;
 
 pub use ids::{Ids, base_number};
 pub use read::{Bases, read_document};
-pub use session::PdfSession;
+pub use session::{PdfSession, REWRITE_LOSES_EDITS, REWRITTEN_SINCE};
 pub use write::{Written, rebase, write_changes, write_document};
 
 /// Re-exported so downstream crates (the engine command bridge) share this crate's exact pin.

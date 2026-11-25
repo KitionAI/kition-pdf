@@ -119,10 +119,13 @@ impl PdfSession {
         &self.last
     }
 
-    /// How many overlay entries the repair dropped because a rebase replaced the base they were
-    /// written against: a draft forked before a full rewrite and merged after it
-    /// ([`PdfSession::merge_changes`]) brings edits of the old base. Changes otherwise apply in one
-    /// order, so nothing else counts here. Hosts show it.
+    /// How many overlay entries the repair dropped because they were written against another base
+    /// than the replica's: an undo (or redo) of one scope's full rewrite under the other scope's
+    /// later edits (the person undoes a sanitize after an agent's comment) brings the old base
+    /// back and keeps the later entries, written against the rewritten one. Nothing else counts
+    /// here: changes apply in one order (a peer's arrive with its own repair), and a draft whose
+    /// entries would be of another base is refused ([`PdfSession::merged_state`]). The editor
+    /// shows it.
     pub fn dropped(&self) -> u64 {
         self.dropped
     }
@@ -315,15 +318,53 @@ impl PdfSession {
     /// `import` one. Repairs the result and reloads the view as an import does; add the draft's
     /// blobs first ([`PdfSession::add_blobs`]). Answers the undo steps it made (1 or 0) and the
     /// damage. A refused merge changes nothing.
+    ///
+    /// Refused too, before the KDM's rules are asked, is a draft whose edits the document could
+    /// not keep ([`PdfSession::merged_state`]): one made against an older base than the
+    /// document's (a full rewrite since: applying redactions, sanitizing, changing security,
+    /// signing), and one that rewrote the file in full while the document was edited. The overlay
+    /// entries either brings are of another base than the merged one, and the repair would delete
+    /// them without a word.
     pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<(u32, Damage)> {
+        self.merged_state(bytes)?;
         let before = self.replica.version();
         self.replica.merge_changes(bytes, origin).map_err(kit_err)?;
         self.took_in(&before, origin)
     }
 
     /// What merging a draft's changes would make of the replicated state, changing nothing.
+    /// Refuses what [`PdfSession::merge_changes`] refuses: a draft made against an older base
+    /// than the document's ([`REWRITTEN_SINCE`]), checked first, then what the KDM's rules refuse,
+    /// then a merge that would hold overlay entries of another base than its own
+    /// ([`REWRITE_LOSES_EDITS`]).
     pub fn merged_state(&self, bytes: &[u8]) -> Result<serde_json::Value> {
-        self.replica.merged_state(bytes).map_err(kit_err)
+        if self.draft_base_epoch(bytes).is_some_and(|then| Some(then) != epoch_of(&self.replica)) {
+            return Err(kit_err(REWRITTEN_SINCE));
+        }
+        let merged = self.replica.merged_state(bytes).map_err(kit_err)?;
+        let stale = stale_in(&merged);
+        if !stale.is_empty() {
+            return Err(kit_err(format!("{REWRITE_LOSES_EDITS} (the overlay entries {})", stale.join(", "))));
+        }
+        Ok(merged)
+    }
+
+    /// The base (its epoch) a draft's `changes` were made against: the epoch at the version of
+    /// this replica they follow. `None` when they are not changes of this replica's line, follow
+    /// its current version, or follow one its log no longer holds: the KDM's merge then applies
+    /// or refuses them by its own rules.
+    fn draft_base_epoch(&self, changes: &[u8]) -> Option<String> {
+        let value: serde_json::Value = serde_json::from_slice(changes).ok()?;
+        let seq = value.get("after")?.get("seq")?.as_u64()?;
+        let lineage = value.get("lineage")?.as_str()?.replace('-', "");
+        let now = self.replica.version().encode();
+        let (line, at) = now.split_at_checked(16)?;
+        let hex: String = line.iter().map(|byte| format!("{byte:02x}")).collect();
+        if !hex.eq_ignore_ascii_case(&lineage) || seq >= u64::from_be_bytes(at.try_into().ok()?) {
+            return None;
+        }
+        let version = Version::decode(&[line, &seq.to_be_bytes()].concat()).ok()?;
+        epoch_of(&self.replica.fork_at(&version, ActorId::random()).ok()?)
     }
 
     /// Writes the state `snapshot` holds (a snapshot or the content of this document, as a host's
@@ -492,6 +533,27 @@ impl PdfSession {
         let blobs: &dyn BlobSource = &self.blobs;
         self.model.apply(&self.replica, changed, blobs)
     }
+}
+
+/// Why a draft made against an older base than the document's is refused
+/// ([`PdfSession::merged_state`]); the editor shows it.
+pub const REWRITTEN_SINCE: &str = "the document was rewritten since this draft was made (applying redactions, sanitizing, changing its security or signing renumbers every object), so the draft's edits no longer fit it; make the draft again on the document as it is now";
+
+/// Why a draft that rewrote the file in full while the document was edited is refused.
+pub const REWRITE_LOSES_EDITS: &str = "the draft rewrites the whole file and the document was edited since the draft was made: merging would lose those edits; make the draft again on the document as it is now";
+
+/// The epoch (which base the overlay is written against) of the replica's root, if it has one.
+fn epoch_of(replica: &Replica) -> Option<String> {
+    replica.get(&crate::root_id(), "epoch").ok()?.as_str().map(str::to_owned)
+}
+
+/// The overlay keys of `state` (a replicated state as JSON) whose entries were written against
+/// another base than the state's own: the ones the repair ([`crate::validate`]) deletes.
+fn stale_in(state: &serde_json::Value) -> Vec<String> {
+    let Some(pdf) = state.get("objects").and_then(|objects| objects.get(crate::root_id().as_str())) else { return Vec::new() };
+    let epoch = pdf.get("epoch").and_then(serde_json::Value::as_str);
+    let Some(overlay) = pdf.get("overlay").and_then(serde_json::Value::as_object) else { return Vec::new() };
+    overlay.iter().filter(|(_, entry)| entry.get("epoch").and_then(serde_json::Value::as_str) != epoch).map(|(key, _)| key.clone()).collect()
 }
 
 /// The hash of the replica's current base blob (empty if unreadable).

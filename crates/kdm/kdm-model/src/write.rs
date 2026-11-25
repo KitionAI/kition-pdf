@@ -122,9 +122,8 @@ pub fn write_document(tx: &mut Tx<'_>, doc: &Document, pristine: &Document, ids:
 }
 
 /// A rebase transaction: `pristine`'s bytes become the base of a new epoch, the overlay is
-/// cleared, and `doc`'s own edits of `pristine` (usually none) are its new overlay. Edits a
-/// peer made against the old base meanwhile are dropped when they merge
-/// ([`crate::validate`]).
+/// cleared, and `doc`'s own edits of `pristine` (usually none) are its new overlay. A draft made
+/// against the old base is refused ([`crate::PdfSession::merged_state`]).
 ///
 /// The three registers are written first, always in the same order, so that of two concurrent
 /// rebases every replica keeps all three of the same one.

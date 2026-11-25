@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-pdf-dropped-edits-notice
+feature: pdf.collab.drafts
+intent: >-
+  The editor reads the engine's count of dropped edits (kdmDropped) after every change and shows a
+  warning naming how many were lost when it grew since the last reading; a count that did not grow
+  tells nothing. Nothing in the editor read the count before.
+layer: unit
+source:
+  kind: synthetic
+  from: web/src/droppedEdits.test.mjs
+  license: Apache-2.0
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, --test, src/droppedEdits.test.mjs]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+since: "2026-11-25"
