@@ -541,16 +541,21 @@ mod tests {
 
     /// A draft (a replica forked from the document's) merges in as one step of the person's Undo:
     /// the comparison beforehand names what the merge does and changes nothing, the engine's
-    /// document follows the merge, an edit made here meanwhile stays, and a refused merge changes
-    /// nothing.
+    /// document follows the merge, and Undo and Redo take the whole draft back and again. A draft
+    /// made while the document changed its overlay too (every PDF edit writes the one `overlay`
+    /// map, which the KDM's merge compares as one field) is refused, as are bytes that are no
+    /// changes, and a refused merge changes nothing.
     #[test]
     fn a_draft_merges_in_as_one_undo_step_and_the_document_follows() {
         let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
-        let base = doc.version().unwrap();
-        let mut draft = PdfDocument::open_with_replica("Report.pdf", &[], &doc.snapshot().unwrap(), &doc.blobs().unwrap()).unwrap();
-        note(&mut draft, 2, "from the draft");
-        let (changes, blobs) = (draft.export_changes(&base).unwrap(), draft.blobs_since(&base).unwrap());
-        note(&mut doc, 1, "meanwhile");
+        note(&mut doc, 1, "before");
+        let draft_of = |doc: &mut PdfDocument, text: &str| -> (Vec<u8>, Vec<u8>) {
+            let base = doc.version().unwrap();
+            let mut draft = PdfDocument::open_with_replica("Report.pdf", &[], &doc.snapshot().unwrap(), &doc.blobs().unwrap()).unwrap();
+            note(&mut draft, 2, text);
+            (draft.export_changes(&base).unwrap(), draft.blobs_since(&base).unwrap())
+        };
+        let (changes, blobs) = draft_of(&mut doc, "from the draft");
         doc.add_blobs(&blobs).unwrap();
         let version = doc.version().unwrap();
         let preview = doc.compare_changes(&changes).unwrap();
@@ -558,16 +563,26 @@ mod tests {
         let answer = doc.merge_changes(&changes, &person()).unwrap();
         assert_eq!(answer["summary"], preview, "the comparison named what the merge did: {answer}");
         assert_ne!(answer["damage"], json!({ "kind": "none" }), "{answer}");
-        assert_eq!(contents(&mut doc), ["from the draft", "meanwhile"], "the engine's document follows the merge");
+        assert_eq!(contents(&mut doc), ["before", "from the draft"], "the engine's document follows the merge");
         assert!(doc.dirty());
         assert!(PdfDocument::open("Merged.pdf", &doc.save(None).unwrap()).is_ok());
         assert!(doc.undo().unwrap().0);
-        assert_eq!(contents(&mut doc), ["meanwhile"], "one undo takes the whole draft back");
+        assert_eq!(contents(&mut doc), ["before"], "one undo takes the whole draft back");
         assert!(doc.redo().unwrap().0);
-        assert_eq!(contents(&mut doc), ["from the draft", "meanwhile"]);
+        assert_eq!(contents(&mut doc), ["before", "from the draft"]);
+        assert!(doc.undo().unwrap().0);
+        assert_eq!(contents(&mut doc), ["before"], "the person's earlier step is still below it");
+
+        let (changes, blobs) = draft_of(&mut doc, "late");
+        doc.add_blobs(&blobs).unwrap();
+        note(&mut doc, 1, "meanwhile");
         let at = doc.version().unwrap();
+        let refused = doc.merge_changes(&changes, &person()).unwrap_err();
+        assert!(refused.contains("stale"), "{refused}");
+        assert!(doc.compare_changes(&changes).is_err());
         assert!(doc.merge_changes(b"not changes", &person()).is_err());
         assert_eq!(doc.version().unwrap(), at, "a refused merge changes nothing");
+        assert_eq!(contents(&mut doc), ["before", "meanwhile"]);
     }
 
     /// An earlier state (a checkpoint's snapshot) is written over the document by object id as one
