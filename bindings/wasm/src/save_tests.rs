@@ -360,7 +360,7 @@ fn pinned_corpus_sdk_saves_and_kdm_reopen_are_strict() {
 
 #[test]
 fn unsupported_trailer_protect_and_sanitize_fail_before_working_state_or_kdm_commit() {
-    for (command, args) in [("file.protect", json!({"open_password":"obviously-fake-test-password"})), ("file.removeHidden", json!({}))] {
+    for (command, args) in [("file.protect", json!({"openPassword":"obviously-fake-test-password"})), ("file.removeHidden", json!({}))] {
         let original = unknown_fixture(false);
         let mut doc = PdfDocument::open("Unknown.pdf", &original).unwrap();
         doc.auto = std::mem::take(&mut doc.auto).with_clock(|| 1_700_000_000);

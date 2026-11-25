@@ -92,7 +92,7 @@ try {
     const checksum = Buffer.concat([source.subarray(0, at), Buffer.from('/DocChecksum /synthetic-save-checksum '), source.subarray(at)])
     const doc = open(checksum); add(doc, 'Retained checksum edit')
     const prepared = doc.save(), revision = doc.revision, version = doc.version()
-    assert.throws(() => execute(doc, 'file.protect', { open_password: 'synthetic-save-password' }), /DocChecksum/)
+    assert.throws(() => execute(doc, 'file.protect', { openPassword: 'synthetic-save-password' }), /DocChecksum/)
     assert.equal(doc.dirty, true); assert.equal(doc.revision, revision)
     assert.deepEqual(doc.version(), version)
     assert.deepEqual(titles(doc), ['Retained checksum edit'])

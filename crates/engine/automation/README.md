@@ -18,7 +18,7 @@ tools() -> Vec<ToolDef>                                  // name, title, descrip
 
 ## Conventions
 
-- Tool names are `snake_case` (`page.rotate`): tool names with dots are not valid in every model provider's namespace. `ToolDef::command` links a tool to the registry id it automates (`page.rotate`), and `command_list` reports the link.
+- A tool the kit offers as a command is named by its command id (`page.rotate`, `file.getInfo`: Kition's command naming standard) and its parameters are lower camel case (`toPage`). The tools only the headless executable offers keep `snake_case` names (`doc_open`, `doc_save`). `ToolDef::command` links a tool to the registry id it automates (`page.rotate`), and `command_list` reports the link.
 - Pages and positions are **1-based**. Rectangles are PDF points with the origin at the top-left of the displayed page.
 - Unknown arguments are rejected, so typos fail loudly.
 - Tools that change a document return its summary (`doc`, `pages`, `dirty`, `undo`, `redo`, …).
@@ -36,12 +36,12 @@ tools() -> Vec<ToolDef>                                  // name, title, descrip
 
 ## Text selection
 
-`text.select {doc, page, anchor: [x,y], focus: [x,y], end_page?, mode?}` reads
+`text.select {doc, page, anchor: [x,y], focus: [x,y], endPage?, mode?}` reads
 selection text and geometry without editing. Pages are 1-based; both points and
 returned rectangles use displayed page-local points with top-left origin, crop
 and rotation already applied. `mode` defaults to `range`: endpoints select their
 nearest glyph inclusively, backward selections normalize to reading order, and
-intermediate pages contribute all their text. `end_page` defaults to `page`.
+intermediate pages contribute all their text. `endPage` defaults to `page`.
 
 `column` mode requires one page and includes glyphs whose centers lie inside the
 rectangle. It uses the existing visual row ordering (with reading-order fallback
@@ -96,7 +96,7 @@ ignored with a `warnings` array; required values and paths still go through the 
 `command_batch {steps: [{id, params?}], stop_on_error?}` returns `completed`, `failed`, and per-step
 `{ok, result?, error?}` entries. The default is to stop at the first error; earlier edits remain.
 `file.inspect {doc?}` returns one document's info, or `{documents: [...]}` for all open documents.
-`file.render {doc?, page?, max_side?}` returns a PNG (page defaults to 1, maximum side defaults
+`file.render {doc?, page?, maxSide?}` returns a PNG (page defaults to 1, maximum side defaults
 to 1024, allowed 1–4096). Omit `doc` only when exactly one document is open.
 
 Exports complete synchronously.

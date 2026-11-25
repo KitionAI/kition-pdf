@@ -56,7 +56,7 @@ fn callout_leaders_stay_outside_the_box_and_land_square() {
         ([300.0, 560.0, 440.0, 604.0], [500.0, 700.0], Some([370.0, 580.0])),
     ];
     for (rect, to, knee) in callouts {
-        let mut params = json!({ "page": 1, "type": "callout", "rect": rect, "to": to, "contents": "42% up on Q2: split the recall from routine work.", "font_size": 9.5 });
+        let mut params = json!({ "page": 1, "type": "callout", "rect": rect, "to": to, "contents": "42% up on Q2: split the recall from routine work.", "fontSize": 9.5 });
         if let Some(knee) = knee {
             params["knee"] = json!(knee);
         }
@@ -98,7 +98,7 @@ fn callout_leaders_stay_outside_the_box_and_land_square() {
 #[test]
 fn measurements_read_square_units_and_draw_their_labels() {
     let mut doc = PdfDocument::create("plot.pdf", 612, 792).unwrap();
-    run(&mut doc, "measure.setScale", json!({ "page": 1, "rect": [86, 140, 526, 500], "units_per_point": 0.05, "unit": "m", "name": "Site plan" }));
+    run(&mut doc, "measure.setScale", json!({ "page": 1, "rect": [86, 140, 526, 500], "unitsPerPoint": 0.05, "unit": "m", "name": "Site plan" }));
     run(&mut doc, "measure.distance", json!({ "page": 1, "points": [[106, 494], [506, 494]], "label": "Frontage" }));
     run(&mut doc, "measure.area", json!({ "page": 1, "points": [[126, 180], [256, 180], [256, 280], [126, 280]], "label": "Brassica bed" }));
     let list = run(&mut doc, "measure.list", json!({ "page": 1 }));

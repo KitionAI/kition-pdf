@@ -3,7 +3,7 @@ import test from 'node:test'
 import { selectionPoint, SelectionSession } from './textSelection.ts'
 
 const pages = [{ area: { x0: 20, y0: 40, x1: 220, y1: 240 } }, { area: { x0: 40, y0: 260, x1: 200, y1: 500 } }]
-const request = n => ({ page: 1, anchor: [0, 0], focus: [n, n], end_page: 1, mode: 'range' })
+const request = n => ({ page: 1, anchor: [0, 0], focus: [n, n], endPage: 1, mode: 'range' })
 const result = text => ({ text, pages: [{ page: 1, text, rects: [[1, 2, 3, 4]] }] })
 const flush = async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve() }
 

@@ -492,8 +492,8 @@ impl Automation {
                     bold: a.opt_bool("bold")?,
                     size: a.opt_num("size")?,
                     underline: a.opt_bool("underline")?,
-                    line_spacing: a.opt_num("line_spacing")?,
-                    char_spacing: a.opt_num("char_spacing")?,
+                    line_spacing: a.opt_num("lineSpacing")?,
+                    char_spacing: a.opt_num("charSpacing")?,
                     scale: a.opt_num("scale")?,
                     width: a.opt_num("width")?,
                     ..Default::default()
@@ -841,13 +841,13 @@ impl Automation {
             v.page = (p.max(1) - 1) as usize;
         }
         for (k, f) in [
-            ("fit_window", &mut v.fit_window),
-            ("center_window", &mut v.center_window),
-            ("full_screen", &mut v.full_screen),
-            ("display_title", &mut v.display_title),
-            ("hide_menubar", &mut v.hide_menubar),
-            ("hide_toolbar", &mut v.hide_toolbar),
-            ("hide_window_ui", &mut v.hide_window_ui),
+            ("fitWindow", &mut v.fit_window),
+            ("centerWindow", &mut v.center_window),
+            ("fullScreen", &mut v.full_screen),
+            ("displayTitle", &mut v.display_title),
+            ("hideMenubar", &mut v.hide_menubar),
+            ("hideToolbar", &mut v.hide_toolbar),
+            ("hideWindowUi", &mut v.hide_window_ui),
         ] {
             if let Some(b) = a.opt_bool(k)? {
                 *f = b;
@@ -965,12 +965,12 @@ impl Automation {
         }))
     }
 
-    /// A watermark or background picture: `file` (an image or a PDF) and `file_page` (1-based).
+    /// A watermark or background picture: `file` (an image or a PDF) and `filePage` (1-based).
     fn mark_file(&self, a: &Args) -> Result<Option<kition_pdf_engine::MarkFile>> {
         let Some(p) = a.opt_str("file")? else { return Ok(None) };
         let path = self.resolve(p, false)?;
         let bytes = std::fs::read(&path).map_err(|e| failed(format!("{}: {e}", path.display())))?;
-        let page = a.opt_int("file_page")?.unwrap_or(1).max(1) as usize - 1;
+        let page = a.opt_int("filePage")?.unwrap_or(1).max(1) as usize - 1;
         Ok(Some(kition_pdf_engine::MarkFile {
             name: path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(),
             bytes: Arc::new(bytes),
@@ -997,10 +997,10 @@ impl Automation {
         let edit = match tool {
             "file.setHeaderFooter" => {
                 let mut hf = HeaderFooter::default();
-                for (k, key) in ["header_left", "header_center", "header_right", "footer_left", "footer_center", "footer_right"].iter().enumerate() {
+                for (k, key) in ["headerLeft", "headerCenter", "headerRight", "footerLeft", "footerCenter", "footerRight"].iter().enumerate() {
                     hf.text[k] = a.opt_str(key)?.unwrap_or_default().to_string();
                 }
-                if let Some(s) = a.opt_num("font_size")? {
+                if let Some(s) = a.opt_num("fontSize")? {
                     hf.font_size = s;
                 }
                 hf.color = color("color", hf.color)?;
@@ -1008,7 +1008,7 @@ impl Automation {
                     let m: Vec<f64> = m.iter().filter_map(Value::as_f64).collect();
                     hf.margins = <[f64; 4]>::try_from(m).map_err(|_| ToolError::InvalidArgs("margins must be 4 numbers".into()))?;
                 }
-                if let Some(s) = a.opt_int("start_number")? {
+                if let Some(s) = a.opt_int("startNumber")? {
                     hf.start_number = s.clamp(1, u32::MAX as i64) as u32;
                 }
                 Edit::AddHeaderFooter { pages, settings: hf, replace }
@@ -1024,7 +1024,7 @@ impl Automation {
                     text,
                     source: None,
                     scale: a.opt_num("scale")?.unwrap_or(d.scale).clamp(0.01, 1.0),
-                    font_size: a.opt_num("font_size")?.unwrap_or(0.0),
+                    font_size: a.opt_num("fontSize")?.unwrap_or(0.0),
                     color: color("color", d.color)?,
                     opacity: a.opt_num("opacity")?.unwrap_or(d.opacity),
                     rotation: a.opt_num("rotation")?.unwrap_or(d.rotation),
@@ -1200,14 +1200,14 @@ impl Automation {
         // enforced against the owner password; without one everything stays allowed). Refuse a
         // restriction that could not take effect instead of writing an unrestricted file.
         let restriction = ["printing", "changes", "copy", "accessibility"].into_iter().find(|k| a.get(k).is_some());
-        if let (None, Some(key)) = (a.opt_str("permissions_password")?, restriction) {
+        if let (None, Some(key)) = (a.opt_str("permissionsPassword")?, restriction) {
             return Err(ToolError::InvalidArgs(format!(
-                "`{key}` needs `permissions_password`: with open_password alone the document is encrypted but nothing is restricted"
+                "`{key}` needs `permissionsPassword`: with openPassword alone the document is encrypted but nothing is restricted"
             )));
         }
         let p = Protection {
-            open_password: a.opt_str("open_password")?.map(str::to_owned),
-            permissions_password: a.opt_str("permissions_password")?.map(str::to_owned),
+            open_password: a.opt_str("openPassword")?.map(str::to_owned),
+            permissions_password: a.opt_str("permissionsPassword")?.map(str::to_owned),
             printing: match a.opt_str("printing")? {
                 None => d.printing,
                 Some("none") => Printing::None,
@@ -1233,7 +1233,7 @@ impl Automation {
                 Some("rc4-40") => Algorithm::Rc4_40,
                 Some(o) => return Err(ToolError::InvalidArgs(format!("unknown compatibility {o:?}"))),
             },
-            encrypt_metadata: a.opt_bool("encrypt_metadata")?.unwrap_or(d.encrypt_metadata),
+            encrypt_metadata: a.opt_bool("encryptMetadata")?.unwrap_or(d.encrypt_metadata),
         };
         let mut out = self.apply(a, Edit::Protect(p))?;
         out["security"] = security(self.doc(a)?);
@@ -1905,7 +1905,7 @@ fn info(d: &Document) -> Value {
         "outline": outline(&i.outline),
         "outline_more": i.outline_more,
         // Rectangles use the tools' convention (top-left of the displayed page, like
-        // comment_list and link_list), not raw PDF user space, so they can be fed back to
+        // comment.list and link.list), not raw PDF user space, so they can be fed back to
         // geometry-taking tools.
         "annotations": i.annotations.iter().map(|a| json!({
             "page": page1(a.page), "type": a.subtype, "author": a.author, "contents": a.contents,

@@ -83,7 +83,7 @@ impl Automation {
         };
         let first_number = args.int("page")?;
         let mut first = page_index(first_number, "page")?;
-        let mut last = page_index(args.opt_int("end_page")?.unwrap_or(first_number), "end_page")?;
+        let mut last = page_index(args.opt_int("endPage")?.unwrap_or(first_number), "endPage")?;
         let mut anchor = point(args, "anchor")?;
         let mut focus = point(args, "focus")?;
         let column = match args.opt_str("mode")?.unwrap_or("range") {
@@ -92,7 +92,7 @@ impl Automation {
             _ => return Err(Args::wrong("mode", "range or column")),
         };
         if column && first != last {
-            return Err(ToolError::InvalidArgs("column selection requires page and end_page to be the same".into()));
+            return Err(ToolError::InvalidArgs("column selection requires page and endPage to be the same".into()));
         }
         if first > last {
             std::mem::swap(&mut first, &mut last);

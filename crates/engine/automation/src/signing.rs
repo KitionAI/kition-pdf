@@ -170,7 +170,7 @@ impl Automation {
             None | Some(Value::Null) => None,
             Some(Value::String(s)) => Some(match s.as_str() {
                 "no_changes" => 1,
-                "form.fill" => 2,
+                "form_fill" => 2,
                 "comments" => 3,
                 other => return Err(bad(format!("unknown certify level {other:?} (no_changes, form_fill, comments)"))),
             }),

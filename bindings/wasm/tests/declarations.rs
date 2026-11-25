@@ -37,7 +37,7 @@ const ADDRESSES: &[&str] = &[
     "parent",
     "position",
     "to",
-    "to_page",
+    "toPage",
     "at",
     "from",
     "name",
@@ -109,7 +109,7 @@ fn two_values(doc: &PdfDocument, command: &str, name: &str, node: &Value) -> Opt
     };
     let page_base = json!({ "page": 1 });
     match name {
-        "page" | "to_page" => with(name, json!(1), json!(2), json!({})),
+        "page" | "toPage" => with(name, json!(1), json!(2), json!({})),
         "pages" => with(name, json!([1]), json!([2]), json!({})),
         "index" | "figure" | "image" | "paragraph" | "line" => with(name, json!(1), json!(2), page_base),
         "id" => with(name, comment(0), comment(1), json!({})),
@@ -356,7 +356,7 @@ type Expected = (&'static str, Value, &'static [(&'static str, &'static [&'stati
 fn expected() -> Vec<Expected> {
     const G: &[&str] = &["width", "height", "rotation", "boxes"];
     vec![
-        // comments.rs comment_edit: comment_target (id, or page + index), then each set member.
+        // comments.rs comment.edit: comment_target (id, or page + index), then each set member.
         ("comment.edit", json!({ "page": 2, "index": 1, "contents": "x" }), &[("page:2", &["*"]), ("comment:2/1", &["contents", "type"])], &[]),
         ("comment.edit", json!({ "page": 2, "index": 1, "move": [5, 5] }), &[("page:2", G), ("comment:2/1", &["rect"])], &[]),
         (
@@ -375,10 +375,10 @@ fn expected() -> Vec<Expected> {
         ("comment.lock", json!({ "page": 3, "index": 1, "locked": true }), &[("page:3", &["*"]), ("comment:3/1", &["locked"])], &[]),
         ("comment.delete", json!({ "page": 3, "index": 1 }), &[("page:3", &["*"]), ("comment:3/1", &["*"])], &[]),
         ("comment.reply", json!({ "page": 2, "index": 1, "text": "r" }), &[("page:2", &["*"]), ("comment:2/1", &["rect", "color"])], &[]),
-        // comments.rs comment_add: the page, a point converted through its geometry; `find` reads its text.
+        // comments.rs comment.add: the page, a point converted through its geometry; `find` reads its text.
         ("comment.add", json!({ "page": 2, "type": "note", "at": [300, 300], "contents": "n" }), &[("page:2", G)], &[]),
         ("comment.add", json!({ "page": 1, "type": "highlight", "find": "Page" }), &[("page:1", G)], &["text"]),
-        // forms.rs form_fill: each named field's value (and the check box states showing it).
+        // forms.rs form.fill: each named field's value (and the check box states showing it).
         (
             "form.fill",
             json!({ "values": { "F2": "x" } }),
@@ -398,7 +398,7 @@ fn expected() -> Vec<Expected> {
         ),
         ("form.setProps", json!({ "field": "F3", "tooltip": "t" }), &[("field:F3", &["tooltip", "name"])], &[]),
         ("form.setProps", json!({ "field": "F1", "required": true }), &[("field:F1", &["flags", "name"])], &[]),
-        ("form.setProps", json!({ "field": "F2", "max_length": 5 }), &[("field:F2", &["maxLength", "name"])], &[]),
+        ("form.setProps", json!({ "field": "F2", "maxLength": 5 }), &[("field:F2", &["maxLength", "name"])], &[]),
         ("form.deleteField", json!({ "field": "F1" }), &[("field:F1", &["*"])], &[]),
         ("form.addField", json!({ "page": 1, "type": "text", "rect": [72, 400, 300, 424], "name": "New" }), &[("page:1", G)], &["field"]),
         ("form.setScript", json!({ "field": "F1", "event": "calculate", "script": "1" }), &[("field:F1", &["actions", "name"])], &[]),
@@ -418,7 +418,7 @@ fn expected() -> Vec<Expected> {
             &[],
         ),
         ("file.setWatermark", json!({ "text": "W", "pages": [1] }), &[("page:1", G)], &[]),
-        ("file.setHeaderFooter", json!({ "header_left": "H" }), &[("page:1", G), ("page:2", G), ("page:3", G)], &[]),
+        ("file.setHeaderFooter", json!({ "headerLeft": "H" }), &[("page:1", G), ("page:2", G), ("page:3", G)], &[]),
         // content.rs / links.rs: items of a page by index, no id: the page and the entry.
         ("content.set", json!({ "page": 1, "index": 1, "text": "y" }), &[("page:1", &["*"])], &["entry"]),
         ("content.delete", json!({ "page": 2, "index": 1 }), &[("page:2", &["*"])], &["entry"]),
@@ -429,7 +429,7 @@ fn expected() -> Vec<Expected> {
             &[],
         ),
         ("link.delete", json!({ "page": 2, "index": 4 }), &[("page:2", &["*"]), ("link:2/4", &["*"]), ("comment:2/1", &["*"])], &[]),
-        ("link.add", json!({ "page": 1, "rect": [1, 1, 20, 20], "to_page": 2 }), &[("page:1", G), ("page:2", &["*"])], &[]),
+        ("link.add", json!({ "page": 1, "rect": [1, 1, 20, 20], "toPage": 2 }), &[("page:1", G), ("page:2", &["*"])], &[]),
         ("bookmark.add", json!({ "page": 1, "title": "New", "position": 1 }), &[("page:1", &["*"]), ("bookmark:1", &["*"])], &[]),
         ("measure.distance", json!({ "page": 2, "points": [[10, 10], [50, 50]] }), &[("page:2", G)], &["viewports"]),
         ("redaction.mark", json!({ "page": 1, "rect": [10, 10, 50, 50] }), &[("page:1", G)], &["covered"]),

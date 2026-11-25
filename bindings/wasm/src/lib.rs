@@ -71,10 +71,10 @@ const LEFT_OUT: &[&str] = &[
 /// The automation tools a document in the page uses, built once.
 static TOOLS: LazyLock<Vec<ToolDef>> = LazyLock::new(|| kition_pdf_automation::tools().into_iter().filter(usable).collect());
 
-/// The menu a tool goes in, by its name's first word.
+/// The menu a tool goes in, by its command id's namespace (`edit_undo` and `edit_redo`: `edit`).
 const MENUS: &[(&str, &str)] = &[
     ("edit", "Edit"),
-    ("doc", "Document"),
+    ("file", "Document"),
     ("page", "Pages"),
     ("text", "Text"),
     ("content", "Edit PDF"),
@@ -83,22 +83,27 @@ const MENUS: &[(&str, &str)] = &[
     ("form", "Forms"),
     ("bookmark", "Bookmarks"),
     ("link", "Links"),
-    ("redact", "Redact"),
+    ("redaction", "Redact"),
     ("measure", "Measure"),
-    ("sign", "Protect"),
     ("signature", "Protect"),
-    ("security", "Protect"),
-    ("a11y", "Accessibility"),
     ("accessibility", "Accessibility"),
     ("object", "Edit PDF"),
-    ("links", "Links"),
-    ("comments", "Comment"),
-    ("fill", "Forms"),
-    ("js", "Tools"),
+    ("fillSign", "Forms"),
+    ("script", "Tools"),
     ("pdfa", "Tools"),
     ("action", "Tools"),
     ("ocr", "Tools"),
 ];
+
+/// The menu of a tool ([`MENUS`]). `file.render` is in no menu: it draws the preview an agent
+/// looks at.
+fn menu_of(tool: &str) -> Option<&'static str> {
+    if tool == "file.render" {
+        return None;
+    }
+    let namespace = tool.split(['.', '_']).next()?;
+    MENUS.iter().find(|(prefix, _)| *prefix == namespace).map(|(_, menu)| *menu)
+}
 
 /// A command id for a tool: the frame's own `edit.undo` and `edit.redo`, the tool name otherwise.
 fn command_id(tool: &str) -> &str {
@@ -118,7 +123,7 @@ fn tool_name(command: &str) -> &str {
 }
 
 /// Marks what a command's parameters address ([`premises`]): a comment's `id` is its target, a
-/// `Comment`'s tool id; a page number (`page`, `pages`, `to_page`, a move's `to`, an insertion's
+/// `Comment`'s tool id; a page number (`page`, `pages`, `toPage`, a move's `to`, an insertion's
 /// `at`) and a comment's or an item's `index` are places, which [`KitDocument::under`] answers
 /// with the objects there now.
 fn mark_addresses(command: &mut KitCommand) {
@@ -127,15 +132,16 @@ fn mark_addresses(command: &mut KitCommand) {
     const PAGES: &[&str] = &["pages"];
     const PAGE_AND_PAGES: &[&str] = &["page", "pages"];
     const PAGE_INDEX: &[&str] = &["page", "index"];
-    const LINK: &[&str] = &["page", "index", "to_page"];
-    const LINK_ADD: &[&str] = &["page", "to_page"];
+    const LINK: &[&str] = &["page", "index", "toPage"];
+    const LINK_ADD: &[&str] = &["page", "toPage"];
     const MOVE: &[&str] = &["pages", "to"];
     const INSERT: &[&str] = &["at"];
     let id = command.id.as_str();
     if !command.mutates {
         return;
     }
-    if id.starts_with("comment_") && id != "comment.add" {
+    // A comment's own writes; `comment.add` makes one and `comment.hide` is a view setting.
+    if id.starts_with("comment.") && !matches!(id, "comment.add" | "comment.hide") {
         command.targets = Some("id");
         command.object_types = &[("id", &["Comment"])];
         command.places = COMMENT;
@@ -580,7 +586,7 @@ impl KitDocument for PdfDocument {
                 known.join(", ")
             ));
         }
-        // Tools of the whole session (action_list, ocr_status) take no `doc` and refuse one.
+        // Tools of the whole session (action.list, ocr.status) take no `doc` and refuse one.
         if tool.input_schema.get("properties").and_then(|properties| properties.get("doc")).is_some() {
             args.insert("doc".into(), json!(self.id.0));
         }
@@ -621,12 +627,7 @@ impl KitDocument for PdfDocument {
         let mut commands: Vec<KitCommand> = self
             .tools()
             .map(|tool| {
-                let menu = tool
-                    .name
-                    .split('_')
-                    .next()
-                    .and_then(|first| MENUS.iter().find(|(prefix, _)| *prefix == first))
-                    .map(|(_, menu)| vec![(*menu).to_owned()]);
+                let menu = menu_of(tool.name).map(|menu| vec![menu.to_owned()]);
                 KitCommand {
                     id: command_id(tool.name).to_owned(),
                     title: tool.title.to_owned(),

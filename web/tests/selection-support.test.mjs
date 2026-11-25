@@ -24,7 +24,7 @@ test('cross-page reverse preserves ascending page/text order', () => {
   assert.deepEqual(forward.expected, reverse.expected)
   assert.equal(forward.expected.text, 'CD\nAB')
   assert.equal(reverse.page, 2)
-  assert.equal(reverse.end_page, 1)
+  assert.equal(reverse.endPage, 1)
 })
 test('oracle rejects wrong text, missing rectangles, and displaced geometry', () => {
   const { expected } = selectionCases(pages[0])[0]

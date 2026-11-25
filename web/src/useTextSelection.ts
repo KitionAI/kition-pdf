@@ -51,7 +51,7 @@ export function useTextSelection({ document: doc, revision, pages, execute, onSt
           ? selectionPoint([pages[anchor.page - 1]], pointer.x, pointer.y, true)
           : selectionPoint(pages, pointer.x, pointer.y, true)
         if (!end) return
-        const request: SelectionRequest = { page: anchor.page, anchor: anchor.point, focus: end.point, end_page: mode === 'column' ? anchor.page : end.page, mode }
+        const request: SelectionRequest = { page: anchor.page, anchor: anchor.point, focus: end.point, endPage: mode === 'column' ? anchor.page : end.page, mode }
         const key = JSON.stringify(request)
         if (key === last) return
         last = key

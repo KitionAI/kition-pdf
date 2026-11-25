@@ -9,7 +9,7 @@ use serde_json::json;
 fn removing_marks_honors_the_page_list_after_reopen() {
     for (kind, tool, settings) in [
         ("watermark", "file.setWatermark", json!({"text": "Watermark"})),
-        ("header_footer", "file.setHeaderFooter", json!({"header_left": "Header"})),
+        ("header_footer", "file.setHeaderFooter", json!({"headerLeft": "Header"})),
         ("background", "file.setBackground", json!({"color": "yellow"})),
     ] {
         let mut doc = PdfDocument::create("marks.pdf", 612, 792).unwrap();

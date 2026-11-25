@@ -98,7 +98,7 @@ try {
         return { x: bounds.x + (area.x + local[0] - actual.view.x) * actual.view.zoom, y: bounds.y + (area.y + local[1] - actual.view.y) * actual.view.zoom }
       }
       const drag = async spec => {
-        const start = await point(spec.page, spec.anchor), end = await point(spec.end_page ?? spec.page, spec.focus)
+        const start = await point(spec.page, spec.anchor), end = await point(spec.endPage ?? spec.page, spec.focus)
         if (spec.mode === 'column') await page.keyboard.down('Alt')
         try { await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(end.x, end.y, { steps: 4 }); await page.mouse.up() }
         finally { if (spec.mode === 'column') await page.keyboard.up('Alt') }
@@ -106,7 +106,7 @@ try {
       const verify = async (spec, zoom) => {
         await frame.waitForFunction(({ spec, zoom }) => {
           const probe = window.__pdfSelection, call = probe.calls.at(-1), params = call?.params
-          return probe.active === 0 && call?.status === 'returned' && params.page === spec.page && (params.end_page ?? params.page) === (spec.end_page ?? spec.page) && params.mode === spec.mode && ['anchor', 'focus'].every(key => params[key]?.every((value, axis) => Math.abs(value - spec[key][axis]) <= 1.1 / zoom))
+          return probe.active === 0 && call?.status === 'returned' && params.page === spec.page && (params.endPage ?? params.page) === (spec.endPage ?? spec.page) && params.mode === spec.mode && ['anchor', 'focus'].every(key => params[key]?.every((value, axis) => Math.abs(value - spec[key][axis]) <= 1.1 / zoom))
         }, { spec, zoom })
         await settle()
         const actual = await snap()

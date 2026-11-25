@@ -33,8 +33,8 @@ Themes, layouts and every other parameter that takes one of a fixed list of valu
 | `binding` | `left`, `right` | `file.setInitialView` |
 | `box` | `crop`, `trim`, `bleed`, `art`, `media` | `page.setBox` |
 | `changes` | `none`, `pages`, `fill-sign`, `comment-fill-sign`, `any-except-extract` | `file.protect` |
-| `check_style` | `check`, `circle`, `cross`, `diamond`, `square`, `star` | `form.setProps` |
-| `code_set` | `foia`, `privacy-act` | `redaction.mark` |
+| `checkStyle` | `check`, `circle`, `cross`, `diamond`, `square`, `star` | `form.setProps` |
+| `codeSet` | `foia`, `privacy-act` | `redaction.mark` |
 | `compatibility` | `aes-256`, `aes-128`, `rc4-128`, `rc4-40` | `file.protect` |
 | `event` | `keystroke`, `format`, `validate`, `calculate`, `mouse_up` | `form.setScript` |
 | `font` | `helvetica`, `times`, `courier` | `page.addText`, `content.set`, `text.edit` |
@@ -83,43 +83,43 @@ Defaults the engine states in its schemas (other defaults are named in the param
 - `file.getHiddenInfo` (reads): What Remove Hidden Information would remove, by category (metadata, attachments, comments, form-fields, hidden-text, hidden-layers, bookmarks, links-actions-scripts, private-data) with counts. No parameters.
 - `file.removeHidden` (writes): Remove the listed categories (see file.getHiddenInfo), or every category when none are listed (Sanitize Document). Form fields are flattened so their values stay visible. The next save rewrites the whole file. Undoable until saved.
   - `categories` string[]
-- `file.protect` (writes): Encrypt the document (applied by the next doc_save, a full rewrite). open_password is needed to open it. permissions_password is needed to change security and lifts the restrictions given by printing/changes/copy/accessibility; those restrictions (and their defaults) apply only when permissions_password is given. With open_password alone the document is encrypted and everything stays allowed, so passing a restriction without permissions_password is an error. Passwords are never echoed back. Undoable.
-  - `accessibility` boolean, Allow screen readers to read the text (needs permissions_password; default true).
-  - `changes` string, one of `none` | `pages` | `fill-sign` | `comment-fill-sign` | `any-except-extract`, Needs permissions_password. Default none.
+- `file.protect` (writes): Encrypt the document (applied by the next doc_save, a full rewrite). openPassword is needed to open it. permissionsPassword is needed to change security and lifts the restrictions given by printing/changes/copy/accessibility; those restrictions (and their defaults) apply only when permissionsPassword is given. With openPassword alone the document is encrypted and everything stays allowed, so passing a restriction without permissionsPassword is an error. Passwords are never echoed back. Undoable.
+  - `accessibility` boolean, Allow screen readers to read the text (needs permissionsPassword; default true).
+  - `changes` string, one of `none` | `pages` | `fill-sign` | `comment-fill-sign` | `any-except-extract`, Needs permissionsPassword. Default none.
   - `compatibility` string, one of `aes-256` | `aes-128` | `rc4-128` | `rc4-40`, Default aes-256 (Acrobat X and later).
-  - `copy` boolean, Allow copying text and images (needs permissions_password; default false).
-  - `encrypt_metadata` boolean, Default true.
-  - `open_password` string, Required to open the document. On its own it restricts nothing. (minLength 1)
-  - `permissions_password` string, Required to change security; enables printing/changes/copy/accessibility and their defaults. (minLength 1)
-  - `printing` string, one of `none` | `low` | `high`, Needs permissions_password. Default high.
+  - `copy` boolean, Allow copying text and images (needs permissionsPassword; default false).
+  - `encryptMetadata` boolean, Default true.
+  - `openPassword` string, Required to open the document. On its own it restricts nothing. (minLength 1)
+  - `permissionsPassword` string, Required to change security; enables printing/changes/copy/accessibility and their defaults. (minLength 1)
+  - `printing` string, one of `none` | `low` | `high`, Needs permissionsPassword. Default high.
 - `file.unprotect` (writes): Remove password security (the document must have been opened with its permissions password, or have none). Applied by the next doc_save. Undoable. No parameters.
-- `file.setHeaderFooter` (writes): Add a header and/or footer to pages. Text boxes: header_left/center/right, footer_left/center/right. Tokens: <<1>> page number, <<n>> page count, <<1 of n>>, <<Page 1 of n>>, <<1/n>>, dates <<m/d/yyyy>> <<yyyy-mm-dd>> <<mmmm d, yyyy>> (and more), Bates <<Bates Number#6#1#PREFIX#SUFFIX>>. replace: true swaps out existing ones (Update). Undoable.
+- `file.setHeaderFooter` (writes): Add a header and/or footer to pages. Text boxes: headerLeft/headerCenter/headerRight, footerLeft/footerCenter/footerRight. Tokens: <<1>> page number, <<n>> page count, <<1 of n>>, <<Page 1 of n>>, <<1/n>>, dates <<m/d/yyyy>> <<yyyy-mm-dd>> <<mmmm d, yyyy>> (and more), Bates <<Bates Number#6#1#PREFIX#SUFFIX>>. replace: true swaps out existing ones (Update). Undoable.
   - `color` string, #RRGGBB or a colour name.
-  - `font_size` number
-  - `footer_center` string
-  - `footer_left` string
-  - `footer_right` string
-  - `header_center` string
-  - `header_left` string
-  - `header_right` string
+  - `fontSize` number
+  - `footerCenter` string
+  - `footerLeft` string
+  - `footerRight` string
+  - `headerCenter` string
+  - `headerLeft` string
+  - `headerRight` string
   - `margins` number[], Top, bottom, left, right in points (default 36, 36, 72, 72). (maxItems 4, minItems 4)
   - `pages` integer[], 1-based page numbers to mark (default: all). (minItems 1)
   - `replace` boolean
-  - `start_number` integer, (minimum 1)
-- `file.setWatermark` (writes): Add a watermark to pages: text, or a picture from `file` (an image, or page `file_page` of a PDF) at `scale` of the page (default 0.5); rotated (degrees counter-clockwise, default 45), semi-transparent (opacity 0–1, default 0.5), text fitted to the page unless font_size is given, on top unless behind: true. replace: true swaps out existing ones. Undoable.
+  - `startNumber` integer, (minimum 1)
+- `file.setWatermark` (writes): Add a watermark to pages: text, or a picture from `file` (an image, or page `filePage` of a PDF) at `scale` of the page (default 0.5); rotated (degrees counter-clockwise, default 45), semi-transparent (opacity 0–1, default 0.5), text fitted to the page unless fontSize is given, on top unless behind: true. replace: true swaps out existing ones. Undoable.
   - `behind` boolean
   - `color` string
-  - `file_page` integer, (minimum 1)
-  - `font_size` number
+  - `filePage` integer, (minimum 1)
+  - `fontSize` number
   - `opacity` number, (maximum 1, minimum 0)
   - `pages` integer[], 1-based page numbers to mark (default: all). (minItems 1)
   - `replace` boolean
   - `rotation` number
   - `scale` number, (maximum 1)
   - `text` string, (minLength 1)
-- `file.setBackground` (writes): Fill page backgrounds with a colour, or a picture from `file` (an image, or page `file_page` of a PDF) fitted at `scale` (default 1), behind the content. Undoable.
+- `file.setBackground` (writes): Fill page backgrounds with a colour, or a picture from `file` (an image, or page `filePage` of a PDF) fitted at `scale` (default 1), behind the content. Undoable.
   - `color` string
-  - `file_page` integer, (minimum 1)
+  - `filePage` integer, (minimum 1)
   - `opacity` number, (maximum 1, minimum 0)
   - `pages` integer[], 1-based page numbers to fill (default: all). (minItems 1)
   - `replace` boolean
@@ -141,15 +141,15 @@ Defaults the engine states in its schemas (other defaults are named in the param
   - `pages` integer, (maximum 10000, minimum 1)
   - `text` string
   - `width` number, (minimum 3)
-- `file.setInitialView` (writes): Read or change how the document opens (Document Properties ▸ Initial View) and its reading options: navigation (page, bookmarks, pages, attachments, layers), layout (default, single, continuous, two_up, two_up_continuous, two_up_cover, two_up_continuous_cover), magnification (default, actual, fit_page, fit_width, fit_height, fit_visible, or a percentage), page, window options (fit_window, center_window, full_screen, display_title), interface options (hide_menubar, hide_toolbar, hide_window_ui), language and binding (left, right). Only the given ones change; returns the result. Undoable.
+- `file.setInitialView` (writes): Read or change how the document opens (Document Properties ▸ Initial View) and its reading options: navigation (page, bookmarks, pages, attachments, layers), layout (default, single, continuous, two_up, two_up_continuous, two_up_cover, two_up_continuous_cover), magnification (default, actual, fit_page, fit_width, fit_height, fit_visible, or a percentage), page, window options (fitWindow, centerWindow, fullScreen, displayTitle), interface options (hideMenubar, hideToolbar, hideWindowUi), language and binding (left, right). Only the given ones change; returns the result. Undoable.
   - `binding` string, one of `left` | `right`
-  - `center_window` boolean
-  - `display_title` boolean
-  - `fit_window` boolean
-  - `full_screen` boolean
-  - `hide_menubar` boolean
-  - `hide_toolbar` boolean
-  - `hide_window_ui` boolean
+  - `centerWindow` boolean
+  - `displayTitle` boolean
+  - `fitWindow` boolean
+  - `fullScreen` boolean
+  - `hideMenubar` boolean
+  - `hideToolbar` boolean
+  - `hideWindowUi` boolean
   - `language` string
   - `layout` string, one of `default` | `single` | `continuous` | `two_up` | `two_up_continuous` | `two_up_cover` | `two_up_continuous_cover`
   - `magnification` number or string
@@ -219,13 +219,13 @@ Defaults the engine states in its schemas (other defaults are named in the param
   - `offset` number[], required, (maxItems 2, minItems 2)
   - `page` integer, required, (minimum 1)
 - `content.list` (reads): Text and images added with page.addText/page_add_image (or Edit a PDF ▸ Add content), per page with a 1-based index, rect (points from the top-left of the page), and text style. No parameters.
-- `content.set` (writes): Move/resize (rect), retype (text) or restyle (font, size, bold, italic, color, align) an added item (page, index from content.list). Images: rotate (degrees, multiple of 90, counter-clockwise), flip_h / flip_v (toggle), crop [left, bottom, right, top] as fractions trimmed, image (a file that replaces the picture). Undoable.
+- `content.set` (writes): Move/resize (rect), retype (text) or restyle (font, size, bold, italic, color, align) an added item (page, index from content.list). Images: rotate (degrees, multiple of 90, counter-clockwise), flipH / flipV (toggle), crop [left, bottom, right, top] as fractions trimmed, image (a file that replaces the picture). Undoable.
   - `align` string, one of `left` | `center` | `right` | `justify`
   - `bold` boolean
   - `color` string
   - `crop` number[], (maxItems 4, minItems 4)
-  - `flip_h` boolean
-  - `flip_v` boolean
+  - `flipH` boolean
+  - `flipV` boolean
   - `font` string, one of `helvetica` | `times` | `courier`
   - `index` integer, required, (minimum 1)
   - `italic` boolean
@@ -254,7 +254,7 @@ Defaults the engine states in its schemas (other defaults are named in the param
   - `query` string, required, (minLength 1)
 - `text.select` (reads): Read text and highlight rectangles between inclusive nearest-glyph endpoints in displayed page-local top-left points (rotation and crop already applied). Range selection normalizes direction and page order; intermediate pages are complete. Column selection includes glyph centers inside the rectangle and requires one page. Returns {text,pages:[{page,text,rects}]}, retaining blank pages and joining page text with a newline. Refuses spans over 64 pages, text over 1 MiB UTF-8 including page separators, or over 16384 rectangles; never returns a partial selection.
   - `anchor` number[], required, (maxItems 2, minItems 2)
-  - `end_page` integer, Focus page; defaults to page. (minimum 1)
+  - `endPage` integer, Focus page; defaults to page. (minimum 1)
   - `focus` number[], required, (maxItems 2, minItems 2)
   - `mode` string, default `"range"`, one of `range` | `column`
   - `page` integer, required, (minimum 1)
@@ -262,17 +262,17 @@ Defaults the engine states in its schemas (other defaults are named in the param
   - `page` integer, required, (minimum 1)
 - `text.listParagraphs` (reads): The paragraphs on a page (lines grouped by font, size, alignment and spacing): number, text, its line numbers, box (top-left-origin points), font and size. Use the number with text.edit's paragraph.
   - `page` integer, required, (minimum 1)
-- `text.edit` (writes): Replace the text of one paragraph (paragraph, from text.listParagraphs: rewrapped to the paragraph's width with its line spacing) or one line (line, from text.listLines) in place, keeping position, size and colour. For a paragraph, also change its formatting: font (helvetica, times, courier) with bold/italic, size (points), color (#rrggbb), align (left, center, right, justify), underline, line_spacing (× size), char_spacing (points) and scale (horizontal, percent), or move it (dx, dy in points; up is +dy) and rewrap it to a new width (points); text may then be omitted. Its own font is reused when it can show every character and no font/weight change is requested; otherwise it uses a standard font matching the source style or, for Japanese and other text no standard font can show (Cyrillic, Greek), real Mincho/Gothic fallback outlines matching the requested/source family and available weight, from a face that has every character (the result shows the font used). Missing Japanese weights use Regular, not synthetic bold; the small web build has only Gothic Regular. Paragraph bold may be set without font to keep the source family. Text that no available font can show is refused. Undoable.
+- `text.edit` (writes): Replace the text of one paragraph (paragraph, from text.listParagraphs: rewrapped to the paragraph's width with its line spacing) or one line (line, from text.listLines) in place, keeping position, size and colour. For a paragraph, also change its formatting: font (helvetica, times, courier) with bold/italic, size (points), color (#rrggbb), align (left, center, right, justify), underline, lineSpacing (× size), charSpacing (points) and scale (horizontal, percent), or move it (dx, dy in points; up is +dy) and rewrap it to a new width (points); text may then be omitted. Its own font is reused when it can show every character and no font/weight change is requested; otherwise it uses a standard font matching the source style or, for Japanese and other text no standard font can show (Cyrillic, Greek), real Mincho/Gothic fallback outlines matching the requested/source family and available weight, from a face that has every character (the result shows the font used). Missing Japanese weights use Regular, not synthetic bold; the small web build has only Gothic Regular. Paragraph bold may be set without font to keep the source family. Text that no available font can show is refused. Undoable.
   - `align` string, one of `left` | `center` | `right` | `justify`
   - `bold` boolean
-  - `char_spacing` number, Points.
+  - `charSpacing` number, Points.
   - `color` string, #rrggbb
   - `dx` number, Paragraph only: move right by this many points (negative: left).
   - `dy` number, Paragraph only: move up by this many points (negative: down).
   - `font` string, one of `helvetica` | `times` | `courier`
   - `italic` boolean
   - `line` integer, (minimum 1)
-  - `line_spacing` number, Multiple of the font size (1.2 is ordinary).
+  - `lineSpacing` number, Multiple of the font size (1.2 is ordinary).
   - `page` integer, required, (minimum 1)
   - `paragraph` integer, (minimum 1)
   - `scale` number, Horizontal scale in percent.
@@ -305,30 +305,30 @@ Defaults the engine states in its schemas (other defaults are named in the param
   - `editable` boolean, Combo box accepts typed text.
   - `export` string, Radio button export value (default Choice1).
   - `group` string, Radio group to join.
-  - `multi_select` boolean
+  - `multiSelect` boolean
   - `multiline` boolean
   - `name` string
   - `options` string[], Combo box / list box items.
   - `page` integer, required, (minimum 1)
   - `rect` number[], required, (maxItems 4, minItems 4)
   - `type` string, required, one of `text` | `date` | `checkbox` | `radio` | `combo` | `list` | `button` | `image` | `signature`
-- `form.setProps` (writes): Change field properties: give field for one field, or fields for a list of unique field names (1–1000). A bulk change is atomic and one Undo step; an invalid or locked field leaves every field unchanged. Only the given properties change, and partial appearance changes preserve each field's other colours and font. name (rename), rect (position) and rotation require a single field. General and Options: tooltip, read_only, required, multiline, max_length (0 = no limit), options (combo/list items), font_size (0 = auto), format, validate, calculate (Acrobat's native AF rules). Options: align (left, center, right), default (Reset form's value; check boxes/radio buttons use their on state, "" for off), flags { scroll, rich_text, password, file_select, spell_check, comb (needs max_length), sort, editable, multi_select, commit_immediately }, check_style (check boxes/radio buttons: check, circle, cross, diamond, square, star). rotation is 0, 90, 180 or 270 degrees counterclockwise and swaps width/height when the axis changes. Undoable.
+- `form.setProps` (writes): Change field properties: give field for one field, or fields for a list of unique field names (1–1000). A bulk change is atomic and one Undo step; an invalid or locked field leaves every field unchanged. Only the given properties change, and partial appearance changes preserve each field's other colours and font. name (rename), rect (position) and rotation require a single field. General and Options: tooltip, readOnly, required, multiline, maxLength (0 = no limit), options (combo/list items), fontSize (0 = auto), format, validate, calculate (Acrobat's native AF rules). Options: align (left, center, right), default (Reset form's value; check boxes/radio buttons use their on state, "" for off), flags { scroll, rich_text, password, file_select, spell_check, comb (needs maxLength), sort, editable, multi_select, commit_immediately }, checkStyle (check boxes/radio buttons: check, circle, cross, diamond, square, star). rotation is 0, 90, 180 or 270 degrees counterclockwise and swaps width/height when the axis changes. Undoable.
   - `align` string, one of `left` | `center` | `right`
   - `appearance` object, Appearance tab: border, fill, text_color (#RRGGBB, a name or "none"), width (0–12 points; 1 thin, 2 medium, 3 thick), style (solid, dashed, beveled, inset, underline), font (helvetica, times, courier).
   - `calculate` object or string, Calculate tab: {"op": "sum"|"product"|"average"|"min"|"max", "fields": ["a", "b"]}, {"notation": "Price * Qty"} (simplified field notation), or "none".
-  - `check_style` string, one of `check` | `circle` | `cross` | `diamond` | `square` | `star`, Check boxes and radio buttons: the mark shown when on.
+  - `checkStyle` string, one of `check` | `circle` | `cross` | `diamond` | `square` | `star`, Check boxes and radio buttons: the mark shown when on.
   - `default` string
   - `field` string, The field's current name.
   - `fields` string[], Apply the same changes to these fields in one atomic edit. Use either field or fields. (maxItems 1000, minItems 1)
   - `flags` object
-  - `font_size` number, (minimum 0)
+  - `fontSize` number, (minimum 0)
   - `format` object or string, Format tab: {"type": "number", "decimals": 2, "currency": "$", "separator": 0-4, "negative": 0-3}, {"type": "percent"}, {"type": "date"|"time", "pattern": "mm/dd/yyyy"}, {"type": "zip"|"zip4"|"phone"|"ssn"}, {"type": "mask", "mask": "AA-9999"}, or "none".
   - `locked` boolean, Lock the field's properties (only unlocking is accepted while locked).
-  - `max_length` integer, (minimum 0)
+  - `maxLength` integer, (minimum 0)
   - `multiline` boolean
   - `name` string
   - `options` string[]
-  - `read_only` boolean
+  - `readOnly` boolean
   - `rect` number[], Move/resize: points from the top-left of the displayed page. (maxItems 4, minItems 4)
   - `required` boolean
   - `rotation` integer, one of `0` | `90` | `180` | `270`, Widget rotation in degrees, counterclockwise. Changing between horizontal and vertical swaps the rectangle around its center.
@@ -367,10 +367,10 @@ Defaults the engine states in its schemas (other defaults are named in the param
 
 ### Redact
 
-- `redaction.mark` (writes): Mark content for redaction (nothing is removed until redaction.apply). One of: rect [x0, y0, x1, y1] (points from the top-left of the displayed page) with page; find (text, every match); words (a list of words or phrases, every match of each; the result's matched_words says how many marks each made); pattern (phone, email, credit-card, ssn, date: every match, Acrobat's Search & Redact patterns); whole_pages: true. find, words, pattern and whole_pages work on pages (default all). overlay: text shown on the box once applied, or code_set (foia: U.S. FOIA (b)(1)(A)…(b)(9); privacy-act: U.S. Privacy Act (d)(5), (j)(1)…(k)(7)) with codes, shown as "(b)(6), (b)(7)(C)"; fill: box colour (default black). Undoable.
+- `redaction.mark` (writes): Mark content for redaction (nothing is removed until redaction.apply). One of: rect [x0, y0, x1, y1] (points from the top-left of the displayed page) with page; find (text, every match); words (a list of words or phrases, every match of each; the result's matched_words says how many marks each made); pattern (phone, email, credit-card, ssn, date: every match, Acrobat's Search & Redact patterns); wholePages: true. find, words, pattern and wholePages work on pages (default all). overlay: text shown on the box once applied, or codeSet (foia: U.S. FOIA (b)(1)(A)…(b)(9); privacy-act: U.S. Privacy Act (d)(5), (j)(1)…(k)(7)) with codes, shown as "(b)(6), (b)(7)(C)"; fill: box colour (default black). Undoable.
   - `author` string
-  - `code_set` string, one of `foia` | `privacy-act`
-  - `codes` string[], Redaction codes from code_set, e.g. ["(b)(6)"]. (minItems 1)
+  - `codeSet` string, one of `foia` | `privacy-act`
+  - `codes` string[], Redaction codes from codeSet, e.g. ["(b)(6)"]. (minItems 1)
   - `fill` string, #RRGGBB or a colour name.
   - `find` string, (minLength 1)
   - `overlay` string
@@ -378,7 +378,7 @@ Defaults the engine states in its schemas (other defaults are named in the param
   - `pages` integer[], 1-based page numbers to search or mark (default: all). (minItems 1)
   - `pattern` string, one of `phone` | `email` | `credit-card` | `ssn` | `date`
   - `rect` number[], (maxItems 4, minItems 4)
-  - `whole_pages` boolean
+  - `wholePages` boolean
   - `words` string[], (maxItems 1000, minItems 1)
 - `redaction.apply` (writes): Apply the redaction marks (all, or those on pages): text, images, vectors, comments and form fields under them are removed for good and boxes are drawn in their place. A verification pass fails the operation if anything readable remains. Undoable until saved; the saved file no longer contains the content.
   - `pages` integer[], 1-based page numbers whose marks to apply (default: all). (minItems 1)
@@ -386,23 +386,23 @@ Defaults the engine states in its schemas (other defaults are named in the param
 
 ### Links
 
-- `link.list` (reads): Every link: page, 1-based index (for link.edit/link_delete), rect (points from the top-left of the page), and where it goes (url or to_page). No parameters.
-- `link.add` (writes): Add a link over rect on page that opens url or goes to to_page. Appearance: visible (rectangle), color, width 1-3, highlight none/invert/outline/inset. Undoable.
+- `link.list` (reads): Every link: page, 1-based index (for link.edit/link.delete), rect (points from the top-left of the page), and where it goes (url or to_page). No parameters.
+- `link.add` (writes): Add a link over rect on page that opens url or goes to toPage. Appearance: visible (rectangle), color, width 1-3, highlight none/invert/outline/inset. Undoable.
   - `color` string
   - `highlight` string, one of `none` | `invert` | `outline` | `inset`
   - `page` integer, required, (minimum 1)
   - `rect` number[], required, (maxItems 4, minItems 4)
-  - `to_page` integer, (minimum 1)
+  - `toPage` integer, (minimum 1)
   - `url` string
   - `visible` boolean
   - `width` number
-- `link.edit` (writes): Change a link's rect, destination (url or to_page) or appearance. Undoable.
+- `link.edit` (writes): Change a link's rect, destination (url or toPage) or appearance. Undoable.
   - `color` string
   - `highlight` string, one of `none` | `invert` | `outline` | `inset`
   - `index` integer, required, (minimum 1)
   - `page` integer, required, (minimum 1)
   - `rect` number[], (maxItems 4, minItems 4)
-  - `to_page` integer, (minimum 1)
+  - `toPage` integer, (minimum 1)
   - `url` string
   - `visible` boolean
   - `width` number
@@ -435,7 +435,7 @@ Defaults the engine states in its schemas (other defaults are named in the param
   - `type` string, one of `distance` | `perimeter` | `area`
 - `measure.list` (reads): Saved measurement annotations with calculated values, scale and vertices in display coordinates. Measurements with unsupported imported formats (compound or fractional units, non-rectilinear scales) or invalid geometry are listed under unsupported with a reason.
   - `page` integer, (minimum 1)
-- `measure.setScale` (writes): Read the scale at a point, or add a rectangular viewport using units_per_point or two calibration points and their real-world distance. Existing measurements retain their original scales. Undoable.
+- `measure.setScale` (writes): Read the scale at a point, or add a rectangular viewport using unitsPerPoint or two calibration points and their real-world distance. Existing measurements retain their original scales. Undoable.
   - `at` number[], [x, y] in points from the top-left of the displayed page. (maxItems 2, minItems 2)
   - `distance` number
   - `name` string
@@ -444,7 +444,7 @@ Defaults the engine states in its schemas (other defaults are named in the param
   - `precision` integer, (maximum 6, minimum 0)
   - `rect` number[], (maxItems 4, minItems 4)
   - `unit` string
-  - `units_per_point` number
+  - `unitsPerPoint` number
 - `measure.setSnap` (reads): Snap a point to vector paths, endpoints, midpoints or intersections. Coordinates and tolerance are in display points. Bounded extraction reports truncated geometry.
   - `at` number[], required, [x, y] in points from the top-left of the displayed page. (maxItems 2, minItems 2)
   - `endpoints` boolean
@@ -467,7 +467,7 @@ Defaults the engine states in its schemas (other defaults are named in the param
   - `endings` string[], Line endings. Two names (start, end) for a line, arrow or polyline; one name for a callout. (maxItems 2, minItems 1)
   - `fill` string, #RRGGBB or a name: yellow, red, orange, green, blue, purple, pink, black, gray, white.
   - `find` string, Text on the page to mark up (case-insensitive).
-  - `font_size` number
+  - `fontSize` number
   - `from` number[], [x, y] in points from the top-left of the displayed page. (maxItems 2, minItems 2)
   - `icon` string, note: Comment, Note, Help, Insert, Key, NewParagraph, Paragraph; attachment: PushPin, Paperclip, Graph, Tag.
   - `knee` number[], [x, y] in points from the top-left of the displayed page. (maxItems 2, minItems 2)
@@ -564,11 +564,11 @@ Defaults the engine states in its schemas (other defaults are named in the param
 - `action.list` (reads): Action Wizard: the built-in actions (name, description, steps) and every step an action can use (id, label, whether it takes a text argument). No parameters.
 - `script.enabled` (writes): Preferences ▸ JavaScript ▸ Enable Acrobat JavaScript: set it with `enabled`, or read it. With JavaScript off, field scripts other than Acrobat's AF calls don't run.
   - `enabled` boolean
-- `ocr.recognize` (writes): Scan & OCR ▸ Recognize text: render pages, read the words in them and add them as invisible text over the page image, so scanned pages become searchable and selectable (a searchable image; the image is not changed). Pages that already have text are skipped unless skip_text_pages is false. Returns each page's recognised text, word count or why it was skipped. Needs the OCR models (ocr.status). Undoable as one step.
+- `ocr.recognize` (writes): Scan & OCR ▸ Recognize text: render pages, read the words in them and add them as invisible text over the page image, so scanned pages become searchable and selectable (a searchable image; the image is not changed). Pages that already have text are skipped unless skipTextPages is false. Returns each page's recognised text, word count or why it was skipped. Needs the OCR models (ocr.status). Undoable as one step.
   - `dpi` number, Resolution pages are read at (default 300; a scanned page is read at most at its own resolution). (maximum 600, minimum 72)
   - `language` string, one of `en`, Document language (default en).
   - `pages` integer[], 1-based page numbers to recognise (default: all). (minItems 1)
-  - `skip_text_pages` boolean, Leave pages that already contain text alone (default true).
+  - `skipTextPages` boolean, Leave pages that already contain text alone (default true).
 - `ocr.status` (reads): Whether text recognition is available (its models are installed: release packages include them; a source build fetches them with `cargo xtask models`; KITION_PDF_MODELS overrides), where it looks for them, and the languages it reads. No parameters.
 
 ### Edit
@@ -580,8 +580,8 @@ Defaults the engine states in its schemas (other defaults are named in the param
 
 ### (no menu)
 
-- `file.render` (reads): Render a PNG bounded by max_side (default 1024), without changing or saving the document. Page defaults to 1; doc may be omitted when exactly one document is open.
-  - `max_side` integer, (maximum 4096, minimum 1)
+- `file.render` (reads): Render a PNG bounded by maxSide (default 1024), without changing or saving the document. Page defaults to 1; doc may be omitted when exactly one document is open.
+  - `maxSide` integer, (maximum 4096, minimum 1)
   - `page` integer, (minimum 1)
 
 ## Examples

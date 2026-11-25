@@ -411,7 +411,7 @@ pub fn mutate(bytes: &[u8], writer: Writer, change: Change) -> Vec<u8> {
             }
         }
         Text | DrawingText | OtherText | DeleteText => {
-            // page_add_text stores each block as its own stream; preserve its resource/font.
+            // page.addText stores each block as its own stream; preserve its resource/font.
             let streams = list(&doc, p, "Contents");
             let r = streams[if change.kind == OtherText { 1 } else { 0 }].as_ref().unwrap();
             let Object::Stream(s) = &*doc.get(r) else { panic!("text stream") };

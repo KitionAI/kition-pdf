@@ -157,7 +157,7 @@ fn links_and_text_edits_survive_save_and_reopen() {
     run(&mut doc, "page.addText", json!({ "page": 1, "text": "Kition PDF text", "at": [20, 40], "size": 16 }));
     run(&mut doc, "text.edit", json!({ "page": 1, "line": 1, "text": "Kition PDF edited", "bold": true, "color": "#aa2200" }));
     run(&mut doc, "link.add", json!({ "page": 1, "rect": [20, 60, 120, 80], "url": "https://kition.ai" }));
-    run(&mut doc, "link.add", json!({ "page": 1, "rect": [20, 90, 120, 110], "to_page": 2 }));
+    run(&mut doc, "link.add", json!({ "page": 1, "rect": [20, 90, 120, 110], "toPage": 2 }));
     let text = run(&mut doc, "text.extract", json!({ "pages": [1] }));
     assert!(text.to_string().contains("Kition PDF edited"), "{text}");
     assert_eq!(run(&mut doc, "link.list", json!({}))["links"].as_array().map_or(0, Vec::len), 2);

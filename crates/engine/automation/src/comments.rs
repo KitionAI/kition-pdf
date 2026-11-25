@@ -161,7 +161,7 @@ impl Automation {
                 return Ok((page, comment.index.saturating_sub(1)));
             }
             let c =
-                all.iter().find(|c| c.name.as_deref() == Some(id)).ok_or_else(|| failed(format!("no comment with id {id:?} (see comment_list)")))?;
+                all.iter().find(|c| c.name.as_deref() == Some(id)).ok_or_else(|| failed(format!("no comment with id {id:?} (see comment.list)")))?;
             return Ok((c.page, c.index));
         }
         let (Some(page), Some(index)) = (a.opt_int("page")?, a.opt_int("index")?) else {
@@ -169,7 +169,7 @@ impl Automation {
         };
         let (page, index) = ((page.max(1) - 1) as usize, (index.max(1) - 1) as usize);
         if !all.iter().any(|c| c.page == page && c.index == index) {
-            return Err(failed(format!("there is no comment {} on page {} (see comment_list)", index + 1, page + 1)));
+            return Err(failed(format!("there is no comment {} on page {} (see comment.list)", index + 1, page + 1)));
         }
         Ok((page, index))
     }
@@ -310,7 +310,7 @@ impl Automation {
                 "rectangle" => Shape::Rectangle { rect: rect_to_user(&info, a.need::<4>("rect", "a rectangle")?) },
                 "oval" => Shape::Oval { rect: rect_to_user(&info, a.need::<4>("rect", "an oval")?) },
                 "textbox" => {
-                    let font_size = a.opt_num("font_size")?.unwrap_or(12.0);
+                    let font_size = a.opt_num("fontSize")?.unwrap_or(12.0);
                     Shape::TextBox { rect: rect_to_user(&info, a.need::<4>("rect", "a text box")?), font_size }
                 }
                 "line" | "arrow" => {
@@ -371,7 +371,7 @@ impl Automation {
                         rect,
                         knee,
                         point,
-                        font_size: a.opt_num("font_size")?.unwrap_or(10.0),
+                        font_size: a.opt_num("fontSize")?.unwrap_or(10.0),
                         ending: match endings.as_deref() {
                             None => LineEnding::OpenArrow,
                             Some([ending]) => *ending,
@@ -500,7 +500,7 @@ impl Automation {
             "date" => {
                 let lang = a.opt_str("language")?;
                 if let Some(l) = lang.filter(|l| kition_pdf_engine::dates::date_language(l).is_none()) {
-                    return Err(ToolError::InvalidArgs(format!("unknown date language {l:?} (see fill_sign_date_format)")));
+                    return Err(ToolError::InvalidArgs(format!("unknown date language {l:?} (see fillSign.setDateFormat)")));
                 }
                 let t = self.session.today_text_for_pdf(a.opt_str("format")?, lang).map_err(ToolError::InvalidArgs)?;
                 (text_at(&t), t)
@@ -628,7 +628,7 @@ impl Automation {
             file: kition_pdf_engine::MarkFile {
                 name: file,
                 bytes: std::sync::Arc::new(bytes),
-                page: a.opt_int("file_page")?.unwrap_or(1).max(1) as usize - 1,
+                page: a.opt_int("filePage")?.unwrap_or(1).max(1) as usize - 1,
             },
             author: a.opt_str("author")?.unwrap_or(DEFAULT_AUTHOR).to_string(),
         };

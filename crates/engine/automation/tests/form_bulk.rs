@@ -159,7 +159,7 @@ fn bulk_options_apply_per_field_and_refuse_an_invalid_comb_atomically() {
     let before = bytes(&a, id);
     assert!(matches!(a.call("form.setProps", &json!({"doc": id, "fields": ["alpha", "beta"], "flags": {"comb": true}})), Err(ToolError::Failed(_))));
     assert_eq!(bytes(&a, id), before);
-    call(&mut a, json!({"doc": id, "fields": ["alpha", "beta"], "max_length": 20, "align": "center", "flags": {"comb": true, "spell_check": false}}));
+    call(&mut a, json!({"doc": id, "fields": ["alpha", "beta"], "maxLength": 20, "align": "center", "flags": {"comb": true, "spell_check": false}}));
     let doc = a.session().get(DocId(id)).unwrap();
     assert!(doc.form.iter().all(|f| f.max_len == Some(20) && f.quadding == 1 && f.has(field_flags::COMB) && f.has(field_flags::DO_NOT_SPELL_CHECK)));
     assert_eq!(doc.form.iter().map(|f| f.value[0].as_str()).collect::<Vec<_>>(), ["alpha", "beta"]);

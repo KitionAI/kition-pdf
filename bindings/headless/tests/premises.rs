@@ -165,7 +165,7 @@ async fn document_settings_hold_the_whole_document() {
     case(&f, &[("comment.add", json!({ "page": 2, "type": "note", "at": [300, 300], "contents": "theirs" }))], mine(), Want::Applies).await;
     case(&f, &[("file.setInitialView", json!({ "layout": "two_up" }))], mine(), CHANGED).await;
     case(&f, &[], mine(), Want::Applies).await;
-    let protect = || step("file.protect", json!({ "open_password": "secret" }));
+    let protect = || step("file.protect", json!({ "openPassword": "secret" }));
     case(&f, &[("comment.add", json!({ "page": 1, "type": "note", "at": [300, 300], "contents": "theirs" }))], protect(), CHANGED).await;
     f.shutdown().await;
 }
@@ -223,7 +223,7 @@ async fn a_field_without_a_name_holds_every_name() {
 #[tokio::test(flavor = "multi_thread")]
 async fn a_footer_with_the_number_of_pages_holds_every_page() {
     let f = Fixture::new(3);
-    let mine = || step("file.setHeaderFooter", json!({ "pages": [1], "footer_center": "<<1>> of <<n>>" }));
+    let mine = || step("file.setHeaderFooter", json!({ "pages": [1], "footerCenter": "<<1>> of <<n>>" }));
     case(&f, &[("comment.edit", json!({ "page": 3, "index": 1, "contents": "theirs" }))], mine(), Want::Applies).await;
     case(&f, &[("page.insertBlank", json!({ "at": 4 }))], mine(), CHANGED).await;
     f.shutdown().await;

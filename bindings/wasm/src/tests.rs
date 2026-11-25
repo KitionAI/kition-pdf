@@ -113,12 +113,12 @@ fn text_selection_is_exposed_as_a_read_only_sdk_command() {
     assert!(!command.mutates);
     let schema = command.schema.unwrap();
     assert!(schema.get("doc").is_none(), "the SDK supplies its active document");
-    for key in ["page", "end_page", "anchor", "focus", "mode"] {
+    for key in ["page", "endPage", "anchor", "focus", "mode"] {
         assert!(schema.get(key).is_some(), "selection parameter {key} is exposed");
     }
     let revision = doc.revision();
     let bytes = doc.doc().unwrap().bytes.clone();
-    let result = doc.execute("text.select", json!({"page":1,"end_page":2,"anchor":[1,1],"focus":[2,2]})).unwrap();
+    let result = doc.execute("text.select", json!({"page":1,"endPage":2,"anchor":[1,1],"focus":[2,2]})).unwrap();
     assert_eq!(result["text"], "\n");
     assert_eq!(result["pages"].as_array().unwrap().len(), 2);
     assert_eq!(doc.revision(), revision);
@@ -157,7 +157,7 @@ fn asks_for_the_whole_documents_lease_exactly_when_an_edit_rewrites_the_file() {
     doc.execute("edit.redo", json!({})).unwrap();
 
     assert_eq!(doc.lease_scope("pdfa.convert"), "", "an unencrypted file converts in place");
-    assert_eq!(run(&mut doc, "file.protect", json!({ "open_password": "open" })), ("*".to_owned(), true));
+    assert_eq!(run(&mut doc, "file.protect", json!({ "openPassword": "open" })), ("*".to_owned(), true));
     assert_eq!(doc.lease_scope("pdfa.convert"), "*", "converting removes the encryption");
     assert_eq!(run(&mut doc, "file.unprotect", json!({})), ("*".to_owned(), true));
     assert_eq!(run(&mut doc, "page.insertBlank", json!({ "at": 1 })), (String::new(), false));

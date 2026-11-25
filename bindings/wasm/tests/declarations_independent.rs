@@ -95,26 +95,26 @@ fn readings(doc: &mut PdfDocument) -> Vec<Row> {
     };
     let mut rows = vec![
         // ---- Pages (automation lib.rs; organize).
-        // page_rotate: `degrees` added to each page's own or inherited /Rotate (organize rotate).
+        // page.rotate: `degrees` added to each page's own or inherited /Rotate (organize rotate).
         row("page.rotate", json!({ "pages": [2], "degrees": 90 }), &[("page:2", &["rotation"])], &[("pdf", "pages")], &[]),
         // `orientation` compares the displayed width and height (engine filter_pages); no `pages`: all.
         row("page.rotate", json!({ "degrees": 90, "orientation": "portrait" }), &pages(&["rotation", "width", "height"]), &[("pdf", "pages")], &[]),
-        // page_delete: the pages by number; the engine also drops links, bookmarks and named
+        // page.delete: the pages by number; the engine also drops links, bookmarks and named
         // destinations to them: consequences of the deletion, not what it rests on.
         row("page.delete", json!({ "pages": [1] }), &[("page:1", STAR)], &[("pdf", "pages")], &[]),
-        // page_move: `to` is a place in the list WITHOUT the moved pages (organize move_pages:
+        // page.move: `to` is a place in the list WITHOUT the moved pages (organize move_pages:
         // splice at min(to, rest.len())): pages [1] to 2 go between pages 2 and 3.
         // was: the pages either side of `to` before the move (pages 1 and 2), not page 3.
         row("page.move", json!({ "pages": [1], "to": 2 }), &[("page:1", STAR), ("page:2", STAR), ("page:3", STAR)], &[("pdf", "pages")], &[]),
         row("page.move", json!({ "pages": [3], "to": 1 }), &[("page:3", STAR), ("page:1", STAR)], &[("pdf", "pages")], &[]),
-        // page_insert_blank: without a size the displayed size of the page before (at 1: the first).
+        // page.insertBlank: without a size the displayed size of the page before (at 1: the first).
         row("page.insertBlank", json!({ "at": 2 }), &[("page:1", &["*", "width", "height"]), ("page:2", STAR)], &[("pdf", "pages")], &[]),
-        // page_duplicate: copies the page and what is on it as it is (links to other pages lose
+        // page.duplicate: copies the page and what is on it as it is (links to other pages lose
         // their destination: a consequence of the copy).
         row("page.duplicate", json!({ "pages": [2] }), &[("page:2", STAR)], &[("pdf", "pages")], &[]),
-        // page_set_box: margins from each page's media box, `rect` through crop and rotation.
+        // page.setBox: margins from each page's media box, `rect` through crop and rotation.
         row("page.setBox", json!({ "pages": [2], "box": "crop", "margins": [10, 10, 10, 10] }), &[("page:2", G)], &[("pdf", "pages")], &[]),
-        // page_number: the existing label ranges and the number page `to`+1 showed (labels.rs).
+        // page.number: the existing label ranges and the number page `to`+1 showed (labels.rs).
         row(
             "page.number",
             json!({ "from": 1, "to": 2, "style": "upper-roman" }),
@@ -122,21 +122,21 @@ fn readings(doc: &mut PdfDocument) -> Vec<Row> {
             &[("pdf", "pages")],
             &[],
         ),
-        // page_add_text: `at`/`rect` flipped through the displayed height, placed through the
+        // page.addText: `at`/`rect` flipped through the displayed height, placed through the
         // page's view matrix (crop, rotation, unit).
         row("page.addText", json!({ "page": 3, "at": [72, 200], "text": "t" }), &[("page:3", G)], &[("pdf", "pages")], &[]),
         // ---- Page marks (engine marks; edit stamp): each page's display size and view matrix.
         row("file.setWatermark", json!({ "text": "W", "pages": [1] }), &[("page:1", G)], &[("pdf", "pages")], &[]),
         row("file.setBackground", json!({ "color": "yellow", "pages": [2] }), &[("page:2", G)], &[("pdf", "pages")], &[]),
-        row("file.setHeaderFooter", json!({ "header_left": "H" }), &pages(G), &[("pdf", "pages")], &[]),
+        row("file.setHeaderFooter", json!({ "headerLeft": "H" }), &pages(G), &[("pdf", "pages")], &[]),
         // `<<n>>` is the number of pages of the document (edit header_footer `all.len()`).
         // was: only the pages marked.
-        row("file.setHeaderFooter", json!({ "pages": [2], "footer_center": "<<1>> of <<n>>" }), &[("page:2", G)], &[("pdf", "pages")], &["pages"]),
-        // doc_remove_marks: every page's content streams tagged with the kit's marks.
+        row("file.setHeaderFooter", json!({ "pages": [2], "footerCenter": "<<1>> of <<n>>" }), &[("page:2", G)], &[("pdf", "pages")], &["pages"]),
+        // file.removeMarks: every page's content streams tagged with the kit's marks.
         // was: the whole document.
         row("file.removeMarks", json!({ "kind": "watermark" }), &[], &[], &["marks"]),
         // ---- Bookmarks (organize outline).
-        // bookmark_add: the page object for the destination; `parent` a path of places; `position`
+        // bookmark.add: the page object for the destination; `parent` a path of places; `position`
         // a place among the parent's children (clamped).
         // was: the parent's children's titles and pages as a fact, the parent by its path only.
         row(
@@ -153,7 +153,7 @@ fn readings(doc: &mut PdfDocument) -> Vec<Row> {
             &[("pdf", "pages"), ("pdf", "bookmarks"), ("bookmark:1", "children")],
             &[],
         ),
-        // bookmark_from_structure: the structure tree's headings and their text on every page.
+        // bookmark.addFromStructure: the structure tree's headings and their text on every page.
         row("bookmark.addFromStructure", json!({}), &[], &[], &["headings"]),
         // ---- Comments (comments.rs comment_target: `index` is the place in /Annots).
         row("comment.add", json!({ "page": 2, "type": "note", "at": [300, 300], "contents": "n" }), &[("page:2", G)], &[("pdf", "pages")], &[]),
@@ -233,7 +233,7 @@ fn readings(doc: &mut PdfDocument) -> Vec<Row> {
             &[("pdf", "pages"), ("page:3", "comments")],
             &[],
         ),
-        // comments_hide: a view setting of the session (engine set_hide_comments); the file does
+        // comment.hide: a view setting of the session (engine set_hide_comments); the file does
         // not change. was: the whole document.
         row("comment.hide", json!({ "hidden": true }), &[], &[], &[]),
         // ---- Measuring (measure.rs): points through the view matrix; the scale of the page's
@@ -247,26 +247,26 @@ fn readings(doc: &mut PdfDocument) -> Vec<Row> {
             &["viewports"],
         ),
         row("measure.area", json!({ "page": 2, "points": [[10, 10], [50, 50], [10, 50]] }), &[("page:2", G)], &[("pdf", "pages")], &["viewports"]),
-        // measure_scale: the page's size for the default viewport; appends to /VP.
+        // measure.setScale: the page's size for the default viewport; appends to /VP.
         row("measure.setScale", json!({ "page": 1, "points": [[0, 0], [72, 0]], "distance": 1 }), &[("page:1", G)], &[("pdf", "pages")], &[]),
         // ---- Fill & Sign: `at` through crop and rotation; the date format is a preference.
         row("fillSign.add", json!({ "page": 1, "type": "text", "at": [100, 500], "text": "x" }), &[("page:1", G)], &[("pdf", "pages")], &[]),
-        // fill_sign_date_format: the session's preference only. was: the whole document.
+        // fillSign.setDateFormat: the session's preference only. was: the whole document.
         row("fillSign.setDateFormat", json!({ "format": "dd.mm.yyyy" }), &[], &[], &[]),
         // ---- Redaction (redact.rs).
         // `rect` on `page` (`pages` not read): the content it covers (item 5). was: geometry only.
         row("redaction.mark", json!({ "page": 1, "rect": [10, 10, 50, 50] }), &[("page:1", G)], &[("pdf", "pages")], &["covered"]),
         // `find` without `pages`: every page's text. was: the whole document.
         row("redaction.mark", json!({ "find": "Page" }), &pages(STAR), &[("pdf", "pages")], &["text"]),
-        // `whole_pages`: each page's crop box. was: the page only, no geometry.
-        row("redaction.mark", json!({ "whole_pages": true, "pages": [2] }), &[("page:2", G)], &[("pdf", "pages")], &[]),
-        // redact_apply: every mark, the pages' content, annotations and fields under the marks; a
+        // `wholePages`: each page's crop box. was: the page only, no geometry.
+        row("redaction.mark", json!({ "wholePages": true, "pages": [2] }), &[("page:2", G)], &[("pdf", "pages")], &[]),
+        // redaction.apply: every mark, the pages' content, annotations and fields under the marks; a
         // full rewrite.
         row("redaction.apply", json!({}), &[], &[], &["redaction-inputs"]),
-        // redact_clear: every redaction mark (redact clear_marks). was: the whole document.
+        // redaction.clear: every redaction mark (redact clear_marks). was: the whole document.
         row("redaction.clear", json!({}), &[], &[], &["redactions"]),
         // ---- Form fields (forms.rs; forms crate).
-        // form_fill: `value_for` reads the type; write_value reads the flags, maximum length,
+        // form.fill: `value_for` reads the type; write_value reads the flags, maximum length,
         // choices, the check boxes' on states and runs format and validation scripts.
         // was: value, type and widget states.
         row(
@@ -282,7 +282,7 @@ fn readings(doc: &mut PdfDocument) -> Vec<Row> {
         row("form.reset", json!({}), &fields3(&["value", "default", "widgets", "name"]), &[("pdf", "fields")], &["calculations"]),
         row("form.setProps", json!({ "field": "F3", "tooltip": "t" }), &[("field:F3", &["tooltip", "name"])], &[], &[]),
         row("form.setProps", json!({ "field": "F1", "required": true }), &[("field:F1", &["flags", "name"])], &[], &[]),
-        row("form.setProps", json!({ "field": "F2", "max_length": 5 }), &[("field:F2", &["maxLength", "name"])], &[], &[]),
+        row("form.setProps", json!({ "field": "F2", "maxLength": 5 }), &[("field:F2", &["maxLength", "name"])], &[], &[]),
         // `rect`: in the coordinates of the page of the field's first widget.
         row("form.setProps", json!({ "field": "F1", "rect": [72, 600, 320, 624] }), &[("field:F1", &["widgets", "name"]), ("page:1", G)], &[], &[]),
         // A rename: the new name free (set_props checks it against every name).
@@ -297,7 +297,7 @@ fn readings(doc: &mut PdfDocument) -> Vec<Row> {
             &[("pdf", "pages")],
             &[],
         ),
-        // form_add_field: `rect` through crop and rotation; a name given: free.
+        // form.addField: `rect` through crop and rotation; a name given: free.
         row(
             "form.addField",
             json!({ "page": 1, "type": "text", "rect": [72, 400, 300, 424], "name": "New" }),
@@ -320,7 +320,7 @@ fn readings(doc: &mut PdfDocument) -> Vec<Row> {
         // With `field` (`pages` not read): the order of the widgets on the field's page.
         // was: every page (it holds `pages` when none) and the field, not the order there.
         row("form.setTabOrder", json!({ "field": "F1", "move": "later" }), &[("field:F1", &["name"])], &[], &["tabs"]),
-        // form_detect_fields: the page's content, its widgets' places, every name, the geometry
+        // form.detectFields: the page's content, its widgets' places, every name, the geometry
         // the words go through. was: the page's content only.
         row(
             "form.detectFields",
@@ -330,16 +330,16 @@ fn readings(doc: &mut PdfDocument) -> Vec<Row> {
             &["content", "names"],
         ),
         // ---- Scripts.
-        // js_run: every field's state, the document's scripts, /Info, the number of pages; it
+        // script.run: every field's state, the document's scripts, /Info, the number of pages; it
         // sets fields only. was: the whole document.
         row("script.run", json!({ "script": "1" }), &fields3(STAR), &[("pdf", "fields"), ("pdf", "pages")], &["scripts", "info"]),
-        // js_set_document_script: /Names /JavaScript only. was: the whole document.
+        // script.set: /Names /JavaScript only. was: the whole document.
         row("script.set", json!({ "name": "init", "script": "1" }), &[], &[], &["scripts"]),
-        // js_enabled: a session preference. was: the whole document.
+        // script.enabled: a session preference. was: the whole document.
         row("script.enabled", json!({ "enabled": true }), &[], &[], &[]),
-        // ---- Links (links.rs; annot links): `index` is the place in /Annots, as link_list numbers it.
-        row("link.add", json!({ "page": 1, "rect": [1, 1, 20, 20], "to_page": 2 }), &[("page:1", G), ("page:2", STAR)], &[("pdf", "pages")], &[]),
-        // link_edit replaces the action given; was: the whole link entry as a fact.
+        // ---- Links (links.rs; annot links): `index` is the place in /Annots, as link.list numbers it.
+        row("link.add", json!({ "page": 1, "rect": [1, 1, 20, 20], "toPage": 2 }), &[("page:1", G), ("page:2", STAR)], &[("pdf", "pages")], &[]),
+        // link.edit replaces the action given; was: the whole link entry as a fact.
         row(
             "link.edit",
             json!({ "page": 1, "index": l1, "url": "https://example.com/z" }),
@@ -370,19 +370,19 @@ fn readings(doc: &mut PdfDocument) -> Vec<Row> {
             &[("pdf", "pages"), ("page:2", "links")],
             &[],
         ),
-        // links_from_urls: every page's text, and the links there (an address over one is
+        // link.addFromUrls: every page's text, and the links there (an address over one is
         // skipped). was: the whole document.
         row("link.addFromUrls", json!({}), &[], &[], &["urls"]),
-        // links_remove: every link wherever it is; nothing it reads decides what it writes.
+        // link.removeAll: every link wherever it is; nothing it reads decides what it writes.
         // was: the whole document.
         row("link.removeAll", json!({}), &[], &[], &[]),
         // ---- Page content (content.rs; edit added, text, images, objects): items by place.
-        // content_update merges the parameters over the item's content and style.
+        // content.set merges the parameters over the item's content and style.
         row("content.set", json!({ "page": 1, "index": 1, "text": "y" }), &[("page:1", STAR)], &[("pdf", "pages")], &["entry"]),
         // `rect` flipped through the displayed height (content.rs to_display). was: no geometry.
         row("content.set", json!({ "page": 1, "index": 1, "rect": [72, 100, 300, 140] }), &[("page:1", G)], &[("pdf", "pages")], &["entry"]),
         row("content.delete", json!({ "page": 2, "index": 1 }), &[("page:2", STAR)], &[("pdf", "pages")], &["entry"]),
-        // object_move: the offset through the page's rotation (engine view_vector). was: no geometry.
+        // object.move: the offset through the page's rotation (engine view_vector). was: no geometry.
         row(
             "object.move",
             json!({ "page": 1, "objects": [{ "index": 1, "kind": "added" }], "offset": [5, 5] }),
@@ -391,13 +391,13 @@ fn readings(doc: &mut PdfDocument) -> Vec<Row> {
             &["entry"],
         ),
         row("image.edit", json!({ "page": 1, "image": 1, "action": "rotate" }), &[("page:1", G)], &[("pdf", "pages")], &["entry"]),
-        // text_edit: the line, and the text overlapping it, which the edit takes out
+        // text.edit: the line, and the text overlapping it, which the edit takes out
         // (coincident_ops). was: the line only.
         row("text.edit", json!({ "page": 1, "line": 1, "text": "z" }), &[("page:1", STAR)], &[("pdf", "pages")], &["entry", "text-overlap"]),
         // A paragraph without `width` wraps at the crop box.
         row("text.edit", json!({ "page": 1, "paragraph": 1, "text": "z" }), &[("page:1", G)], &[("pdf", "pages")], &["entry", "text-overlap"]),
         // ---- Accessibility (a11y.rs; engine accessibility_fix).
-        // `figure` is the structure element's object number (accessibility_figures' `figure`),
+        // `figure` is the structure element's object number (accessibility.listFigures' `figure`),
         // not a place in the list. was: the n-th entry of the list.
         row("accessibility.setAlt", json!({ "figure": 1, "alt": "a" }), &[], &[], &["entry"]),
         // primary-language: /Lang, rewriting the whole initial view it reads. was: the whole document.
@@ -406,19 +406,19 @@ fn readings(doc: &mut PdfDocument) -> Vec<Row> {
         // tab-order: /Tabs on every page.
         row("accessibility.fix", json!({ "rule": "tab-order" }), &pages(STAR), &[("pdf", "pages")], &[]),
         // ---- Document settings.
-        // doc_initial_view: the initial view it reads and rewrites; `page` by number to a page
+        // file.setInitialView: the initial view it reads and rewrites; `page` by number to a page
         // object. was: the whole document.
         row("file.setInitialView", json!({ "layout": "single" }), &[], &[], &["view"]),
         row("file.setInitialView", json!({ "page": 2 }), &[("page:2", STAR)], &[("pdf", "pages")], &["view"]),
-        // doc_revisions: reads the revisions; writes nothing. was: the whole document.
+        // file.listRevisions: reads the revisions; writes nothing. was: the whole document.
         row("file.listRevisions", json!({}), &[], &[], &[]),
-        // doc_create: makes another document; this one does not change. was: the whole document.
+        // file.new: makes another document; this one does not change. was: the whole document.
         row("file.new", json!({ "from": "blank" }), &[], &[], &[]),
         // OCR: skip textual pages, otherwise consume raster content and geometry.
         row("ocr.recognize", json!({ "pages": [2] }), &[("page:2", STAR)], &[("pdf", "pages")], &["ocr-inputs"]),
         row("ocr.recognize", json!({}), &pages(STAR), &[("pdf", "pages")], &["ocr-inputs"]),
         // ---- The whole document: full rewrites, every comment or field, another document, history.
-        row("file.protect", json!({ "open_password": "x" }), &[], &[], &["all"]),
+        row("file.protect", json!({ "openPassword": "x" }), &[], &[], &["all"]),
         row("file.unprotect", json!({}), &[], &[], &["all"]),
         row("file.removeHidden", json!({}), &[], &[], &["all"]),
         row("pdfa.convert", json!({}), &[], &[], &["all"]),

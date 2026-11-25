@@ -317,7 +317,7 @@ fn act(root: &Path) {
     let port: u16 = std::env::var(PORT).unwrap().parse().unwrap();
     let mut agent = Agent::new(&workspace);
 
-    // A picture added to the page: content_update's `image` replaces it by a file's bytes.
+    // A picture added to the page: content.set's `image` replaces it by a file's bytes.
     let id = agent.open("picture.pdf");
     let listed = agent.run(&id, "content.list", json!({}));
     if !listed.contains("index") {
@@ -326,7 +326,7 @@ fn act(root: &Path) {
     let probe = |name: &str| json!({ "page": 1, "index": 1, "image": at(&outside, name) });
     let there = agent.every_way(&id, "content.set", &probe("secret.bmp"));
     let absent = agent.every_way(&id, "content.set", &probe("absent.bmp"));
-    no_existence_oracle(&mut agent, "content_update image", &there, &absent);
+    no_existence_oracle(&mut agent, "content.set image", &there, &absent);
     agent.every_way(&id, "content.set", &probe("pipe.bmp"));
     for (command, value) in [
         ("page_add_image", json!({ "page": 1, "path": at(&outside, "pipe.bmp") })),

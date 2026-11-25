@@ -1,6 +1,6 @@
 type Area = { x0: number; y0: number; x1: number; y1: number }
 export type SelectionPoint = { page: number; point: [number, number] }
-export type SelectionRequest = { page: number; anchor: [number, number]; focus: [number, number]; end_page: number; mode: 'range' | 'column' }
+export type SelectionRequest = { page: number; anchor: [number, number]; focus: [number, number]; endPage: number; mode: 'range' | 'column' }
 export type SelectionResult = { text: string; pages: Array<{ page: number; text: string; rects: number[][] }> }
 
 /** Canvas tools already supply document coordinates; crop/rotation belong to the engine. */

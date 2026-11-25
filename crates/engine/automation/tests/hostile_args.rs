@@ -111,7 +111,7 @@ fn path_props(def: &kition_pdf_automation::ToolDef) -> Vec<(String, bool)> {
             // strings; `image` is an image number elsewhere, which the integer check skips.
             let is_pathish = matches!(name.as_str(), "path" | "paths" | "folder" | "out_dir" | "file" | "out" | "image")
                 || spec["description"].as_str().is_some_and(|d| d.starts_with("A file path"));
-            // `file_page` is a page number inside a file, not a path.
+            // `filePage` is a page number inside a file, not a path.
             is_pathish && spec["type"] != "integer"
         })
         .map(|(name, spec)| (name.clone(), spec["type"] == "array"))

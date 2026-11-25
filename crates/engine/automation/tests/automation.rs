@@ -67,7 +67,11 @@ fn tool_table_is_well_formed() {
     let mut names = std::collections::HashSet::new();
     for t in &all {
         assert!(names.insert(t.name), "duplicate tool {}", t.name);
-        assert!(t.name.len() <= 64 && t.name.chars().all(|c| c.is_ascii_lowercase() || c == '_'), "bad MCP tool name {}", t.name);
+        // A kit command's tool is named by the command id (`page.insertBlank`: letters and dots); the
+        // tools only the headless executable offers keep lowercase words joined by `_`.
+        let id = t.name.split('.').all(|part| part.starts_with(|c: char| c.is_ascii_lowercase()) && part.chars().all(|c| c.is_ascii_alphanumeric()));
+        let words = t.name.chars().all(|c| c.is_ascii_lowercase() || c == '_');
+        assert!(t.name.len() <= 64 && (words || (id && t.name.contains('.'))), "bad tool name {}", t.name);
         assert_eq!(t.input_schema["type"], "object", "{}", t.name);
         let props = t.input_schema["properties"].as_object().unwrap();
         for r in t.input_schema["required"].as_array().unwrap() {
@@ -679,7 +683,7 @@ fn comments_through_tools() {
     let id = hl["comment"]["id"].as_str().unwrap().to_string();
     ok(&mut a, "comment.add", json!({ "doc": doc, "page": 2, "type": "note", "at": [150, 20], "contents": "Sticky" }));
     ok(&mut a, "comment.add", json!({ "doc": doc, "page": 1, "type": "rectangle", "rect": [10, 10, 60, 40], "color": "blue", "width": 3 }));
-    ok(&mut a, "comment.add", json!({ "doc": doc, "page": 1, "type": "textbox", "rect": [10, 200, 190, 240], "contents": "Hello", "font_size": 10 }));
+    ok(&mut a, "comment.add", json!({ "doc": doc, "page": 1, "type": "textbox", "rect": [10, 200, 190, 240], "contents": "Hello", "fontSize": 10 }));
     ok(&mut a, "comment.add", json!({ "doc": doc, "page": 1, "type": "ink", "strokes": [[[10, 280], [50, 260], [90, 285]]] }));
     ok(&mut a, "comment.add", json!({ "doc": doc, "page": 3, "type": "arrow", "from": [10, 10], "to": [100, 100] }));
     ok(&mut a, "comment.reply", json!({ "doc": doc, "id": id, "text": "Looks right", "author": "Bob" }));
@@ -787,7 +791,7 @@ fn protecting_through_tools() {
     let r = ok(
         &mut a,
         "file.protect",
-        json!({ "doc": doc, "open_password": "open", "permissions_password": "boss", "printing": "low", "changes": "comment-fill-sign" }),
+        json!({ "doc": doc, "openPassword": "open", "permissionsPassword": "boss", "printing": "low", "changes": "comment-fill-sign" }),
     );
     assert_eq!(r["security"]["pending"], true);
     assert_eq!(
@@ -825,7 +829,7 @@ fn signing_an_encrypted_form_through_tools() {
         .as_str()
         .unwrap()
         .to_owned();
-    ok(&mut a, "file.protect", json!({ "doc": doc, "permissions_password": "boss", "changes": "fill-sign" }));
+    ok(&mut a, "file.protect", json!({ "doc": doc, "permissionsPassword": "boss", "changes": "fill-sign" }));
     ok(&mut a, "doc_save", json!({ "doc": doc, "path": "form.pdf" }));
     let mut b = auto(&dir);
     let form = ok(&mut b, "doc_open", json!({ "path": "form.pdf" }))["doc"].as_u64().unwrap();
@@ -856,7 +860,7 @@ fn combine_opens_protected_files_with_their_passwords() {
     let mut a = auto(&dir);
     let doc = ok(&mut a, "doc_open", json!({ "path": "a.pdf" }))["doc"].as_u64().unwrap();
     // Opens with "open"; only "boss" may assemble pages.
-    ok(&mut a, "file.protect", json!({ "doc": doc, "open_password": "open", "permissions_password": "boss", "changes": "none" }));
+    ok(&mut a, "file.protect", json!({ "doc": doc, "openPassword": "open", "permissionsPassword": "boss", "changes": "none" }));
     ok(&mut a, "doc_save", json!({ "doc": doc, "path": "locked.pdf" }));
     let combine = |a: &mut Automation, passwords: Value| {
         a.call("doc_combine", &json!({ "paths": ["locked.pdf", "b.pdf"], "passwords": passwords, "open": true }))
@@ -877,7 +881,7 @@ fn combine_opens_protected_files_with_their_passwords() {
     assert_eq!(ok(&mut a, "file.getInfo", json!({ "doc": out }))["security"]["protected"], false, "the result is not encrypted");
 }
 
-/// Restrictions exist only behind a permissions password: open_password alone encrypts and
+/// Restrictions exist only behind a permissions password: openPassword alone encrypts and
 /// restricts nothing, and asking for a restriction without one is refused rather than ignored.
 #[test]
 fn protecting_with_an_open_password_alone_restricts_nothing() {
@@ -885,13 +889,13 @@ fn protecting_with_an_open_password_alone_restricts_nothing() {
     let mut a = auto(&dir);
     let doc = ok(&mut a, "doc_open", json!({ "path": "a.pdf" }))["doc"].as_u64().unwrap();
     for (key, value) in [("copy", json!(false)), ("changes", json!("none")), ("printing", json!("none")), ("accessibility", json!(false))] {
-        match a.call("file.protect", &json!({ "doc": doc, "open_password": "openme", key: value })) {
-            Err(ToolError::InvalidArgs(m)) => assert!(m.contains(key) && m.contains("permissions_password"), "{key}: {m}"),
-            other => panic!("{key} without permissions_password: {other:?}"),
+        match a.call("file.protect", &json!({ "doc": doc, "openPassword": "openme", key: value })) {
+            Err(ToolError::InvalidArgs(m)) => assert!(m.contains(key) && m.contains("permissionsPassword"), "{key}: {m}"),
+            other => panic!("{key} without permissionsPassword: {other:?}"),
         }
     }
     assert_eq!(ok(&mut a, "file.getInfo", json!({ "doc": doc }))["security"]["protected"], false, "a refused call changes nothing");
-    let r = ok(&mut a, "file.protect", json!({ "doc": doc, "open_password": "openme" }));
+    let r = ok(&mut a, "file.protect", json!({ "doc": doc, "openPassword": "openme" }));
     assert_eq!(
         (r["security"]["protected"].as_bool(), r["security"]["copy"].as_bool(), r["security"]["modify"].as_bool()),
         (Some(true), Some(true), Some(true))
@@ -908,10 +912,10 @@ fn protecting_with_an_open_password_alone_restricts_nothing() {
     ok(&mut b, "page.delete", json!({ "doc": re, "pages": [1] }));
     // The schema says so too.
     let def = tools().into_iter().find(|t| t.name == "file.protect").unwrap();
-    assert!(def.description.contains("permissions_password"), "{}", def.description);
+    assert!(def.description.contains("permissionsPassword"), "{}", def.description);
     for key in ["printing", "changes", "copy", "accessibility"] {
         let desc = def.input_schema["properties"][key]["description"].as_str().unwrap();
-        assert!(desc.contains("permissions_password"), "{key}: {desc}");
+        assert!(desc.contains("permissionsPassword"), "{key}: {desc}");
     }
 }
 
@@ -1032,7 +1036,7 @@ fn headers_watermarks_and_backgrounds_through_tools() {
     let dir = workdir("marks");
     let mut a = auto(&dir);
     let doc = ok(&mut a, "doc_open", json!({ "path": "a.pdf" }))["doc"].as_u64().unwrap();
-    ok(&mut a, "file.setHeaderFooter", json!({ "doc": doc, "footer_center": "<<Page 1 of n>>", "header_right": "ACME" }));
+    ok(&mut a, "file.setHeaderFooter", json!({ "doc": doc, "footerCenter": "<<Page 1 of n>>", "headerRight": "ACME" }));
     let texts = page_text(&mut a, doc);
     assert!(texts[2].contains("Page 3 of 3") && texts[0].contains("ACME"), "{texts:?}");
     ok(&mut a, "file.setWatermark", json!({ "doc": doc, "pages": [1], "text": "DRAFT", "opacity": 0.2 }));
@@ -1472,7 +1476,7 @@ fn image_signature_preview_layers_are_read_only_and_survive_encrypted_save() {
     let expected = image::load_from_memory(expected).unwrap().to_rgba8();
     ok(&mut a, "fillSign.add", json!({ "doc": doc, "page": 1, "type": "signature", "at": [120, 100], "path": "signature.png" }));
     ok(&mut a, "comment.edit", json!({ "doc": doc, "page": 1, "index": 2, "opacity": 0.5 }));
-    ok(&mut a, "file.protect", json!({ "doc": doc, "open_password": "preview-test" }));
+    ok(&mut a, "file.protect", json!({ "doc": doc, "openPassword": "preview-test" }));
     ok(&mut a, "doc_save", json!({ "doc": doc, "path": "signed.pdf" }));
     let reopened = ok(&mut a, "doc_open", json!({ "path": "signed.pdf", "password": "preview-test" }))["doc"].as_u64().unwrap();
     for doc in [doc, reopened] {
@@ -1688,10 +1692,10 @@ fn preparing_a_form_through_tools() {
     assert_eq!(f[1]["options"], json!(["S", "L"]));
     // The mark a check box or radio button shows.
     assert_eq!(f[1]["check_style"], "circle", "radio buttons default to a circle");
-    ok(&mut a, "form.setProps", json!({ "doc": doc, "field": "size", "check_style": "star" }));
+    ok(&mut a, "form.setProps", json!({ "doc": doc, "field": "size", "checkStyle": "star" }));
     assert_eq!(ok(&mut a, "form.listFields", json!({ "doc": doc }))["fields"][1]["check_style"], "star");
-    assert!(matches!(a.call("form.setProps", &json!({ "doc": doc, "field": "size", "check_style": "heart" })), Err(ToolError::InvalidArgs(_))));
-    assert!(matches!(a.call("form.setProps", &json!({ "doc": doc, "field": "full name", "check_style": "star" })), Err(ToolError::Failed(_))));
+    assert!(matches!(a.call("form.setProps", &json!({ "doc": doc, "field": "size", "checkStyle": "heart" })), Err(ToolError::InvalidArgs(_))));
+    assert!(matches!(a.call("form.setProps", &json!({ "doc": doc, "field": "full name", "checkStyle": "star" })), Err(ToolError::Failed(_))));
     ok(&mut a, "form.fill", json!({ "doc": doc, "values": { "full name": "Ada", "size": "L" } }));
     assert!(page_text(&mut a, doc)[0].contains("Ada"));
     // Options tab: alignment, default, flags (comb needs a limit).
@@ -1699,7 +1703,7 @@ fn preparing_a_form_through_tools() {
     ok(
         &mut a,
         "form.setProps",
-        json!({ "doc": doc, "field": "full name", "align": "center", "default": "Anon", "max_length": 8, "flags": { "comb": true, "spell_check": false } }),
+        json!({ "doc": doc, "field": "full name", "align": "center", "default": "Anon", "maxLength": 8, "flags": { "comb": true, "spell_check": false } }),
     );
     assert!(matches!(
         a.call("form.setProps", &json!({ "doc": doc, "field": "full name", "flags": { "sparkles": true } })),
@@ -1784,19 +1788,19 @@ fn redacting_with_codes_through_tools() {
     let mut a = auto(&dir);
     let doc = ok(&mut a, "file.new", json!({ "from": "text", "path": "memo.txt" }))["doc"].as_u64().unwrap();
     let bad = |a: &mut Automation, args: Value| matches!(a.call("redaction.mark", &args), Err(ToolError::InvalidArgs(_)));
-    assert!(bad(&mut a, json!({ "doc": doc, "find": "Jane Roe", "code_set": "gdpr", "codes": ["(b)(6)"] })));
-    assert!(bad(&mut a, json!({ "doc": doc, "find": "Jane Roe", "code_set": "foia", "codes": ["(k)(1)"] })));
-    assert!(bad(&mut a, json!({ "doc": doc, "find": "Jane Roe", "code_set": "foia", "codes": [] })));
+    assert!(bad(&mut a, json!({ "doc": doc, "find": "Jane Roe", "codeSet": "gdpr", "codes": ["(b)(6)"] })));
+    assert!(bad(&mut a, json!({ "doc": doc, "find": "Jane Roe", "codeSet": "foia", "codes": ["(k)(1)"] })));
+    assert!(bad(&mut a, json!({ "doc": doc, "find": "Jane Roe", "codeSet": "foia", "codes": [] })));
     assert!(bad(&mut a, json!({ "doc": doc, "find": "Jane Roe", "codes": ["(b)(6)"] })));
-    assert!(bad(&mut a, json!({ "doc": doc, "find": "Jane Roe", "overlay": "X", "code_set": "foia", "codes": ["(b)(6)"] })));
+    assert!(bad(&mut a, json!({ "doc": doc, "find": "Jane Roe", "overlay": "X", "codeSet": "foia", "codes": ["(b)(6)"] })));
     let Err(ToolError::InvalidArgs(msg)) =
-        a.call("redaction.mark", &json!({ "doc": doc, "find": "Jane Roe", "code_set": "foia", "codes": ["(b)(10)"] }))
+        a.call("redaction.mark", &json!({ "doc": doc, "find": "Jane Roe", "codeSet": "foia", "codes": ["(b)(10)"] }))
     else {
         panic!("an unknown code is rejected")
     };
     assert!(msg.contains("(b)(7)(C)"), "the error lists the allowed codes: {msg}");
     assert_eq!(
-        ok(&mut a, "redaction.mark", json!({ "doc": doc, "find": "Jane Roe", "code_set": "foia", "codes": ["(b)(7)(C)", "(b)(6)"] }))["marked"],
+        ok(&mut a, "redaction.mark", json!({ "doc": doc, "find": "Jane Roe", "codeSet": "foia", "codes": ["(b)(7)(C)", "(b)(6)"] }))["marked"],
         1
     );
     ok(&mut a, "redaction.apply", json!({ "doc": doc }));
@@ -1899,7 +1903,7 @@ fn adding_content_through_tools() {
     let text = page_text(&mut a, doc)[0].clone();
     assert!(text.contains("DRAFT") && !text.contains("CONFIDENTIAL"), "{text}");
     // Image tools: rotate, flip, crop, replace.
-    ok(&mut a, "content.set", json!({ "doc": doc, "page": 1, "index": 2, "rotate": 90, "flip_h": true, "crop": [0.1, 0, 0.1, 0] }));
+    ok(&mut a, "content.set", json!({ "doc": doc, "page": 1, "index": 2, "rotate": 90, "flipH": true, "crop": [0.1, 0, 0.1, 0] }));
     ok(&mut a, "content.set", json!({ "doc": doc, "page": 1, "index": 2, "image": "logo.png" }));
     assert_eq!(ok(&mut a, "file.getInfo", json!({ "doc": doc }))["document"]["dirty"], true);
     assert!(matches!(a.call("content.set", &json!({ "doc": doc, "page": 1, "index": 2, "rotate": 45 })), Err(ToolError::InvalidArgs(_))));
@@ -2056,7 +2060,7 @@ fn stamps_through_tools() {
         Err(ToolError::InvalidArgs(_))
     ));
     // A custom stamp from another PDF's page.
-    ok(&mut a, "stamp_custom", json!({ "doc": doc, "page": 2, "path": "b.pdf", "file_page": 2, "at": [100, 150], "name": "Logo" }));
+    ok(&mut a, "stamp_custom", json!({ "doc": doc, "page": 2, "path": "b.pdf", "filePage": 2, "at": [100, 150], "name": "Logo" }));
     let list = ok(&mut a, "comment.list", json!({ "doc": doc }));
     assert_eq!(list["count"], 4, "{list}");
     // Its "Page 2" is drawn over the page's own.
@@ -2125,7 +2129,7 @@ fn links_through_tools() {
     let doc = ok(&mut a, "file.new", json!({ "from": "text", "path": "notes.txt" }))["doc"].as_u64().unwrap();
     let r = ok(&mut a, "link.addFromUrls", json!({ "doc": doc }));
     assert_eq!(r["created"], json!(["https://example.org/docs", "http://www.rust-lang.org"]));
-    ok(&mut a, "link.add", json!({ "doc": doc, "page": 1, "rect": [72, 300, 200, 320], "to_page": 1, "visible": true, "color": "red" }));
+    ok(&mut a, "link.add", json!({ "doc": doc, "page": 1, "rect": [72, 300, 200, 320], "toPage": 1, "visible": true, "color": "red" }));
     let list = ok(&mut a, "link.list", json!({ "doc": doc }));
     assert_eq!(list["count"], 3);
     let added = list["links"].as_array().unwrap().iter().find(|l| l["to_page"] == 1).unwrap().clone();
@@ -2140,8 +2144,8 @@ fn links_through_tools() {
     assert!(matches!(a.call("link.add", &json!({ "doc": doc, "page": 1, "rect": [0, 0, 50, 20] })), Err(ToolError::InvalidArgs(_))));
 }
 
-/// doc_info reports annotation and link rectangles in the tools' displayed-page convention,
-/// the same values comment_list and link_list give, so they can be fed back to link_edit.
+/// file.getInfo reports annotation and link rectangles in the tools' displayed-page convention,
+/// the same values comment.list and link.list give, so they can be fed back to link.edit.
 #[test]
 fn doc_info_rects_are_displayed_page_coordinates() {
     let dir = workdir("info-rects");
@@ -2170,15 +2174,15 @@ fn doc_info_rects_are_displayed_page_coordinates() {
         let page = json!(page);
         let find = |items: &Value| items.as_array().unwrap().iter().find(|x| x["page"] == page).unwrap()["rect"].clone();
         let (info_note, note) = (find(&info["annotations"]), find(&comments["comments"]));
-        assert!(close(&info_note, &note), "page {page}: doc_info note {info_note} vs comment_list {note}");
+        assert!(close(&info_note, &note), "page {page}: file.getInfo note {info_note} vs comment.list {note}");
         if page == 1 {
             assert!(close(&note, &json!([72.0, 72.0, 92.0, 92.0])), "note {note}");
         }
         let (info_link, link) = (find(&info["links"]), find(&links["links"]));
-        assert!(close(&info_link, &link), "page {page}: doc_info link {info_link} vs link_list {link}");
+        assert!(close(&info_link, &link), "page {page}: file.getInfo link {info_link} vs link.list {link}");
         assert!(close(&link, &json!([72.0, 100.0, 200.0, 120.0])), "page {page}: link {link}");
     }
-    // Reusing the doc_info rectangle in a geometry-taking edit leaves the link where it is.
+    // Reusing the file.getInfo rectangle in a geometry-taking edit leaves the link where it is.
     let rotated = links["links"].as_array().unwrap().iter().find(|l| l["page"] == 2).unwrap().clone();
     let from_info = info["links"].as_array().unwrap().iter().find(|l| l["page"] == 2).unwrap()["rect"].clone();
     ok(&mut a, "link.edit", json!({ "doc": re, "page": 2, "index": rotated["index"], "rect": from_info }));
@@ -2577,7 +2581,7 @@ fn initial_view_through_tools() {
     let r = ok(
         &mut a,
         "file.setInitialView",
-        json!({ "doc": doc, "navigation": "pages", "layout": "two_up", "magnification": 150, "page": 2, "language": "en-GB", "binding": "right", "display_title": true }),
+        json!({ "doc": doc, "navigation": "pages", "layout": "two_up", "magnification": 150, "page": 2, "language": "en-GB", "binding": "right", "displayTitle": true }),
     );
     let v = &r["initial_view"];
     assert_eq!((v["navigation"].as_str(), v["magnification"].as_str(), v["page"].as_u64()), (Some("Pages"), Some("Percent(150.0)"), Some(2)));
@@ -2973,7 +2977,7 @@ fn measurements_calibrate_draw_save_reopen_and_export() {
     assert!(csv.contains("area,48,\"m²\",\"Room, \"\"A\"\"\""), "{csv}");
     assert!(a.call("measure_export", &json!({"doc":doc,"out":"../outside.csv"})).is_err());
     // A new viewport changes future readings, without recalibrating saved measurements.
-    ok(&mut a, "measure.setScale", json!({"doc":doc,"page":1,"units_per_point":1,"rect":[0,0,50,50],"unit":"cm"}));
+    ok(&mut a, "measure.setScale", json!({"doc":doc,"page":1,"unitsPerPoint":1,"rect":[0,0,50,50],"unit":"cm"}));
     assert_eq!(ok(&mut a, "measure.setScale", json!({"doc":doc,"page":1,"at":[20,20]}))["scale"]["unit"], "cm");
     assert_eq!(ok(&mut a, "measure.setScale", json!({"doc":doc,"page":1,"at":[80,80]}))["scale"]["unit"], "m");
     assert_eq!(ok(&mut a, "measure.list", json!({"doc":doc}))["measurements"], all["measurements"]);
@@ -2999,7 +3003,7 @@ fn measurements_bad_arguments_leave_document_and_history_unchanged() {
         ("measure.area", json!({"doc":doc,"page":1,"points":[[0,0],[20,20],[0,20],[20,0]]})),
         ("measure.setScale", json!({"doc":doc,"page":1,"points":[[0,0],[0,0]],"distance":10})),
         ("measure.setSnap", json!({"doc":doc,"page":1,"at":[1e100,0]})),
-        ("measure.setScale", json!({"doc":doc,"page":1,"units_per_point":1,"precision":8})),
+        ("measure.setScale", json!({"doc":doc,"page":1,"unitsPerPoint":1,"precision":8})),
     ] {
         assert!(a.call(tool, &args).is_err(), "{tool} {args}");
         assert_eq!(ok(&mut a, "doc_list", json!({})), before);
@@ -3049,7 +3053,7 @@ fn xfa_scripts_run_for_buttons_and_field_changes_through_tools() {
     // Filling recalculates; a bad value shows its message (the tool reports alerts in js output? no: it is applied, the value stays).
     ok(&mut a, "form.fill", json!({ "doc": doc, "values": { "qty": "4" } }));
     assert_eq!(field(&mut a, "total").unwrap()["value"], "20");
-    // A button's XFA click script runs through js_run, like any button.
+    // A button's XFA click script runs through script.run, like any button.
     let before = ok(&mut a, "file.getInfo", json!({ "doc": doc }))["xfa_layout"]["fields"].as_u64().unwrap();
     let r = ok(&mut a, "script.run", json!({ "doc": doc, "script": "", "field": "addRow" }));
     assert!(r["error"].is_null(), "{r}");
@@ -3062,7 +3066,7 @@ fn xfa_scripts_run_for_buttons_and_field_changes_through_tools() {
     assert_eq!(r["alerts"], json!(["Hello 4"]));
 }
 
-/// doc_info describes a link's set-layer-visibility action by layer name.
+/// file.getInfo describes a link's set-layer-visibility action by layer name.
 #[test]
 fn doc_info_describes_set_layer_links() {
     let dir = workdir("layer-links");
@@ -3444,7 +3448,7 @@ fn text_extract_with_a_rect_takes_one_column() {
     assert_eq!(reading["pages"][0]["text"], "Name\nApple\nPear\nQty\n12\n7", "reading order is column by column");
 
     for page in [1u64, 2] {
-        // The box around "Qty" and "7", as text_find reports them on this page.
+        // The box around "Qty" and "7", as text.find reports them on this page.
         let rect_of = |a: &mut Automation, q: &str| -> [f64; 4] {
             let found = ok(a, "text.find", json!({ "doc": doc, "query": q }));
             let m = found["matches"].as_array().unwrap().iter().find(|m| m["page"] == page).unwrap().clone();

@@ -1017,15 +1017,15 @@ fn field_props(params: &Value) -> Vec<&'static str> {
         ("calculate", "actions"),
         ("format", "actions"),
         ("validate", "actions"),
-        ("check_style", "widgets"),
+        ("checkStyle", "widgets"),
         ("default", "default"),
         ("flags", "flags"),
-        ("read_only", "flags"),
+        ("readOnly", "flags"),
         ("required", "flags"),
         ("multiline", "flags"),
         ("locked", "widgets"),
-        ("font_size", "appearance"),
-        ("max_length", "maxLength"),
+        ("fontSize", "appearance"),
+        ("maxLength", "maxLength"),
         ("options", "options"),
         ("rect", "widgets"),
         ("rotation", "widgets"),
@@ -1045,7 +1045,7 @@ fn link_edit_fields(params: &Value) -> Vec<&'static str> {
     if params.get("rect").is_some() {
         fields.push("rect");
     }
-    if params.get("url").is_some() || params.get("to_page").is_some() {
+    if params.get("url").is_some() || params.get("toPage").is_some() {
         fields.extend(LINK_ACTION);
     }
     if ["visible", "color", "width", "highlight"].iter().any(|key| params.get(*key).is_some()) {
@@ -1082,7 +1082,7 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
             }
         }
         "redaction.mark" => {
-            let whole = params.get("whole_pages").and_then(Value::as_bool) == Some(true);
+            let whole = params.get("wholePages").and_then(Value::as_bool) == Some(true);
             if params.get("rect").is_some() {
                 // A rectangle: on `page` (`pages` is not read).
                 for number in page("page") {
@@ -1105,7 +1105,7 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
             for number in page("page") {
                 h.page(number, GEOMETRY);
             }
-            for number in page("to_page") {
+            for number in page("toPage") {
                 h.page(number, &[]);
             }
         }
@@ -1220,7 +1220,7 @@ pub fn under(command: &str, params: &Value, objects: &Projection) -> Under {
         "link.edit" => {
             let fields = link_edit_fields(params);
             h.link(params, &fields, params.get("rect").is_some());
-            for number in page("to_page") {
+            for number in page("toPage") {
                 h.page(number, &[]);
             }
         }
@@ -1460,7 +1460,7 @@ pub fn region(command: &str, params: &Value, objects: &Projection) -> Option<Val
         }
         "ocr.recognize" => or_all(page("pages"))
             .iter()
-            .map(|page| json!(["ocr-inputs", page, params.get("skip_text_pages").and_then(Value::as_bool).unwrap_or(true)]))
+            .map(|page| json!(["ocr-inputs", page, params.get("skipTextPages").and_then(Value::as_bool).unwrap_or(true)]))
             .collect(),
         // Items of a page's content by index: no item has an id but its content, so the item at
         // the place, with its drawing stream as well as the editing metadata `content.list`
@@ -1520,7 +1520,7 @@ pub fn region(command: &str, params: &Value, objects: &Projection) -> Option<Val
         }
         // A header or footer with the number of pages (`<<n>>`) counts every page.
         "file.setHeaderFooter" => {
-            let counts = ["header_left", "header_center", "header_right", "footer_left", "footer_center", "footer_right"]
+            let counts = ["headerLeft", "headerCenter", "headerRight", "footerLeft", "footerCenter", "footerRight"]
                 .iter()
                 .any(|key| params.get(*key).and_then(Value::as_str).is_some_and(|text| text.contains("<<n>>")));
             if counts { vec![json!(["pages"])] } else { Vec::new() }

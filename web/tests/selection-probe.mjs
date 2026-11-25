@@ -1,4 +1,4 @@
-/** Called after installSearchProbe; observes actual text_select replies and the live engine. */
+/** Called after installSearchProbe; observes actual text.select replies and the live engine. */
 export async function installSelectionProbe() {
   const url = performance.getEntriesByType('resource').map(entry => entry.name).find(name => /\/engine\/kitEngine\.ts(?:\?|$)/.test(name))
   if (!url) throw new Error('Live engine module is unavailable')

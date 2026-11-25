@@ -65,7 +65,7 @@ fn inclusive_full_partial_reverse_and_single_glyph_ranges_follow_rotations_and_c
 fn cross_page_range_normalizes_direction_and_includes_whole_intermediate_pages() {
     let (mut automation, id) = open();
     let pages = fixture::pages();
-    let args = json!({"doc":id,"page":2,"end_page":5,"anchor":center(glyph(pages[1],1)),"focus":center(glyph(pages[4],2))});
+    let args = json!({"doc":id,"page":2,"endPage":5,"anchor":center(glyph(pages[1],1)),"focus":center(glyph(pages[4],2))});
     let result = call(&mut automation, "text.select", args.clone());
     assert_eq!(result["text"], "B\nCD\nAB\nCD\nAB\nCD\nAB\nC");
     assert_eq!(result["pages"].as_array().unwrap().iter().map(|p| p["page"].as_u64().unwrap()).collect::<Vec<_>>(), [2, 3, 4, 5]);
@@ -73,7 +73,7 @@ fn cross_page_range_normalizes_direction_and_includes_whole_intermediate_pages()
     rects_equal(&result["pages"][1]["rects"], &pages[2].rects(false));
     rects_equal(&result["pages"][2]["rects"], &pages[3].rects(false));
     rects_equal(&result["pages"][3]["rects"], &[pages[4].rects(false)[0], glyph(pages[4], 2)]);
-    assert_eq!(call(&mut automation, "text.select", json!({"doc":id,"page":5,"end_page":2,"anchor":args["focus"],"focus":args["anchor"]})), result);
+    assert_eq!(call(&mut automation, "text.select", json!({"doc":id,"page":5,"endPage":2,"anchor":args["focus"],"focus":args["anchor"]})), result);
 }
 
 #[test]
@@ -108,12 +108,12 @@ fn blank_pages_and_maximum_page_span_are_safe_without_partial_results() {
     let id = automation.session_mut().open("BlankSelection.pdf", None, bytes, None).unwrap().0;
     let result = call(&mut automation, "text.select", json!({"doc":id,"page":1,"anchor":[1,1],"focus":[2,2]}));
     assert_eq!(result, json!({"text":"","pages":[{"page":1,"text":"","rects":[]}]}));
-    let args = json!({"doc":id,"page":1,"end_page":64,"anchor":[1,1],"focus":[2,2]});
+    let args = json!({"doc":id,"page":1,"endPage":64,"anchor":[1,1],"focus":[2,2]});
     let result = call(&mut automation, "text.select", args.clone());
     assert_eq!(result["pages"].as_array().unwrap().len(), 64);
     assert_eq!(result["text"], "\n".repeat(63));
     let mut too_many = args;
-    too_many["end_page"] = json!(65);
+    too_many["endPage"] = json!(65);
     assert!(automation.call("text.select", &too_many).unwrap_err().to_string().contains("64 pages"));
 }
 
@@ -126,9 +126,9 @@ fn invalid_arguments_and_cross_page_columns_are_actionable_errors() {
         ("page", json!(9)),
         ("page", json!(1.5)),
         ("page", json!(4_294_967_297i64)),
-        ("end_page", json!(-1)),
-        ("end_page", json!(9)),
-        ("end_page", json!(i64::MAX)),
+        ("endPage", json!(-1)),
+        ("endPage", json!(9)),
+        ("endPage", json!(i64::MAX)),
         ("anchor", json!([1])),
         ("anchor", json!([1, 2, 3])),
         ("anchor", json!([null, 0])),
@@ -147,7 +147,7 @@ fn invalid_arguments_and_cross_page_columns_are_actionable_errors() {
         assert!(automation.call("text.select", &args).is_err(), "missing {key}");
     }
     let mut args = base;
-    args["end_page"] = json!(2);
+    args["endPage"] = json!(2);
     args["mode"] = json!("column");
     assert!(automation.call("text.select", &args).unwrap_err().to_string().contains("same"));
 }

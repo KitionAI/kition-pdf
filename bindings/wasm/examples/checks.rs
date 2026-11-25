@@ -150,7 +150,7 @@ fn restricted(dir: &Path) -> Result<(), String> {
         _ => return Err("doc_open answered no document".into()),
     };
     tools
-        .call("file.protect", &json!({ "doc": doc, "permissions_password": "owner", "printing": "none", "copy": false }))
+        .call("file.protect", &json!({ "doc": doc, "permissionsPassword": "owner", "printing": "none", "copy": false }))
         .map_err(|error| format!("{error:?}"))?;
     tools.call("doc_save", &json!({ "doc": doc, "path": "check-restricted.pdf" })).map_err(|error| format!("{error:?}"))?;
     println!("wrote check-restricted.pdf");

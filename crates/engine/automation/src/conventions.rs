@@ -102,9 +102,9 @@ impl Automation {
             }
         };
         let page = args.opt_int("page")?.unwrap_or(1);
-        let max = args.opt_int("max_side")?.unwrap_or(1024);
+        let max = args.opt_int("maxSide")?.unwrap_or(1024);
         if !(1..=4096).contains(&max) {
-            return Err(ToolError::InvalidArgs("max_side must be between 1 and 4096".into()));
+            return Err(ToolError::InvalidArgs("maxSide must be between 1 and 4096".into()));
         }
         let page = usize::try_from(page).ok().and_then(|p| p.checked_sub(1)).ok_or_else(|| failed("page must be at least 1"))?;
         let doc = self.session.get(id).ok_or_else(|| failed("no such document"))?;

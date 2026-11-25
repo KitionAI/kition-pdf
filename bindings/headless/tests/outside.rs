@@ -286,14 +286,14 @@ fn kind_steps(kind: usize, id: &Value) -> Vec<(&'static str, Value)> {
 /// The write forms of the mixed table, and the rule that says which change kinds make a refusal
 /// necessary, written down before the table first ran:
 ///
-/// - W1 by id, `comment_edit {id, contents}`: the comment's text changed (C1) or it is gone (C9).
+/// - W1 by id, `comment.edit {id, contents}`: the comment's text changed (C1) or it is gone (C9).
 ///   Not its page's moves, other pages, fields, its colour.
-/// - W2 by name, `form_fill {F2}`: F2's value changed (C3) or no field is named F2 now (C11).
-/// - W3 by index, `comment_edit {page: 2, index: 1, contents}`: page 2 / comment 1 names another
+/// - W2 by name, `form.fill {F2}`: F2's value changed (C3) or no field is named F2 now (C11).
+/// - W3 by index, `comment.edit {page: 2, index: 1, contents}`: page 2 / comment 1 names another
 ///   comment or none now (C5, C9, C10) or the comment's text changed (C1).
-/// - W4 by point, `comment_add {page: 2, at}`: page 2 names another page (C5, C10) or its geometry
+/// - W4 by point, `comment.add {page: 2, at}`: page 2 names another page (C5, C10) or its geometry
 ///   changed (C7). Not the comments on it.
-/// - W5 structural, `page_delete {pages: [2]}`: page 2 names another page (C5, C10). Not what is
+/// - W5 structural, `page.delete {pages: [2]}`: page 2 names another page (C5, C10). Not what is
 ///   on the page.
 const FORMS: &[(&str, &[usize])] =
     &[("W1 by id", &[0, 8]), ("W2 by name", &[2, 10]), ("W3 by index", &[0, 4, 8, 9]), ("W4 by point", &[4, 6, 9]), ("W5 structural", &[4, 9])];
@@ -361,14 +361,14 @@ async fn table_mixed_seeded() {
 /// What each cell of the full table must answer, written down before its first run (C8-pdf-2):
 /// `A` applies, else the refusal's reasons. Rows are the forms W1-W5, columns the kinds C1-C12.
 ///
-/// - W1 by id (`comment_edit {id, contents}`): its text (C1) `changed`, gone (C9) `deleted`.
-/// - W2 by name (`form_fill {F2}`): its value (C3) `changed`; renamed (C11) `changed` (the name's
+/// - W1 by id (`comment.edit {id, contents}`): its text (C1) `changed`, gone (C9) `deleted`.
+/// - W2 by name (`form.fill {F2}`): its value (C3) `changed`; renamed (C11) `changed` (the name's
 ///   fact: see `a_rename_by_another_program_refuses_by_tool_id`).
-/// - W3 by index (`comment_edit {page: 2, index: 1}`): text (C1) `changed`; a page put before (C5)
+/// - W3 by index (`comment.edit {page: 2, index: 1}`): text (C1) `changed`; a page put before (C5)
 ///   or page 2 moved (C10) `relocated`; the comment gone (C9) `deleted`.
-/// - W4 by point (`comment_add {page: 2, at}`): a page put before (C5) or page 2 moved (C10)
+/// - W4 by point (`comment.add {page: 2, at}`): a page put before (C5) or page 2 moved (C10)
 ///   `relocated`; page 2 rotated (C7) `changed`.
-/// - W5 structural (`page_delete {pages: [2]}`): a page put before (C5) or page 2 moved (C10)
+/// - W5 structural (`page.delete {pages: [2]}`): a page put before (C5) or page 2 moved (C10)
 ///   `relocated`.
 const FULL: [[&str; 12]; 5] = [
     ["changed", "A", "A", "A", "A", "A", "A", "A", "deleted", "A", "A", "A"],
@@ -451,16 +451,16 @@ const KINDS2: &[&str] = &[
 /// The extended table's forms: W1-W5 above and five that address by place what has no id of its
 /// own, or rest on less than the whole document now.
 ///
-/// - W6 bookmark by index, `bookmark_add {page: 2, parent: [2]}`: page 2 names another page (C5,
+/// - W6 bookmark by index, `bookmark.add {page: 2, parent: [2]}`: page 2 names another page (C5,
 ///   C10) or `[2]` another bookmark (C14).
-/// - W7 link by index, `link_edit {page: 2, index}` setting its address: page 2 names another page
+/// - W7 link by index, `link.edit {page: 2, index}` setting its address: page 2 names another page
 ///   (C5, C10), the index another annotation (C9: the comment and its pop-up before it went), or
 ///   the link's action changed (C13).
-/// - W8 content item by index, `content_update {page: 2, index: 1, text}`: page 2 names another
+/// - W8 content item by index, `content.set {page: 2, index: 1, text}`: page 2 names another
 ///   page (C5, C10) or the item changed (C15).
-/// - W9 rectangle over content, `redact_mark {page: 2, rect}` over `Page 2`: page 2 names another
+/// - W9 rectangle over content, `redaction.mark {page: 2, rect}` over `Page 2`: page 2 names another
 ///   page (C5, C10), its geometry changed (C7) or the content under the rectangle did (C15).
-/// - W10 a document setting, `doc_initial_view {layout}`: the setting changed (C16).
+/// - W10 a document setting, `file.setInitialView {layout}`: the setting changed (C16).
 const FORMS2: &[(&str, &[usize])] = &[
     ("W1 by id", &[0, 8]),
     ("W2 by name", &[2, 10]),
@@ -492,7 +492,7 @@ fn link_index(f: &Fixture, page: u64) -> Value {
 fn colleague2(f: &Fixture, kind: usize, id: &Value, link: &Value) {
     match kind {
         12 => {
-            f.colleague(&[("link.edit", json!({ "page": 2, "index": link, "to_page": 3 }))]);
+            f.colleague(&[("link.edit", json!({ "page": 2, "index": link, "toPage": 3 }))]);
         }
         13 => {
             // The kit has no command that moves a bookmark: another program moves it (the

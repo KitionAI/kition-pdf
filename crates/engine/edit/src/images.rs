@@ -144,7 +144,7 @@ pub fn page_images(doc: &Document, page: usize) -> Result<Vec<PageImage>, EditEr
 
 /// The images page `page` (0-based) shows, in drawing order, including those drawn inside form
 /// XObjects (Export to Word, HTML and RTF). Read-only: indexes into this list are not
-/// [`page.listImages`] indexes, so they can't be passed to [`change_image`].
+/// [`page_images`] indexes, so they can't be passed to [`change_image`].
 pub fn reading_images(doc: &Document, page: usize) -> Result<Vec<PageImage>, EditError> {
     /// The CTM and `q` stack carry from one page stream to the next (§7.8.2); a form starts
     /// its own.
@@ -248,7 +248,7 @@ pub fn turn_about_centre(rect: [f64; 4], quarters: i32, flip_h: bool, flip_v: bo
     [a, b, c, d, cx - a * cx - c * cy, cy - b * cx - d * cy]
 }
 
-/// Change image `index` (from [`page.listImages`]) on `page`.
+/// Change image `index` (from [`page_images`]) on `page`.
 pub fn change_image(doc: &mut Document, page: usize, index: usize, change: &ImageChange) -> Result<(), EditError> {
     let images = page_images(doc, page)?;
     let img = images.get(index).cloned().ok_or_else(|| EditError::Invalid(format!("page {} has no image {}", page + 1, index + 1)))?;

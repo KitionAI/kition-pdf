@@ -160,10 +160,10 @@ export async function selectionLifecycle(harness) {
   await run(9, async () => { const spec = crossPageCase(manifest.pages[0], manifest.pages[1], true); await drag(spec); await verify(spec, 1) })
   await run(10, async () => {
     const { a } = fixtureGlyphs(manifest.pages[0]), { b } = fixtureGlyphs(manifest.pages[1])
-    await drag({ page: 1, end_page: 2, mode: 'column', anchor: a.slice(0, 2), focus: [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2] })
+    await drag({ page: 1, endPage: 2, mode: 'column', anchor: a.slice(0, 2), focus: [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2] })
     await quiet(); await settle()
     const actual = await snap()
-    assert.equal(actual.latest.params.mode, 'column'); assert.equal(actual.latest.params.end_page, 1)
+    assert.equal(actual.latest.params.mode, 'column'); assert.equal(actual.latest.params.endPage, 1)
     assertSelected(actual.latest.result, full.expected)
   })
   await place(1, 1, 1)

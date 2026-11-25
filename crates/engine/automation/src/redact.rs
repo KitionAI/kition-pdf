@@ -18,13 +18,13 @@ impl Automation {
             Some(_) => self.pages(a, "pages")?,
             None => (0..n).collect(),
         };
-        let overlay = match (a.opt_str("overlay")?, a.opt_str("code_set")?) {
-            (Some(_), Some(_)) => return Err(ToolError::InvalidArgs("pass overlay or code_set with codes, not both".into())),
+        let overlay = match (a.opt_str("overlay")?, a.opt_str("codeSet")?) {
+            (Some(_), Some(_)) => return Err(ToolError::InvalidArgs("pass overlay or codeSet with codes, not both".into())),
             (Some(o), None) => o.to_string(),
             (None, Some(id)) => {
                 let set = RedactionCodeSet::from_id(id).ok_or_else(|| {
                     let ids: Vec<_> = REDACTION_CODE_SETS.iter().map(|s| s.id).collect();
-                    ToolError::InvalidArgs(format!("unknown code_set {id:?}; allowed: {}", ids.join(", ")))
+                    ToolError::InvalidArgs(format!("unknown codeSet {id:?}; allowed: {}", ids.join(", ")))
                 })?;
                 let picked = a.strs("codes")?;
                 let allowed = || format!("allowed in {}: {}", set.id, set.codes.join(", "));
@@ -34,7 +34,7 @@ impl Automation {
                     Err(bad) => return Err(ToolError::InvalidArgs(format!("unknown code {bad:?}; {}", allowed()))),
                 }
             }
-            (None, None) if a.get("codes").is_some() => return Err(ToolError::InvalidArgs("codes needs code_set".into())),
+            (None, None) if a.get("codes").is_some() => return Err(ToolError::InvalidArgs("codes needs codeSet".into())),
             (None, None) => String::new(),
         };
         let author = a.opt_str("author")?.unwrap_or(DEFAULT_AUTHOR).to_string();
@@ -49,10 +49,10 @@ impl Automation {
             a.get("find").is_some(),
             a.get("words").is_some(),
             a.get("pattern").is_some(),
-            a.opt_bool("whole_pages")?.unwrap_or(false),
+            a.opt_bool("wholePages")?.unwrap_or(false),
         ];
         if chosen.iter().filter(|c| **c).count() != 1 {
-            return Err(ToolError::InvalidArgs("pass exactly one of rect (with page), find, words, pattern or whole_pages: true".into()));
+            return Err(ToolError::InvalidArgs("pass exactly one of rect (with page), find, words, pattern or wholePages: true".into()));
         }
         // Per searched word or phrase: how many marks it made.
         let mut matched_words: Vec<(String, usize)> = Vec::new();
@@ -63,7 +63,7 @@ impl Automation {
             let r = <[f64; 4]>::try_from(r).map_err(|_| ToolError::InvalidArgs("rect must be 4 numbers".into()))?;
             let q = info.view_rect_to_quad([r[0] as f32, r[1] as f32, r[2] as f32, r[3] as f32]);
             marks.push((page, vec![q]));
-        } else if a.opt_bool("whole_pages")?.unwrap_or(false) {
+        } else if a.opt_bool("wholePages")?.unwrap_or(false) {
             let info = &self.doc(a)?.info;
             for &p in &pages {
                 let c = info.pages[p].crop;
@@ -140,7 +140,7 @@ impl Automation {
         };
         let before = self.doc(a)?.redaction_marks();
         if before == 0 {
-            return Err(failed("there are no redaction marks to apply (see redact_mark)"));
+            return Err(failed("there are no redaction marks to apply (see redaction.mark)"));
         }
         let mut out = self.apply(a, Edit::ApplyRedactions { pages })?;
         let after = self.doc(a)?.redaction_marks();
@@ -170,7 +170,7 @@ impl Automation {
                 let which = a
                     .strs("categories")?
                     .into_iter()
-                    .map(|c| Hidden::from_id(c).ok_or_else(|| ToolError::InvalidArgs(format!("unknown category {c:?} (see doc_hidden_info)"))))
+                    .map(|c| Hidden::from_id(c).ok_or_else(|| ToolError::InvalidArgs(format!("unknown category {c:?} (see file.getHiddenInfo)"))))
                     .collect::<Result<Vec<_>>>()?;
                 if which.is_empty() {
                     return Err(ToolError::InvalidArgs("categories is empty".into()));

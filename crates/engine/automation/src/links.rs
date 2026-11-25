@@ -22,13 +22,13 @@ impl Automation {
     }
 
     fn link_action(&self, a: &Args) -> Result<Option<LinkAction>> {
-        match (a.opt_str("url")?, a.opt_int("to_page")?) {
-            (Some(_), Some(_)) => Err(bad("pass url or to_page, not both")),
+        match (a.opt_str("url")?, a.opt_int("toPage")?) {
+            (Some(_), Some(_)) => Err(bad("pass url or toPage, not both")),
             (Some(u), None) => Ok(Some(LinkAction::Uri(u.to_string()))),
             (None, Some(p)) => {
                 let n = self.doc(a)?.info.pages.len() as i64;
                 if p < 1 || p > n {
-                    return Err(bad(format!("to_page must be 1–{n}")));
+                    return Err(bad(format!("toPage must be 1–{n}")));
                 }
                 Ok(Some(LinkAction::Page(p as usize - 1)))
             }
@@ -82,8 +82,8 @@ impl Automation {
 
     pub(crate) fn link_add(&mut self, a: &Args) -> Result<Value> {
         let page = self.page(a)?;
-        let rect = self.view_rect(a, page)?.ok_or_else(|| bad("link_add needs rect"))?;
-        let action = self.link_action(a)?.ok_or_else(|| bad("pass url or to_page"))?;
+        let rect = self.view_rect(a, page)?.ok_or_else(|| bad("link.add needs rect"))?;
+        let action = self.link_action(a)?.ok_or_else(|| bad("pass url or toPage"))?;
         let style = self.link_style(a, LinkStyle::default())?;
         self.apply(a, Edit::AddLink { page, rect, action, style })
     }
@@ -96,7 +96,7 @@ impl Automation {
             .links
             .iter()
             .find(|l| l.page == page && l.index as i64 + 1 == index)
-            .ok_or_else(|| failed(format!("page {} has no link {index} (see link_list)", page + 1)))?;
+            .ok_or_else(|| failed(format!("page {} has no link {index} (see link.list)", page + 1)))?;
         Ok((page, l.index, l.style))
     }
 

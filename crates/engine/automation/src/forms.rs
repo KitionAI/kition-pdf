@@ -269,7 +269,8 @@ impl Automation {
         }
         let mut edits = Vec::new();
         for (name, v) in values {
-            let f = doc.form.iter().find(|f| &f.name == name).ok_or_else(|| failed(format!("there is no field named {name:?} (see form_fields)")))?;
+            let f =
+                doc.form.iter().find(|f| &f.name == name).ok_or_else(|| failed(format!("there is no field named {name:?} (see form.listFields)")))?;
             edits.push(Edit::SetFieldValue { name: name.clone(), value: value_for(f, v)? });
         }
         let edit = if edits.len() == 1 { edits.remove(0) } else { Edit::Batch { label: "Fill in form".into(), edits } };
@@ -297,7 +298,7 @@ impl Automation {
                 NewField::Radio { group: a.opt_str("group")?.map(str::to_owned), export: a.opt_str("export")?.unwrap_or("Choice1").to_owned() }
             }
             "combo" => NewField::Combo { options: options()?, editable: a.opt_bool("editable")?.unwrap_or(false) },
-            "list" => NewField::List { options: options()?, multi: a.opt_bool("multi_select")?.unwrap_or(false) },
+            "list" => NewField::List { options: options()?, multi: a.opt_bool("multiSelect")?.unwrap_or(false) },
             "button" => NewField::Button { caption: a.opt_str("caption")?.unwrap_or("").to_owned() },
             "image" => NewField::Image,
             "signature" => NewField::Signature,
@@ -381,7 +382,7 @@ impl Automation {
 
     fn field_props_arg(&self, a: &Args, name: &str) -> Result<FieldProps> {
         let doc = self.doc(a)?;
-        let f = doc.form.iter().find(|f| f.name == name).ok_or_else(|| failed(format!("there is no field named {name:?} (see form_fields)")))?;
+        let f = doc.form.iter().find(|f| f.name == name).ok_or_else(|| failed(format!("there is no field named {name:?} (see form.listFields)")))?;
         // Position: top-left-origin points on the displayed page → user space.
         let rect = match a.get("rect") {
             None => None,
@@ -398,17 +399,17 @@ impl Automation {
             rect,
             name: a.opt_str("name")?.map(str::to_owned),
             tooltip: a.opt_str("tooltip")?.map(str::to_owned),
-            read_only: a.opt_bool("read_only")?,
+            read_only: a.opt_bool("readOnly")?,
             required: a.opt_bool("required")?,
             multiline: a.opt_bool("multiline")?,
-            max_len: match a.opt_int("max_length")? {
+            max_len: match a.opt_int("maxLength")? {
                 None => None,
                 Some(0) => Some(None),
                 Some(n) if n > 0 => Some(Some(n as usize)),
-                Some(_) => return Err(ToolError::InvalidArgs("max_length must be 0 (no limit) or more".into())),
+                Some(_) => return Err(ToolError::InvalidArgs("maxLength must be 0 (no limit) or more".into())),
             },
             options: a.get("options").map(|_| a.strs("options")).transpose()?.map(|v| v.into_iter().map(str::to_owned).collect()),
-            font_size: a.opt_num("font_size")?,
+            font_size: a.opt_num("fontSize")?,
             look: None,
             appearance: a.get("appearance").map(look_arg).transpose()?.filter(|p| *p != kition_pdf_engine::FieldLookPatch::default()),
             format: a.get("format").map(format_arg).transpose()?,
@@ -458,7 +459,7 @@ impl Automation {
                 Some(r) => return Err(ToolError::InvalidArgs(format!("rotation must be 0, 90, 180 or 270, not {r}"))),
             },
             actions: None,
-            check_style: match a.opt_str("check_style")? {
+            check_style: match a.opt_str("checkStyle")? {
                 None => None,
                 Some(s) => Some(
                     kition_pdf_engine::CheckStyle::ALL
@@ -511,7 +512,7 @@ impl Automation {
     pub(crate) fn form_delete_field(&mut self, a: &Args) -> Result<Value> {
         let name = a.str("field")?.to_owned();
         if !self.doc(a)?.form.iter().any(|f| f.name == name) {
-            return Err(failed(format!("there is no field named {name:?} (see form_fields)")));
+            return Err(failed(format!("there is no field named {name:?} (see form.listFields)")));
         }
         self.apply(a, Edit::DeleteField { name })
     }

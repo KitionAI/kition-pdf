@@ -34,9 +34,9 @@ export function selectionCases(page) {
 
 export function crossPageCase(first, second, reverse = false) {
   const left = fixtureGlyphs(first), right = fixtureGlyphs(second)
-  const endpoints = { page: first.page, anchor: center(left.c), end_page: second.page, focus: center(right.b) }
+  const endpoints = { page: first.page, anchor: center(left.c), endPage: second.page, focus: center(right.b) }
   const expected = { text: 'CD\nAB', pages: [{ page: first.page, text: 'CD', rects: [left.full[1]] }, { page: second.page, text: 'AB', rects: [right.full[0]] }] }
-  return { id: reverse ? 'cross-page-reverse' : 'cross-page-forward', mode: 'range', ...(reverse ? { page: endpoints.end_page, anchor: endpoints.focus, end_page: endpoints.page, focus: endpoints.anchor } : endpoints), expected }
+  return { id: reverse ? 'cross-page-reverse' : 'cross-page-forward', mode: 'range', ...(reverse ? { page: endpoints.endPage, anchor: endpoints.focus, endPage: endpoints.page, focus: endpoints.anchor } : endpoints), expected }
 }
 
 export function assertSelected(actual, expected, tolerance = 0.02) {

@@ -123,7 +123,7 @@ impl Automation {
 
     pub(crate) fn accessibility_set_alt(&mut self, a: &Args) -> Result<Value> {
         let figure = u32::try_from(a.int("figure")?)
-            .map_err(|_| ToolError::InvalidArgs("figure must be a figure number from accessibility_figures".into()))?;
+            .map_err(|_| ToolError::InvalidArgs("figure must be a figure number from accessibility.listFigures".into()))?;
         let edit = if a.opt_bool("decorative")?.unwrap_or(false) {
             kition_pdf_engine::Edit::MarkDecorative { figure }
         } else {
@@ -147,7 +147,7 @@ impl Automation {
             }
             settings.language = l.into();
         }
-        if let Some(s) = a.opt_bool("skip_text_pages")? {
+        if let Some(s) = a.opt_bool("skipTextPages")? {
             settings.skip_text_pages = s;
         }
         Ok(settings)

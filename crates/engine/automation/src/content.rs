@@ -158,7 +158,7 @@ impl Automation {
             .filter(|x| x.page == page)
             .nth((index - 1).max(0) as usize)
             .filter(|_| index >= 1)
-            .ok_or_else(|| failed(format!("page {} has no added item {index} (see content_list)", page + 1)))?;
+            .ok_or_else(|| failed(format!("page {} has no added item {index} (see content.list)", page + 1)))?;
         Ok((page, index as usize - 1, it.content.clone(), ph))
     }
 
@@ -174,7 +174,7 @@ impl Automation {
                     t.text = s.to_string();
                 }
                 style(a, t)?;
-                if ["rotate", "flip_h", "flip_v", "crop", "image"].iter().any(|k| a.get(k).is_some()) {
+                if ["rotate", "flipH", "flipV", "crop", "image"].iter().any(|k| a.get(k).is_some()) {
                     return Err(bad("rotate, flip, crop and image apply to images"));
                 }
             }
@@ -188,10 +188,10 @@ impl Automation {
                     }
                     i.rotation = ((i64::from(i.rotation) * 90 + deg).rem_euclid(360) / 90) as u8;
                 }
-                if a.opt_bool("flip_h")? == Some(true) {
+                if a.opt_bool("flipH")? == Some(true) {
                     i.flip_h = !i.flip_h;
                 }
-                if a.opt_bool("flip_v")? == Some(true) {
+                if a.opt_bool("flipV")? == Some(true) {
                     i.flip_v = !i.flip_v;
                 }
                 if let Some(c) = rect_arg(a, "crop")? {
@@ -244,7 +244,7 @@ impl Automation {
             .get("objects")
             .and_then(Value::as_array)
             .filter(|r| !r.is_empty() && r.len() <= MAX_MOVE_OBJECTS)
-            .ok_or_else(|| bad("objects must contain 1–1000 references from object_list"))?;
+            .ok_or_else(|| bad("objects must contain 1–1000 references from object.list"))?;
         let mut targets = Vec::with_capacity(rows.len());
         for row in rows {
             let row = row.as_object().ok_or_else(|| bad("each object must contain kind and index"))?;
@@ -255,14 +255,14 @@ impl Automation {
                 Some("added") => ObjectKind::Added,
                 Some("text") => ObjectKind::Text,
                 Some("image") => ObjectKind::Image,
-                _ => return Err(bad("object kind must be added, text or image (see object_list)")),
+                _ => return Err(bad("object kind must be added, text or image (see object.list)")),
             };
             let index = row
                 .get("index")
                 .and_then(Value::as_u64)
                 .and_then(|i| i.checked_sub(1))
                 .and_then(|i| usize::try_from(i).ok())
-                .ok_or_else(|| bad("object index must be a positive integer from object_list"))?;
+                .ok_or_else(|| bad("object index must be a positive integer from object.list"))?;
             targets.push(ObjectTarget { kind, index });
         }
         let delta = a
@@ -274,9 +274,9 @@ impl Automation {
             .ok_or_else(|| bad("offset must contain two finite numbers [dx, dy] in displayed points"))?;
         let doc = self.doc(a)?;
         if let Some(g) = a.get("generation") {
-            let g = g.as_u64().ok_or_else(|| bad("generation must be a non-negative integer from object_list"))?;
+            let g = g.as_u64().ok_or_else(|| bad("generation must be a non-negative integer from object.list"))?;
             if g != doc.edit_generation() {
-                return Err(failed("the document changed; call object_list again before moving"));
+                return Err(failed("the document changed; call object.list again before moving"));
             }
         }
         let offset = doc.object_move_offset(page, delta).map_err(failed)?;

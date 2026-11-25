@@ -79,8 +79,8 @@ impl Automation {
         let precision = u8::try_from(a.opt_int("precision")?.unwrap_or(2)).map_err(|_| failed("precision must be between 0 and 6"))?;
         let unit = a.opt_str("unit")?.unwrap_or("in");
         let scale = if a.get("points").is_some() {
-            if a.get("units_per_point").is_some() {
-                return Err(failed("pass calibration points or units_per_point, not both"));
+            if a.get("unitsPerPoint").is_some() {
+                return Err(failed("pass calibration points or unitsPerPoint, not both"));
             }
             let (_, points) = self.measurement_points(a)?;
             let [from, to] = points.as_slice() else {
@@ -88,7 +88,7 @@ impl Automation {
             };
             let length = a.opt_num("distance")?.ok_or_else(|| failed("calibration needs a real-world distance"))?;
             Scale::calibrate(*from, *to, length, unit, precision).map_err(failed)?
-        } else if let Some(factor) = a.opt_num("units_per_point")? {
+        } else if let Some(factor) = a.opt_num("unitsPerPoint")? {
             {
                 let from = self.doc(a)?.measurement_to_user(page, [0.0, 0.0]).map_err(failed)?;
                 let to = self.doc(a)?.measurement_to_user(page, [1.0, 0.0]).map_err(failed)?;

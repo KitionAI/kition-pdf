@@ -57,7 +57,7 @@ fn mine(bytes: &[u8], address: Address) -> Value {
         FigureNumber => step("accessibility.setAlt", json!({"figure":figure(&cos,2).num,"alt":"Mine"})),
         Point => step("comment.add", json!({"page":2,"type":"note","at":[220,180],"contents":"mine"})),
         Rectangle => step("redaction.mark", json!({"page":2,"rect":[60,40,260,90]})),
-        Whole => step("file.protect", json!({"open_password":"matrix-password"})),
+        Whole => step("file.protect", json!({"openPassword":"matrix-password"})),
     }
 }
 

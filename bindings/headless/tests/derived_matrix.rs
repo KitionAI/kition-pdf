@@ -124,7 +124,7 @@ fn fixture() -> Vec<u8> {
         ("form.addField", json!({"page":2,"type":"radio","name":"R","rect":[320,600,338,618]})),
         ("form.addField", json!({"page":2,"type":"text","name":"S","rect":[350,600,400,618]})),
         ("comment.add", json!({"page":2,"type":"textbox","rect":[300,400,460,450],"contents":"box"})),
-        ("measure.setScale", json!({"page":2,"units_per_point":0.5,"unit":"m"})),
+        ("measure.setScale", json!({"page":2,"unitsPerPoint":0.5,"unit":"m"})),
         ("redaction.mark", json!({"page":1,"rect":[60,40,260,90]})),
         ("page.addText", json!({"page":2,"at":[72,150],"text":"https://example.com/old"})),
         ("page.addText", json!({"page":2,"at":[80,62],"text":"overlap"})),
@@ -304,8 +304,8 @@ fn mine(bytes: &[u8], d: Derived) -> Value {
     match d {
         BlankSize => step("page.insertBlank", json!({"at":2})),
         Labels => step("page.number", json!({"from":2,"to":2,"style":"upper-roman"})),
-        HeaderTotal => step("file.setHeaderFooter", json!({"pages":[2],"footer_center":"<<1>> of <<n>>"})),
-        HeaderNumber => step("file.setHeaderFooter", json!({"pages":[2],"header_center":"<<1>>"})),
+        HeaderTotal => step("file.setHeaderFooter", json!({"pages":[2],"footerCenter":"<<1>> of <<n>>"})),
+        HeaderNumber => step("file.setHeaderFooter", json!({"pages":[2],"headerCenter":"<<1>>"})),
         Calculation => step("form.fill", json!({"values":{"F3":"15"}})),
         Format => step("form.fill", json!({"values":{"F2":"15"}})),
         DefaultName => step("form.addField", json!({"page":2,"type":"text","rect":[20,300,100,320]})),
@@ -365,7 +365,7 @@ fn want(d: Derived, i: Input) -> Expected {
         Urls => &[Input::Url, Input::LinkRect],
         // The default skips this already-textual page. None
         // of these edits changes the nonempty-text predicate. Actual recognition
-        // with skip_text_pages:false has different dependencies.
+        // with skipTextPages:false has different dependencies.
         Ocr => &[],
         TextOverlap => &[Input::Heading, Input::Overlap],
     };
@@ -505,8 +505,8 @@ async fn regression_c8_appended_blank() {
     pairs(&[(Derived::Labels, Input::Count), (Derived::Urls, Input::Count), (Derived::Labels, Input::Labels), (Derived::Urls, Input::Url)]).await;
 }
 
-/// The original address representative was doc_flatten, later replaced by
-/// doc_protect. Keep its combined comments+fields form exercised, including a
+/// The original address representative was file.flatten, later replaced by
+/// file.protect. Keep its combined comments+fields form exercised, including a
 /// merge that the replacement's blanket refusal would conceal.
 #[tokio::test(flavor = "multi_thread")]
 async fn original_whole_flatten_has_scoped_dependencies() {
@@ -534,7 +534,7 @@ async fn recognition_without_skipping_holds_its_image_inputs() {
             cell(
                 &bytes,
                 &theirs,
-                step("ocr.recognize", json!({"pages":[2],"skip_text_pages":false})),
+                step("ocr.recognize", json!({"pages":[2],"skipTextPages":false})),
                 C,
                 &format!("recognition/{writer:?}/{input:?}"),
                 &mut totals,
