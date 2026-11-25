@@ -1,0 +1,23 @@
+format: 1
+id: pdf.collab.drafts/merge-and-restore
+feature: pdf.collab.drafts
+intent: >-
+  A draft forked from the document's replica, with a comment added, merges into the document (which
+  added a comment of its own meanwhile) as one undo step of the person: the comparison beforehand
+  names what the merge does and changes nothing, the engine's document shows both comments, one
+  Undo takes the draft back and Redo brings it again, and a refused merge changes nothing. An
+  earlier snapshot restored over the document brings back its objects under their ids as one undo
+  step; the same snapshot again changes nothing, and another document's is refused.
+layer: unit
+source:
+  kind: synthetic
+  from: bindings/wasm/src/collab.rs (the collaboration fixture)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, filter: "collab::tests::a_draft_merges_in_as_one_undo_step_and_the_document_follows" }
+  - cargo-test: { package: kition-pdf-kit, filter: "collab::tests::a_restored_state_keeps_the_ids_and_undoes_as_one_step" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-25"

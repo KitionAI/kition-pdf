@@ -5,7 +5,7 @@ each package is published with a `package-v<version>` tag.
 
 ## Unreleased
 
-- The engine runs on kition-sdk's plain document model (no CRDT): Kition Desktop is for one person, so a PDF's replica is no longer merged from concurrent edits; changes reach a replica in one order. Conflict objects (the edits a full rewrite could not keep) are gone with the merge, and so is the editor's report of them; the whole-document lease stays. The engine answers receipts itself (`changesSince`). Loro is no longer bundled or linked.
+- The engine runs on kition-sdk's plain document model (no CRDT): Kition Desktop is for one person, so a PDF's replica is no longer merged from concurrent edits; changes reach a replica in one order. Conflict objects (the edits a full rewrite could not keep) are gone with the merge, and so is the editor's report of them; the whole-document lease stays. The engine answers receipts itself (`changesSince`), merges drafts (`mergeChanges`, `compareChanges`) and restores earlier versions (`restoreState`) as one undo step each, names objects by their tool ids in replies (`modelReply`), and serves the object model (`modelDescribe`, `modelBatch`) in the editor. Loro is no longer bundled or linked.
 
 ## 0.1.4
 

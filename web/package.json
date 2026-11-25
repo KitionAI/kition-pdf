@@ -10,6 +10,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
+    "test:contract": "node ../../kition-sdk/tools/check-manifest.mjs ../kit.json --module public/engine",
     "test:unit": "node --test src/rewriteLease.test.mjs src/thumbnailQueue.test.mjs tests/corpus-support.test.mjs tests/performance-support.test.mjs tests/performance-process.test.mjs tests/cache-support.test.mjs tests/raster-geometry-support.test.mjs src/searchGeometry.test.mjs src/searchSession.test.mjs src/textSelection.test.mjs src/pdf.test.mjs tests/selection-support.test.mjs tests/hairline-support.test.mjs tests/hairline-shared.test.mjs tests/mesh-support.test.mjs tests/type3-support.test.mjs tests/font-support.test.mjs tests/dash-support.test.mjs",
     "test:replica": "node tests/replica.mjs chromium && node tests/replica.mjs webkit",
     "test:flow": "node tests/flow.mjs chromium && node tests/flow.mjs webkit",
@@ -34,7 +35,7 @@
     "test:dash-unit": "node --test tests/dash-support.test.mjs"
   },
   "dependencies": {
-    "@kition/sdk": "npm:@kitionstage/sdk@0.5.2-stage.23",
+    "@kition/sdk": "npm:@kitionstage/sdk@0.5.2-stage.25",
     "@kition/tessera": "npm:@kitionstage/tessera@0.1.1-stage.2",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"

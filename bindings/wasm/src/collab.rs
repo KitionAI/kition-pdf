@@ -54,6 +54,7 @@ impl PdfDocument {
                 saved: RefCell::new(None),
                 saved_revision: Cell::new(None),
                 pasteboard: PASTEBOARD,
+                exchange: Default::default(),
             }),
             Err(_) if bytes.is_empty() => Err("the stored replica does not open and there is no file".into()),
             Err(_) => Self::open(name, bytes),
@@ -171,6 +172,72 @@ impl PdfDocument {
         u32::try_from(self.auto.session().kdm_dropped(self.id)).unwrap_or(u32::MAX)
     }
 
+    /// The replicated state, the replica made first if there is none yet.
+    fn replicated_state(&mut self) -> Result<Value, String> {
+        self.auto.session_mut().version(self.id).map_err(engine_error)?;
+        let kdm = self.auto.session().kdm(self.id).ok_or("the document has no replica")?;
+        kdm.replica().state_json().map_err(engine_error)
+    }
+
+    /// Takes a draft's changes (from a replica forked from this one) in as one undo step of
+    /// `origin`'s scope (`mergeChanges`, as `kition-sdk`'s `export_kit_session!` answers it): the
+    /// engine's document follows, and one Undo takes the whole draft back. Add the draft's blobs
+    /// first. Answers `{"damage", "summary"}`, `summary` the `StateDiff` of the replicated state
+    /// before and after. A refused merge changes nothing and fails with the KDM's message.
+    pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<Value, String> {
+        let before = self.replicated_state()?;
+        let damage = self.auto.session_mut().merge_changes(self.id, bytes, origin).map_err(engine_error)?;
+        let after = self.replicated_state()?;
+        Ok(json!({ "damage": damage, "summary": kition_kit::kdm::diff::diff_states(&before, &after).to_json() }))
+    }
+
+    /// What merging a draft's changes would change in the document now, as `StateDiff` JSON;
+    /// nothing changes. Refuses what [`PdfDocument::merge_changes`] refuses.
+    pub fn compare_changes(&mut self, bytes: &[u8]) -> Result<Value, String> {
+        Ok(self.auto.session_mut().compare_changes(self.id, bytes).map_err(engine_error)?.to_json())
+    }
+
+    /// Writes the state a snapshot holds (a checkpoint of this document, the Kit UI protocol's
+    /// `replica/restore`) over the document by object id, as one undo step of `origin`'s scope:
+    /// the engine's document follows. Add the blobs it references first. Nothing changes when the
+    /// states are equal; another document's snapshot is refused.
+    pub fn restore_state(&mut self, snapshot: &[u8], origin: &Origin) -> Result<Damage, String> {
+        self.auto.session_mut().restore_state(self.id, snapshot, origin).map_err(engine_error)
+    }
+
+    /// An agent's reply (JSON text) with every KDM object id it holds as a value or a key named as
+    /// the tool interface names the object (its tool id, KitObjectModel OM9: a comment's `/NM`, a
+    /// page's `page:<id>`, a field's `field:<id>`); unchanged without a replica. Text that merely
+    /// holds an id stays. The document keeps its own ids.
+    pub fn model_reply(&self, value: &str) -> Result<String, String> {
+        let value: Value = serde_json::from_str(value).map_err(|error| format!("the reply is not JSON: {error}"))?;
+        let Some(kdm) = self.auto.session().kdm(self.id) else { return Ok(value.to_string()) };
+        let ids = kition_kit::kdm::tool_ids::ToolIds::of_replica(kdm.replica());
+        Ok(if ids.is_active() { ids.show_json(&value) } else { value }.to_string())
+    }
+
+    /// `model/describe` (`KitObjectModel 1.0`), through the document's change exchange
+    /// (`kition_kit::session::model::Exchange`, as `kition-pdf` serves it headless).
+    pub fn model_describe(&mut self) -> Result<Value, String> {
+        let mut exchange = std::mem::take(&mut self.exchange);
+        let answer = exchange.describe(self);
+        self.exchange = exchange;
+        answer.map_err(|error| error.to_json().to_string())
+    }
+
+    /// `model/batch` through the document's change exchange: the batch's model operations run on
+    /// a scratch replica caught up with this one, and their changes come in as an import; its
+    /// commands run in the engine. A failure's message is the error's JSON (`{code, index,
+    /// message}`).
+    pub fn model_batch(&mut self, request: &str) -> Result<String, String> {
+        let request: Value = serde_json::from_str(request)
+            .map_err(|error| json!({ "code": "invalid-op", "index": null, "message": format!("the batch is not JSON: {error}") }).to_string())?;
+        let mut exchange = std::mem::take(&mut self.exchange);
+        let answer = exchange.batch(self, &request, false);
+        self.exchange = exchange;
+        answer.map(|answer| answer.to_string()).map_err(|error| error.to_json().to_string())
+    }
+
     /// What changed since the version `since` (a receipt, `Replica::changes_since`), as
     /// `kition-sdk`'s `session::web` answers it: `{"changes": StateDiff}`, or `{"changes": null,
     /// "unavailable": "<why>"}` when the replica's log does not hold `since` (another document's
@@ -266,7 +333,15 @@ impl kition_kit::session::model::ReplicaPort for PdfDocument {
         let blobs = decode_blobs(blobs)?;
         let mut auto = Automation::new();
         let id = auto.session_mut().open_with_replica(name.to_owned(), &[], snapshot, blobs, None).map_err(engine_error)?;
-        Ok(Self { auto, id, renderer: RefCell::new(None), saved: RefCell::new(None), saved_revision: Cell::new(None), pasteboard: PASTEBOARD })
+        Ok(Self {
+            auto,
+            id,
+            renderer: RefCell::new(None),
+            saved: RefCell::new(None),
+            saved_revision: Cell::new(None),
+            pasteboard: PASTEBOARD,
+            exchange: Default::default(),
+        })
     }
 }
 
@@ -449,6 +524,137 @@ mod tests {
             assert_eq!(object_ids(&b), ids, "the same object ids after reopening");
             (snapshot, blobs) = (b.snapshot().unwrap(), b.blobs().unwrap());
         }
+    }
+
+    fn person() -> Origin {
+        Origin::person("person:local")
+    }
+
+    /// The contents of the document's comments, sorted.
+    fn contents(doc: &mut PdfDocument) -> Vec<String> {
+        let listed = doc.execute("comment_list", json!({})).unwrap();
+        let mut out: Vec<String> =
+            listed["comments"].as_array().unwrap().iter().filter_map(|comment| comment["contents"].as_str().map(str::to_owned)).collect();
+        out.sort();
+        out
+    }
+
+    /// A draft (a replica forked from the document's) merges in as one step of the person's Undo:
+    /// the comparison beforehand names what the merge does and changes nothing, the engine's
+    /// document follows the merge, an edit made here meanwhile stays, and a refused merge changes
+    /// nothing.
+    #[test]
+    fn a_draft_merges_in_as_one_undo_step_and_the_document_follows() {
+        let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
+        let base = doc.version().unwrap();
+        let mut draft = PdfDocument::open_with_replica("Report.pdf", &[], &doc.snapshot().unwrap(), &doc.blobs().unwrap()).unwrap();
+        note(&mut draft, 2, "from the draft");
+        let (changes, blobs) = (draft.export_changes(&base).unwrap(), draft.blobs_since(&base).unwrap());
+        note(&mut doc, 1, "meanwhile");
+        doc.add_blobs(&blobs).unwrap();
+        let version = doc.version().unwrap();
+        let preview = doc.compare_changes(&changes).unwrap();
+        assert_eq!(doc.version().unwrap(), version, "comparing changes nothing");
+        let answer = doc.merge_changes(&changes, &person()).unwrap();
+        assert_eq!(answer["summary"], preview, "the comparison named what the merge did: {answer}");
+        assert_ne!(answer["damage"], json!({ "kind": "none" }), "{answer}");
+        assert_eq!(contents(&mut doc), ["from the draft", "meanwhile"], "the engine's document follows the merge");
+        assert!(doc.dirty());
+        assert!(PdfDocument::open("Merged.pdf", &doc.save(None).unwrap()).is_ok());
+        assert!(doc.undo().unwrap().0);
+        assert_eq!(contents(&mut doc), ["meanwhile"], "one undo takes the whole draft back");
+        assert!(doc.redo().unwrap().0);
+        assert_eq!(contents(&mut doc), ["from the draft", "meanwhile"]);
+        let at = doc.version().unwrap();
+        assert!(doc.merge_changes(b"not changes", &person()).is_err());
+        assert_eq!(doc.version().unwrap(), at, "a refused merge changes nothing");
+    }
+
+    /// An earlier state (a checkpoint's snapshot) is written over the document by object id as one
+    /// undo step: the replica holds that state's objects again, under their ids, and Undo takes it
+    /// back.
+    #[test]
+    fn a_restored_state_keeps_the_ids_and_undoes_as_one_step() {
+        use kition_kit::kdm::{ActorId, Replica};
+        let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
+        note(&mut doc, 1, "kept");
+        let checkpoint = doc.snapshot().unwrap();
+        note(&mut doc, 2, "later");
+        assert_eq!(contents(&mut doc), ["kept", "later"]);
+        let damage = doc.restore_state(&checkpoint, &person()).unwrap();
+        assert_ne!(damage, Damage::None);
+        assert_eq!(contents(&mut doc), ["kept"], "the engine's document follows the restore");
+        let schema = <kdm_model::PdfModel as kition_kit::session::KitModel>::schema();
+        let then = Replica::load(schema, &checkpoint, ActorId::random()).unwrap().state_json().unwrap();
+        let ids: Vec<String> = then["objects"].as_object().unwrap().keys().cloned().collect();
+        assert_eq!(object_ids(&doc), ids, "the checkpoint's objects, under their ids");
+        let at = doc.version().unwrap();
+        assert_eq!(doc.restore_state(&checkpoint, &person()).unwrap(), Damage::None, "the same state again changes nothing");
+        assert_eq!(doc.version().unwrap(), at);
+        assert!(doc.undo().unwrap().0);
+        assert_eq!(contents(&mut doc), ["kept", "later"], "one undo takes the restore back");
+        let other = PdfDocument::open("Report.pdf", &fixture()).unwrap().snapshot().unwrap();
+        assert!(doc.restore_state(&other, &person()).is_err(), "another document's state is refused");
+    }
+
+    /// The KDM object id of the comment whose tool id is `tool`.
+    fn comment_object(doc: &mut PdfDocument, tool: &str) -> String {
+        let state = doc.replicated_state().unwrap();
+        let found = state["objects"].as_object().unwrap().iter().find(|(_, object)| object["$type"] == "Comment" && object["id"] == tool);
+        found.map(|(id, _)| id.clone()).unwrap_or_else(|| panic!("no Comment with tool id {tool}: {state}"))
+    }
+
+    /// The id the kit lists for the comment whose contents are `text`.
+    fn listed_id(doc: &mut PdfDocument, text: &str) -> String {
+        let listed = doc.execute("comment_list", json!({})).unwrap();
+        let found = listed["comments"].as_array().unwrap().iter().find(|comment| comment["contents"] == text).cloned();
+        found.and_then(|comment| comment["id"].as_str().map(str::to_owned)).unwrap_or_else(|| panic!("no comment {text}: {listed}"))
+    }
+
+    /// A reply names the comment's KDM object by its tool id (its `/NM`, what `comment_list` and
+    /// receipts name it by); text that merely holds an id stays.
+    #[test]
+    fn a_reply_names_objects_by_their_tool_ids() {
+        let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
+        note(&mut doc, 1, "kept");
+        let tool = listed_id(&mut doc, "kept");
+        let object = comment_object(&mut doc, &tool);
+        assert_ne!(object, tool, "the KDM object id is the replica's own, not the comment's /NM");
+        let shown: Value =
+            serde_json::from_str(&doc.model_reply(&json!({ "target": object, "note": format!("about {object}") }).to_string()).unwrap()).unwrap();
+        assert_eq!(shown["target"], json!(tool), "{shown}");
+        assert_eq!(shown["note"], json!(format!("about {object}")), "text that holds an id stays");
+        assert!(doc.model_reply("not json").is_err());
+    }
+
+    /// One id per comment at the tool interface: the id `comment_list` gives is the one the receipt
+    /// names, the one `modelBatch` loads by, and after a save and a reopen with the stored replica
+    /// it still names the same comment, behind which the replica keeps the same KDM object.
+    #[test]
+    fn a_comments_id_from_one_answer_works_in_the_next_call_and_after_a_reopen() {
+        let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
+        let since = doc.version().unwrap();
+        note(&mut doc, 1, "kept");
+        let tool = listed_id(&mut doc, "kept");
+        let receipt: Value = serde_json::from_str(&doc.changes_since(&since)).unwrap();
+        let created: Vec<&str> = receipt["changes"]["created"].as_array().unwrap().iter().filter_map(|object| object["id"].as_str()).collect();
+        assert!(created.contains(&tool.as_str()), "the receipt names the comment by the listed id: {receipt}");
+        let described: Value = doc.model_describe().unwrap();
+        assert_eq!(described["capability"], "KitObjectModel 1.0", "{described}");
+        let load = |doc: &mut PdfDocument, target: &str| -> Value {
+            let request = json!({ "ops": [], "load": [{ "target": target, "fields": ["contents"] }] });
+            serde_json::from_str(&doc.model_batch(&request.to_string()).unwrap()).unwrap()
+        };
+        assert_eq!(load(&mut doc, &tool)["loaded"][0]["fields"]["contents"], "kept");
+        let object = comment_object(&mut doc, &tool);
+        let bytes = doc.save(None).unwrap();
+        let (snapshot, blobs) = (doc.snapshot().unwrap(), doc.blobs().unwrap());
+        doc.mark_saved();
+        let mut reopened = PdfDocument::open_with_replica("Report.pdf", &bytes, &snapshot, &blobs).unwrap();
+        assert_eq!(listed_id(&mut reopened, "kept"), tool, "the listed id survives the reopen");
+        assert_eq!(load(&mut reopened, &tool)["loaded"][0]["fields"]["contents"], "kept");
+        assert_eq!(comment_object(&mut reopened, &tool), object, "the same KDM object behind it");
+        assert!(reopened.model_batch("not json").is_err());
     }
 
     /// A receipt names what changed since a version of this replica, and a version from another

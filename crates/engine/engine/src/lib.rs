@@ -2774,7 +2774,7 @@ impl Session {
             // The replica steps back only this person's entries, the ones the edit wrote, so the
             // edit's scope still bounds what changed: collaborators' edits since were refreshed
             // in full when they arrived (`import_changes`).
-            Some(view) => (view, scope, steps),
+            Some((view, moved)) => (view, scope, moved),
             None => {
                 // Nothing of this step is in the replica (made before a reset): the snapshot, and
                 // the replica follows it.
@@ -2814,7 +2814,7 @@ impl Session {
     fn step_under(doc: &mut Document, i: usize, undo: bool, history: UndoScope) -> Option<String> {
         let steps = *(if undo { &doc.link.undo_steps } else { &doc.link.redo_steps }).get(i)?;
         let current = doc.editor.as_ref()?.cos.clone();
-        let view = doc.link.replay(steps, undo, history, &current)?;
+        let (view, steps) = doc.link.replay(steps, undo, history, &current)?;
         let editor = doc.editor.as_mut()?;
         let (label, ..) = if undo { editor.undo.remove(i) } else { editor.redo.remove(i) };
         if undo {

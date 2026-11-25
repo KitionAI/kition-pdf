@@ -153,14 +153,21 @@ impl BlobIndex {
         self.redo.clear();
     }
 
-    pub fn undone(&mut self, moved: Moved) {
-        self.undo.pop_back();
-        self.redo.push(moved.all());
-    }
-
-    pub fn redone(&mut self, moved: Moved) {
-        self.redo.pop();
-        self.undo.push_back(moved.all());
+    /// An undo (`undo`) or redo took `steps` steps off its stack; with `done`, they became one
+    /// step of the other stack (steps passed over join the one taken back).
+    pub fn stepped(&mut self, moved: Moved, steps: usize, done: bool, undo: bool) {
+        let mut all = moved.all();
+        for _ in 0..steps {
+            let popped = if undo { self.undo.pop_back() } else { self.redo.pop() };
+            all.extend(popped.unwrap_or_default());
+        }
+        if done {
+            if undo {
+                self.redo.push(all);
+            } else {
+                self.undo.push_back(all);
+            }
+        }
     }
 
     pub fn undo_steps(&self) -> usize {

@@ -1,0 +1,21 @@
+format: 1
+id: pdf.agent.observe/one-comment-id
+feature: pdf.agent.observe
+intent: >-
+  A comment has one id at the tool interface, its tool id (its `/NM`): the id `comment_list` gives is
+  the one the receipt (`changesSince`) names and the one `modelBatch` loads it by, `modelReply` names
+  the comment's KDM object by it, and after a save and a reopen with the stored replica it still names
+  the same comment, behind which the replica keeps the same KDM object.
+layer: unit
+source:
+  kind: synthetic
+  from: bindings/wasm/src/collab.rs (the collaboration fixture)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, filter: "collab::tests::a_comments_id_from_one_answer_works_in_the_next_call_and_after_a_reopen" }
+  - cargo-test: { package: kition-pdf-kit, filter: "collab::tests::a_reply_names_objects_by_their_tool_ids" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-25"

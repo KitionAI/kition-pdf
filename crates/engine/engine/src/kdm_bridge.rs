@@ -28,9 +28,9 @@
 //!
 //! A replica that refuses a write or an undo is left ([`Session::kdm_resets`]): the document keeps
 //! working from its own history snapshots, and the next edit makes a fresh replica. Changes reach
-//! a replica in one order (an import that does not follow on is refused), so no edit is written
-//! against a base a rebase replaced; one that appears is dropped, and counted
-//! ([`Session::kdm_dropped`]).
+//! a replica in one order (an import that does not follow on is refused); a draft forked before a
+//! full rewrite and merged after it ([`Session::merge_changes`]) brings edits of the old base,
+//! which are dropped and counted ([`Session::kdm_dropped`]).
 
 use std::sync::Arc;
 
@@ -168,19 +168,19 @@ impl Link {
         undo: bool,
         scope: UndoScope,
         current: &kition_pdf_cos::Document,
-    ) -> Option<kition_pdf_cos::Document> {
+    ) -> Option<(kition_pdf_cos::Document, u32)> {
         let kdm = self.kdm.as_mut()?;
         let (available, can) = if undo { (kdm.steps().0, kdm.can_undo_in(scope)) } else { (kdm.steps().1, kdm.can_redo_in(scope)) };
         if steps == 0 || !can || usize::try_from(steps).unwrap_or(usize::MAX) > available {
             return None;
         }
-        if !(0..steps).all(|_| matches!(if undo { kdm.undo_in(scope) } else { kdm.redo_in(scope) }, Ok((true, _)))) {
+        let Some(moved) = take_steps(kdm, steps, undo, scope) else {
             self.detach(current);
             return None;
-        }
+        };
         let view = kdm.document().clone();
         self.synced = Some(view.clone());
-        Some(view)
+        Some((view, moved))
     }
 
     /// The editor's history was cleared (a revert, a signature).
@@ -212,19 +212,28 @@ impl Link {
 
     /// Steps the replica `steps` times back (`undo`) or forward and answers its view; `None`
     /// when there is no replica, the step holds nothing of it, or it refused (then it is left).
-    pub(crate) fn step(&mut self, steps: u32, undo: bool, scope: UndoScope, current: &kition_pdf_cos::Document) -> Option<kition_pdf_cos::Document> {
+    ///
+    /// Answers the view and how many replica steps the history step now holds on the other stack:
+    /// fewer than `steps` when the replica passed over some (their objects gone since), whose
+    /// replays joined the ones it took back.
+    pub(crate) fn step(
+        &mut self,
+        steps: u32,
+        undo: bool,
+        scope: UndoScope,
+        current: &kition_pdf_cos::Document,
+    ) -> Option<(kition_pdf_cos::Document, u32)> {
         if steps == 0 {
             return None;
         }
         let kdm = self.kdm.as_mut()?;
-        let all = (0..steps).all(|_| matches!(if undo { kdm.undo_in(scope) } else { kdm.redo_in(scope) }, Ok((true, _))));
-        if !all {
+        let Some(moved) = take_steps(kdm, steps, undo, scope) else {
             self.detach(current);
             return None;
-        }
+        };
         let view = kdm.document().clone();
         self.synced = Some(view.clone());
-        Some(view)
+        Some((view, moved))
     }
 
     /// A save of the document to `saved` (the editor's document now): one appended to the base
@@ -263,6 +272,24 @@ impl Link {
     pub(crate) fn dropped(&self) -> u64 {
         self.dropped_before.saturating_add(self.kdm.as_ref().map_or(0, PdfSession::dropped))
     }
+}
+
+/// Takes `steps` of the replica's steps of `scope` off its undo (`undo`) or redo stack, one undo or
+/// redo at a time; answers how many steps they made on the other stack (a step the replica passed
+/// over joins the next one it takes back). `None` when the replica refused, ran out, or took more
+/// than `steps` (a step of an older history step): the caller leaves it.
+fn take_steps(kdm: &mut PdfSession, steps: u32, undo: bool, scope: UndoScope) -> Option<u32> {
+    let wanted = usize::try_from(steps).ok()?;
+    let (mut consumed, mut moved) = (0usize, 0u32);
+    while consumed < wanted {
+        let (taken, done, _) = kdm.step_in(scope, undo).ok()?;
+        if taken == 0 {
+            return None;
+        }
+        consumed += taken;
+        moved += u32::from(done);
+    }
+    (consumed == wanted).then_some(moved)
 }
 
 impl Document {
@@ -430,6 +457,74 @@ impl Session {
         }
         doc.link.trim();
         result.map_err(replica_error)
+    }
+
+    /// Takes a draft's changes (made on a replica forked from this one, `mergeChanges`) into the
+    /// document as one undo step of `origin`'s scope, as a command's edit is: the document follows
+    /// the replica, and the step's undo takes the whole draft back. Add the draft's blobs first
+    /// ([`Session::add_blobs`]). A refused merge changes nothing.
+    pub fn merge_changes(&mut self, id: DocId, bytes: &[u8], origin: &Origin) -> Result<Damage, EditError> {
+        self.take_in(id, origin, "Merge Draft", |kdm| kdm.merge_changes(bytes, origin))
+    }
+
+    /// What merging a draft's changes would change in the document now (a `StateDiff`);
+    /// nothing changes. Refuses what [`Session::merge_changes`] refuses.
+    pub fn compare_changes(&mut self, id: DocId, bytes: &[u8]) -> Result<kdm_model::kition_kit::kdm::diff::StateDiff, EditError> {
+        let kdm = self.active_kdm(id)?;
+        let before = kdm.replica().state_json().map_err(replica_error)?;
+        let after = kdm.merged_state(bytes).map_err(replica_error)?;
+        Ok(kdm_model::kition_kit::kdm::diff::diff_states(&before, &after))
+    }
+
+    /// Writes the state a snapshot holds (a checkpoint of this document, `replica/restore`) over
+    /// the document by object id, as one undo step of `origin`'s scope, taken in as a merged draft
+    /// is ([`Session::merge_changes`]). Add the blobs it references first. Nothing changes when the
+    /// states are equal; another document's snapshot is refused.
+    pub fn restore_state(&mut self, id: DocId, snapshot: &[u8], origin: &Origin) -> Result<Damage, EditError> {
+        self.take_in(id, origin, "Restore Version", |kdm| kdm.restore_state(snapshot, origin))
+    }
+
+    /// One transaction `write` makes on the document's replica, taken into the document as a
+    /// command's step: the document follows the replica, and its history gets the step (whose
+    /// undo steps the replica back) when the transaction is one.
+    fn take_in(
+        &mut self,
+        id: DocId,
+        origin: &Origin,
+        label: &str,
+        write: impl FnOnce(&mut PdfSession) -> kdm_model::kition_kit::session::Result<(u32, Damage)>,
+    ) -> Result<Damage, EditError> {
+        let now = self.now();
+        let history = UndoScope::of(origin.kind).unwrap_or(UndoScope::Person);
+        let kdm = self.active_kdm(id)?;
+        let before = kdm.version();
+        let result = write(&mut *kdm);
+        let changed = kdm.version() != before;
+        let follow = changed && (result.is_ok() || kdm.view_loaded());
+        let doc = self.doc_mut(id)?;
+        if follow {
+            let steps = result.as_ref().map_or(0, |(steps, _)| *steps);
+            if steps > 0
+                && let Some(editor) = doc.editor.as_mut()
+            {
+                let entry = (label.to_owned(), editor.cos.clone(), editor.keys.clone(), crate::Scope::Full, history, editor.edited);
+                editor.undo.push(entry);
+                if editor.undo.len() > crate::MAX_UNDO {
+                    editor.undo.remove(0);
+                }
+                // A new step clears its own history's redo steps, never the other scope's.
+                let keep: Vec<bool> = editor.redo.iter().map(|u| u.4 != history).collect();
+                editor.redo.retain(|u| u.4 != history);
+                let len = editor.undo.len();
+                doc.link.keep_redo(&keep);
+                doc.link.pushed(steps, len);
+            }
+            doc.follow_kdm(now)?;
+        } else if changed && let Some(cos) = doc.editor.as_ref().map(|e| e.cos.clone()) {
+            doc.link.detach(&cos);
+        }
+        doc.link.trim();
+        result.map(|(_, damage)| damage).map_err(replica_error)
     }
 
     /// Opens another replica's snapshot (with the blobs it references) as a new document, a

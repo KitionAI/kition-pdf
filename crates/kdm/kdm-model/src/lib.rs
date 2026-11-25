@@ -21,9 +21,9 @@
 //! **Rebases.** An edit that rewrites the file in full (applying redactions, changing security,
 //! sanitizing, repairing, a signature) renumbers every object, so it becomes a *rebase*
 //! ([`rebase`]): the rewritten bytes are a new base of a new epoch, and the overlay is cleared.
-//! The replica's changes apply in one order, so no edit is ever written against a base a rebase
-//! replaced; the repair ([`KitModel::validate`]) still deletes an overlay entry of another epoch
-//! should one appear, and counts it ([`PdfSession::dropped`]).
+//! The replica's changes apply in one order; only a draft forked before a full rewrite and merged
+//! after it ([`PdfSession::merge_changes`]) brings edits of the old base, and the repair
+//! ([`KitModel::validate`]) deletes them, counted ([`PdfSession::dropped`]).
 //!
 //! **What is not replicated.** Saving incrementally appends the overlay to the file, but the
 //! replica keeps its base: the saved file is the same document, and an undo past the save still

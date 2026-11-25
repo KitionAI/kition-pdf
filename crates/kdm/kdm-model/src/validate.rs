@@ -2,8 +2,8 @@
 //! than the current one are deleted. Their object numbers belong to a base that a rebase (a full
 //! save: redaction, security, sanitizing, a signature) replaced, so they mean nothing in the new
 //! base and cannot be kept in it; the session counts them ([`crate::PdfSession::dropped`]). The
-//! replica's changes apply in one order, so none is expected; the repair keeps the view readable
-//! if one appears.
+//! replica's changes apply in one order, so only a draft forked before a full rewrite and merged
+//! after it ([`crate::PdfSession::merge_changes`]) brings such entries.
 //!
 //! Deterministic: the same state gives the same deletions.
 

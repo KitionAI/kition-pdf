@@ -308,13 +308,24 @@ pub struct PdfDocument {
     saved_revision: Cell<Option<u64>>,
     /// The canvas around the pages (an editor's canvas color).
     pasteboard: [u8; 4],
+    /// The object model's scratch replica (`modelDescribe`, `modelBatch`), caught up with the
+    /// engine's on every call.
+    exchange: kition_kit::session::model::Exchange,
 }
 
 impl PdfDocument {
     fn open_bytes(name: &str, bytes: Vec<u8>) -> Result<Self, String> {
         let mut auto = Automation::new();
         let id = auto.session_mut().open(name.to_owned(), None, Arc::new(bytes), None).map_err(|error| error.to_string())?;
-        Ok(Self { auto, id, renderer: RefCell::new(None), saved: RefCell::new(None), saved_revision: Cell::new(None), pasteboard: PASTEBOARD })
+        Ok(Self {
+            auto,
+            id,
+            renderer: RefCell::new(None),
+            saved: RefCell::new(None),
+            saved_revision: Cell::new(None),
+            pasteboard: PASTEBOARD,
+            exchange: Default::default(),
+        })
     }
 
     /// Takes the time from `clock` (seconds since the Unix epoch) instead of the system clock:
@@ -755,6 +766,11 @@ pub mod web {
         JsError::new(&message)
     }
 
+    /// An origin in the KDM's commit form, the JSON array `[kind, principal, label]`.
+    fn origin_of(origin: &str) -> Result<kition_pdf_engine::Origin, JsError> {
+        kition_pdf_engine::Origin::decode(origin).ok_or_else(|| error(format!("origin is not [kind, principal, label]: {origin}")))
+    }
+
     /// Adds a font file for CID fonts a PDF does not embed; returns the collections it serves.
     #[wasm_bindgen(js_name = addFont, wasm_bindgen = kition_kit::wasm_bindgen)]
     pub fn add_font(bytes: &[u8]) -> u32 {
@@ -853,6 +869,47 @@ pub mod web {
         #[wasm_bindgen(js_name = kdmDropped)]
         pub fn kdm_dropped(&self) -> u32 {
             self.0.kdm_dropped()
+        }
+
+        /// A draft's changes taken in as one undo step, recorded with `origin` (`[kind, principal,
+        /// label]`): `{"damage", "summary"}`. A refusal fails with the KDM's message.
+        #[wasm_bindgen(js_name = mergeChanges)]
+        pub fn merge_changes(&mut self, changes: &[u8], origin: &str) -> Result<String, JsError> {
+            let origin = origin_of(origin)?;
+            self.0.merge_changes(changes, &origin).map(|answer| answer.to_string()).map_err(error)
+        }
+
+        /// What merging a draft's changes would change now, as `StateDiff` JSON; changes nothing.
+        #[wasm_bindgen(js_name = compareChanges)]
+        pub fn compare_changes(&mut self, changes: &[u8]) -> Result<String, JsError> {
+            self.0.compare_changes(changes).map(|answer| answer.to_string()).map_err(error)
+        }
+
+        /// Writes the state a snapshot holds over the document as one change of `origin`; answers
+        /// the damage JSON.
+        #[wasm_bindgen(js_name = restoreState)]
+        pub fn restore_state(&mut self, snapshot: &[u8], origin: &str) -> Result<String, JsError> {
+            let origin = origin_of(origin)?;
+            self.0.restore_state(snapshot, &origin).map(|damage| serde_json::to_string(&damage).unwrap_or_else(|_| "null".to_owned())).map_err(error)
+        }
+
+        /// An agent's reply (JSON text) with its object ids named as the tool interface names them.
+        #[wasm_bindgen(js_name = modelReply)]
+        pub fn model_reply(&self, value: &str) -> Result<String, JsError> {
+            self.0.model_reply(value).map_err(error)
+        }
+
+        /// `model/describe` as JSON text.
+        #[wasm_bindgen(js_name = modelDescribe)]
+        pub fn model_describe(&mut self) -> Result<String, JsError> {
+            self.0.model_describe().map(|answer| answer.to_string()).map_err(error)
+        }
+
+        /// `model/batch`: the request and the answer as JSON text; a failure's message is the
+        /// error's JSON (`{"code", "index", "message"}`).
+        #[wasm_bindgen(js_name = modelBatch)]
+        pub fn model_batch(&mut self, request: &str) -> Result<String, JsError> {
+            self.0.model_batch(request).map_err(error)
         }
 
         /// What changed since the replica version `since`: `{"changes": StateDiff}`, or
