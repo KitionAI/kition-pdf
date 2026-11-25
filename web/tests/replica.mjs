@@ -87,6 +87,8 @@ try {
   await ask('comment_add', { page: 1, type: 'note', at: [40, 40], contents: 'kept' })
   const first = await changesSince(before)
   const made = createdIds(first.changes)
+  const keptId = async () => (await ask('comment_list')).comments.find((comment) => comment.contents === 'kept')?.id ?? null
+  const madeComment = await keptId()
   step('the comment makes replica objects', made.length > 0, made.join(' ') || why(first))
   const id = await docId()
   step('the document has a replica id', typeof id === 'string' && id.length > 0, String(id))
@@ -113,9 +115,9 @@ try {
   await kit.getByTestId('pdf-save').click()
   await until(async () => (await fileVersion()) > stamp)
   const reopened = await storedReplica()
-  step('the next save stores the same document', reopened?.docId === id, String(reopened?.docId))
-  const kept = made.filter((object) => reopened?.exists(object))
-  step('the objects made before the change keep their ids', made.length > 0 && kept.length === made.length, `${kept.length} of ${made.join(' ')}`)
+  step('the next save stores the same document', reopened?.docId === id, `${reopened?.docId} with ${reopened?.objectsOfType('Comment').length} comments`)
+  const now = await keptId()
+  step('the objects made before the change keep their ids', madeComment !== null && made.includes(madeComment) && now === madeComment, `${madeComment} then ${now}`)
   step('the stored replica is still kept', await page.evaluate((path) => window.devHost.history.replica(path) !== null, path))
 
   // The control: the same file opened alone starts another history, which does not hold it.
