@@ -10,7 +10,6 @@ import {
   kitLeases,
   needsParams,
   toast,
-  useConflictReport,
   useKitEditorState,
   useKitSession,
   type FrameTab,
@@ -40,19 +39,15 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const manifest = useMemo(engineManifest, [])
   // An agent step that rewrites the whole file takes the whole document's lease too (UI-L2).
   // A PDF changed outside Kition opens with its stored replica all the same: the engine records
-  // what the file changed as one import, so the document keeps its identity and history (UI-R1).
+  // what the file changed as one import, so the document keeps its identity and object ids (UI-R1).
   const session = useKitSession(host, manifest, describe, {
-    replicaMergesFile: true,
     agentLeaseScope: (command, _params, engine) => engine.invoke<string>('leaseScope', command),
   })
   const [current, setCurrent] = useState(0)
   const defaults = useMemo(() => commandDefaults(current), [current])
   const editor = useKitEditorState(session, host, t, 'pdf', phrase, defaults)
   const { state } = session
-  // Collaborators' edits a full rewrite could not keep are conflict objects: the host is told of them.
   const { doc } = session
-  const readConflicts = useMemo(() => (doc ? () => doc.invoke<string>('kdmConflicts') : null), [doc])
-  useConflictReport(host, readConflicts, session.change.revision)
   // A command that rewrites the whole file takes the whole document's lease while it runs, and no
   // edit runs while someone else holds it (`rewriteLease.ts`).
   const leases = useMemo(() => kitLeases(host), [host])

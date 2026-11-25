@@ -171,8 +171,7 @@ fn a_pdf_opens_from_its_exported_replica_with_its_base() {
 }
 
 /// Changes the document cannot take (here, from a newer build whose schema this kit does not
-/// read) are refused, and the document is closed. The kit's merge repair itself repairs every
-/// merged state (it records edits made against a replaced base as conflict objects).
+/// read) are refused, and the document is closed.
 #[test]
 fn refuses_changes_it_cannot_take_and_closes_the_document() {
     use kition_kit::kdm::{ActorId, Origin, Replica, Schema};

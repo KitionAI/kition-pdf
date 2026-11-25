@@ -171,11 +171,21 @@ impl PdfDocument {
         u32::try_from(self.auto.session().kdm_dropped(self.id)).unwrap_or(u32::MAX)
     }
 
-    /// The document's unresolved conflict objects (standard 2.0 M22), as JSON `[{ id, kind,
-    /// summary }]`: collaborators' edits a full rewrite could not keep, recorded instead of only
-    /// counted. The editor reports them to its host (Kit UI protocol section 7c).
-    pub fn kdm_conflicts(&self) -> String {
-        serde_json::to_string(&self.auto.session().kdm_conflicts(self.id)).unwrap_or_else(|_| "[]".to_owned())
+    /// What changed since the version `since` (a receipt, `Replica::changes_since`), as
+    /// `kition-sdk`'s `session::web` answers it: `{"changes": StateDiff}`, or `{"changes": null,
+    /// "unavailable": "<why>"}` when the replica's log does not hold `since` (another document's
+    /// version, one from before the document was reopened) or there is no replica yet.
+    pub fn changes_since(&self, since: &[u8]) -> String {
+        let Some(kdm) = self.auto.session().kdm(self.id) else {
+            return json!({ "changes": null, "unavailable": "the document has no replica yet" }).to_string();
+        };
+        let replica = kdm.replica();
+        let since = if since.is_empty() { Ok(Version::empty()) } else { Version::decode(since) };
+        match since.and_then(|since| replica.changes_since(&since)) {
+            Ok(changes) => json!({ "changes": changes.to_recorded_json(replica.schema()) }),
+            Err(error) => json!({ "changes": null, "unavailable": error.to_string() }),
+        }
+        .to_string()
     }
 }
 
@@ -411,7 +421,51 @@ mod tests {
         assert_eq!(a.render(0.0, 0.0, 1.0, a.width(), 300).unwrap(), b.render(0.0, 0.0, 1.0, b.width(), 300).unwrap(), "the same pixels");
         assert_eq!(a.kdm_resets() + b.kdm_resets(), 0);
         assert_eq!(a.kdm_dropped() + b.kdm_dropped(), 0);
-        assert_eq!(a.kdm_conflicts(), "[]", "nothing to resolve");
+    }
+
+    /// The object ids of the document's replica, in order.
+    fn object_ids(doc: &PdfDocument) -> Vec<String> {
+        let kdm = doc.auto.session().kdm(doc.id).unwrap();
+        kdm.replica().state_json().unwrap()["objects"].as_object().unwrap().keys().cloned().collect()
+    }
+
+    /// An unchanged document reopened with its stored replica saves the file it opened, byte for
+    /// byte, and its replica keeps the document id and every object id; so does the next reopen,
+    /// from the reopened document's own snapshot.
+    #[test]
+    fn an_unchanged_reopened_document_saves_its_bytes_and_keeps_its_object_ids() {
+        let mut a = PdfDocument::open("Report.pdf", &fixture()).unwrap();
+        note(&mut a, 1, "kept");
+        let bytes = a.save(None).unwrap();
+        let (mut snapshot, mut blobs) = (a.snapshot().unwrap(), a.blobs().unwrap());
+        a.mark_saved();
+        let ids = object_ids(&a);
+        assert!(ids.len() > 1, "the root and the typed objects: {ids:?}");
+        for _ in 0..2 {
+            let mut b = PdfDocument::open_with_replica("Report.pdf", &bytes, &snapshot, &blobs).unwrap();
+            assert!(!b.dirty());
+            assert_eq!(b.save(None).unwrap(), bytes, "an unchanged document saves the file it opened");
+            assert_eq!(b.doc_id(), a.doc_id());
+            assert_eq!(object_ids(&b), ids, "the same object ids after reopening");
+            (snapshot, blobs) = (b.snapshot().unwrap(), b.blobs().unwrap());
+        }
+    }
+
+    /// A receipt names what changed since a version of this replica, and a version from another
+    /// replica's line is unavailable, never an empty change set.
+    #[test]
+    fn changes_since_answers_what_changed_or_why_it_cannot() {
+        let mut a = PdfDocument::open("Report.pdf", &fixture()).unwrap();
+        let since = a.version().unwrap();
+        note(&mut a, 1, "new");
+        let answer: Value = serde_json::from_str(&a.changes_since(&since)).unwrap();
+        assert!(answer["changes"].is_object(), "{answer}");
+        assert!(answer["changes"]["created"].as_array().is_some_and(|created| !created.is_empty()), "the comment's objects: {answer}");
+        let mut other = PdfDocument::open("Report.pdf", &fixture()).unwrap();
+        let foreign = other.version().unwrap();
+        let answer: Value = serde_json::from_str(&a.changes_since(&foreign)).unwrap();
+        assert!(answer["changes"].is_null(), "{answer}");
+        assert!(answer["unavailable"].as_str().is_some_and(|why| !why.is_empty()), "{answer}");
     }
     /// `kition-pdf` serves the object model through `ReplicaPort`: a command and a model edit in
     /// batches reach the engine, and a read-only batch refuses writes.

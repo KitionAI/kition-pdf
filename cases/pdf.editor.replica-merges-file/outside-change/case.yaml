@@ -2,13 +2,12 @@ format: 1
 id: pdf.editor.replica-merges-file/outside-change
 feature: pdf.editor.replica-merges-file
 intent: >-
-  Through the development host with a replica store (`?replica=1&replica-merges-file=1`), the editor
-  adds a bookmark and a comment and saves; another program appends a bookmark to the saved file, and
-  `devHost.reopenChanged` reopens the editor on it with the stored replica. The outside bookmark and the
-  edits from before show, the replica id is the same, the replica's history still holds the version from
-  before the change with the comment's objects under the same ids, and the replica is still kept. Opening
-  the same file alone (`devHost.open`) starts another replica whose history does not hold that version.
-  In Chromium and WebKit.
+  Through the development host with a replica store (`?replica=1`), the editor adds a bookmark and a
+  comment and saves; another program appends a bookmark to the saved file, and `devHost.reopenChanged`
+  reopens the editor on it with the stored replica. The outside bookmark and the edits from before show,
+  the replica id is the same, and the replica the editor saves next is the same document with the
+  comment's objects under the same ids. Opening the same file alone (`devHost.open`) starts another
+  replica whose line does not hold the version from before. In Chromium and WebKit.
 layer: gate
 source:
   kind: probe

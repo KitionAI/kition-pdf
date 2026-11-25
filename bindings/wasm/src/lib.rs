@@ -855,10 +855,11 @@ pub mod web {
             self.0.kdm_dropped()
         }
 
-        /// The document's unresolved conflict objects, as JSON `[{ id, kind, summary }]`.
-        #[wasm_bindgen(js_name = kdmConflicts)]
-        pub fn kdm_conflicts(&self) -> String {
-            self.0.kdm_conflicts()
+        /// What changed since the replica version `since`: `{"changes": StateDiff}`, or
+        /// `{"changes": null, "unavailable"}` when the replica's log does not hold it.
+        #[wasm_bindgen(js_name = changesSince)]
+        pub fn changes_since(&self, since: &[u8]) -> String {
+            self.0.changes_since(since)
         }
 
         /// Opens a file with the replica a host stored for it (the Kit UI protocol's `replica`

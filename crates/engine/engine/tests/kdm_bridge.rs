@@ -1,7 +1,7 @@
 //! The engine's command bridge to each document's KDM replica: one transaction per edit, undo
-//! on the replica keeping collaborators' edits, saves that keep the replica's base, a full
-//! rewrite as a rebase that drops a concurrent edit (counted), reopening with a stored replica,
-//! and random command convergence between sessions.
+//! on the replica keeping another session's edits, saves that keep the replica's base, a full
+//! rewrite as a rebase another session follows, and reopening with a stored replica. Two
+//! sessions exchange their changes in one order.
 
 use std::sync::Arc;
 
@@ -178,44 +178,13 @@ fn a_comment_and_a_form_fill_reach_the_other_session() {
     let (mut a, aid) = open(fixture(2));
     let (mut b, bid) = peer(&mut a, aid);
     a.apply(aid, note(1, "from a")).unwrap_or_else(|e| panic!("{e}"));
+    sync(&mut a, aid, &mut b, bid);
     b.apply(bid, fill("Bob")).unwrap_or_else(|e| panic!("{e}"));
     sync(&mut a, aid, &mut b, bid);
     assert_converged(&mut a, aid, &mut b, bid);
     assert_eq!(comments(&b, bid), [(1, "from a".to_string())]);
     assert_eq!(field(&a, aid).as_deref(), Some("Bob"));
     assert!(b.get(bid).is_some_and(|d| d.dirty), "a collaborator's change is unsaved here");
-}
-
-#[test]
-fn two_sessions_commenting_on_one_page_at_once_keep_both_comments() {
-    let (mut a, aid) = open(fixture(2));
-    let (mut b, bid) = peer(&mut a, aid);
-    a.apply(aid, note(1, "from a")).unwrap_or_else(|e| panic!("{e}"));
-    b.apply(bid, note(1, "from b")).unwrap_or_else(|e| panic!("{e}"));
-    sync(&mut a, aid, &mut b, bid);
-    assert_converged(&mut a, aid, &mut b, bid);
-    assert_eq!(comments(&a, aid), [(1, "from a".to_string()), (1, "from b".to_string())]);
-    // Each undoes only its own comment; the other's stays.
-    a.undo(aid).unwrap_or_else(|e| panic!("{e}"));
-    sync(&mut a, aid, &mut b, bid);
-    assert_converged(&mut a, aid, &mut b, bid);
-    assert_eq!(comments(&b, bid), [(1, "from b".to_string())]);
-}
-
-#[test]
-fn two_sessions_inserting_pages_at_once_keep_both_pages() {
-    let (mut a, aid) = open(fixture(2));
-    let (mut b, bid) = peer(&mut a, aid);
-    a.apply(aid, Edit::InsertBlankPage { at: 1, width: 300.0, height: 792.0 }).unwrap_or_else(|e| panic!("{e}"));
-    b.apply(bid, Edit::InsertBlankPage { at: 2, width: 400.0, height: 792.0 }).unwrap_or_else(|e| panic!("{e}"));
-    sync(&mut a, aid, &mut b, bid);
-    assert_converged(&mut a, aid, &mut b, bid);
-    assert_eq!(pages(&a, aid), 4, "both inserted pages are kept");
-    // Each undoes only its own page; the other's stays.
-    a.undo(aid).unwrap_or_else(|e| panic!("{e}"));
-    sync(&mut a, aid, &mut b, bid);
-    assert_converged(&mut a, aid, &mut b, bid);
-    assert_eq!(pages(&b, bid), 3);
 }
 
 #[test]
@@ -233,19 +202,14 @@ fn undo_after_a_remote_edit_keeps_the_remote_edit() {
 }
 
 #[test]
-fn a_full_rewrite_is_a_rebase_that_drops_a_concurrent_comment_counted() {
+fn a_full_rewrite_is_a_rebase_the_other_session_follows_and_its_undo_brings_the_old_base_back() {
     let (mut a, aid) = open(fixture(2));
     let (mut b, bid) = peer(&mut a, aid);
     a.apply(aid, Edit::Sanitize).unwrap_or_else(|e| panic!("{e}"));
     assert!(a.kdm(aid).is_some_and(|k| k.last_written().rebased), "sanitizing rebases the replica");
-    b.apply(bid, note(1, "lost")).unwrap_or_else(|e| panic!("{e}"));
     sync(&mut a, aid, &mut b, bid);
     assert_converged(&mut a, aid, &mut b, bid);
-    assert!(comments(&b, bid).is_empty(), "the comment made against the old base is dropped");
-    assert!(b.kdm_dropped(bid) > 0, "and counted where it was made");
-    // Nothing is lost silently: the dropped entries are conflict objects on both replicas.
-    assert!(!b.kdm_conflicts(bid).is_empty());
-    assert_eq!(a.kdm_conflicts(aid), b.kdm_conflicts(bid));
+    assert_eq!(a.kdm_dropped(aid) + b.kdm_dropped(bid), 0, "nothing was written against the old base");
     // The undo of the rewrite brings the old base back, and both follow.
     a.undo(aid).unwrap_or_else(|e| panic!("{e}"));
     sync(&mut a, aid, &mut b, bid);
@@ -400,72 +364,6 @@ fn a_replica_is_made_on_request_and_a_missing_document_has_none() {
     let id = s.open("x.pdf", None, blank, None).unwrap_or_else(|e| panic!("{e}"));
     assert!(s.version(id).is_ok());
     assert!(matches!(s.version(DocId(999)), Err(EditError::NoDocument)));
-}
-
-/// xorshift64*: deterministic, no dependency.
-struct Rng(u64);
-
-impl Rng {
-    fn next(&mut self) -> u64 {
-        self.0 ^= self.0 >> 12;
-        self.0 ^= self.0 << 25;
-        self.0 ^= self.0 >> 27;
-        self.0.wrapping_mul(0x2545_F491_4F6C_DD1D)
-    }
-    fn below(&mut self, n: usize) -> usize {
-        if n == 0 { 0 } else { (self.next() % n as u64) as usize }
-    }
-}
-
-/// A random command on `s`'s document; refused ones (a page gone meanwhile) are skipped, as the
-/// editor skips them.
-fn random_command(s: &mut Session, id: DocId, rng: &mut Rng, n: usize) {
-    let count = pages(s, id);
-    let comments: Vec<(usize, usize)> =
-        s.get(id).map(|d| d.info.annotations.iter().filter(|a| a.subtype == "Text").map(|a| (a.page, a.index)).collect()).unwrap_or_default();
-    let edit = match rng.below(12) {
-        0..=2 if count > 0 => note(rng.below(count), &format!("note {n}")),
-        3 if !comments.is_empty() => {
-            let (page, index) = comments[rng.below(comments.len())];
-            Edit::SetAnnotationContents { page, index, text: format!("edited {n}") }
-        }
-        4 if !comments.is_empty() => {
-            let (page, index) = comments[rng.below(comments.len())];
-            Edit::DeleteAnnotation { page, index }
-        }
-        5 | 6 => fill(&format!("value {n}")),
-        7 if count > 0 => Edit::RotatePages { pages: vec![rng.below(count)], degrees: 90 },
-        8 if count > 1 => Edit::MovePages { pages: vec![rng.below(count)], to: rng.below(count) },
-        9 if count > 1 => Edit::DeletePages { pages: vec![rng.below(count)] },
-        10 if count < 8 => Edit::InsertBlankPage { at: rng.below(count + 1), width: 612.0, height: 792.0 },
-        11 => {
-            let _ = if rng.below(2) == 0 { s.undo(id).map(|_| ()) } else { s.redo(id).map(|_| ()) };
-            return;
-        }
-        _ => return,
-    };
-    let _ = s.apply(id, edit);
-}
-
-#[test]
-fn random_commands_on_two_sessions_converge() {
-    for seed in [5u64, 17, 99] {
-        let mut rng = Rng(seed);
-        let (mut a, aid) = open(fixture(3));
-        let (mut b, bid) = peer(&mut a, aid);
-        for n in 0..120 {
-            match rng.below(10) {
-                0 | 1 => sync(&mut a, aid, &mut b, bid),
-                2 => send(&mut a, aid, &mut b, bid),
-                3 => send(&mut b, bid, &mut a, aid),
-                4..=6 => random_command(&mut a, aid, &mut rng, n),
-                _ => random_command(&mut b, bid, &mut rng, n),
-            }
-        }
-        sync(&mut a, aid, &mut b, bid);
-        assert_converged(&mut a, aid, &mut b, bid);
-        assert_eq!(a.kdm_resets(aid) + b.kdm_resets(bid), 0, "seed {seed}: no replica was left");
-    }
 }
 
 #[test]

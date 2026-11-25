@@ -3,6 +3,10 @@
 Changes to Kition PDF, newest first. A version is the kit package version in `kit.json`;
 each package is published with a `package-v<version>` tag.
 
+## Unreleased
+
+- The engine runs on kition-sdk's plain document model (no CRDT): Kition Desktop is for one person, so a PDF's replica is no longer merged from concurrent edits; changes reach a replica in one order. Conflict objects (the edits a full rewrite could not keep) are gone with the merge, and so is the editor's report of them; the whole-document lease stays. The engine answers receipts itself (`changesSince`). Loro is no longer bundled or linked.
+
 ## 0.1.4
 
 - The same kit as 0.1.3, built on kition-sdk 6672663 (the replica's undo passes over an undo group whose changes came to nothing): the 0.1.3 package was built on kition-sdk 6b4d471.

@@ -14,19 +14,16 @@
 //!   trailer when an edit changed it.
 //!
 //! **Edits.** An edit is the overlay entries it changed ([`write_changes`]): adding a comment
-//! writes the comment, its appearance stream and the page whose `/Annots` it joined. Concurrent
-//! edits of different objects merge; two edits of one object keep one of them (last writer
-//! wins, per entry), on every replica alike. Comments added to one page at once are the
-//! exception, and so are pages inserted and form fields added at once: a list (`/Annots`,
-//! `/Kids`, `/Fields`) is one entry, so the view lists every object added since the base that
-//! nobody removed, whichever write of the list won (`lists`).
+//! writes the comment, its appearance stream and the page whose `/Annots` it joined. A list
+//! (`/Annots`, `/Kids`, `/Fields`) is one entry, so the view lists every object added since the
+//! base that nobody removed (`lists`).
 //!
 //! **Rebases.** An edit that rewrites the file in full (applying redactions, changing security,
 //! sanitizing, repairing, a signature) renumbers every object, so it becomes a *rebase*
 //! ([`rebase`]): the rewritten bytes are a new base of a new epoch, and the overlay is cleared.
-//! Overlay entries a peer wrote against the old base at the same time are dropped when the two
-//! merge ([`KitModel::validate`]), and counted ([`PdfSession::dropped`]): Kition Server's lease for
-//! full-save operations is what keeps them from happening at all.
+//! The replica's changes apply in one order, so no edit is ever written against a base a rebase
+//! replaced; the repair ([`KitModel::validate`]) still deletes an overlay entry of another epoch
+//! should one appear, and counts it ([`PdfSession::dropped`]).
 //!
 //! **What is not replicated.** Saving incrementally appends the overlay to the file, but the
 //! replica keeps its base: the saved file is the same document, and an undo past the save still
@@ -41,7 +38,6 @@
 
 mod blob_gc;
 pub mod codec;
-pub mod conflict;
 mod dangling;
 mod held;
 mod ids;

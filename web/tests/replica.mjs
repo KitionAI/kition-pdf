@@ -1,15 +1,16 @@
-// A PDF changed outside Kition keeps its stored replica (Kit UI protocol UI-R1, `replicaMergesFile`):
-// through the development host with a replica store, the editor opens, edits and saves the
-// sample; another program (the engine in Node, without the replica) then appends a bookmark to
-// the saved file, and `devHost.reopenChanged` reopens the editor on it with the stored replica
-// handed over. The outside bookmark shows, the document keeps its replica id, and the replica's
-// history still holds the versions from before the change, with the objects made then under the
-// same ids. Opening the file alone (`devHost.open`) is the control: its history starts over.
+// A PDF changed outside Kition keeps its stored replica (Kit UI protocol UI-R1): through the
+// development host with a replica store, the editor opens, edits and saves the sample; another
+// program (the engine in Node, without the replica) then appends a bookmark to the saved file, and
+// `devHost.reopenChanged` reopens the editor on it with the stored replica handed over. The outside
+// bookmark shows, the document keeps its replica id, and the replica it saves next holds the
+// objects made before the change under the same ids. Opening the file alone (`devHost.open`) is
+// the control: another replica, whose line does not hold the versions from before.
 // Undo steps live in the session, not in the replica, so nothing here asks for undo after a reopen.
 // node tests/replica.mjs [chromium|webkit]
 import { readFile } from 'node:fs/promises'
 import { chromium, webkit } from 'playwright'
 import { createServer } from 'vite'
+import { Replica, parseSchema } from '@kition/sdk/kdm'
 
 const which = process.argv[2] ?? 'chromium'
 const path = 'Sample.pdf'
@@ -54,6 +55,14 @@ const changesSince = (since) =>
 const why = (answer) => answer.error ?? answer.unavailable ?? ''
 const createdIds = (changes) => (changes?.created ?? []).map((object) => object.id).sort()
 const fileVersion = () => page.evaluate((path) => window.devHost.files.get(path).version, path)
+/** The replica the host stores beside the file, as the KDM reads it (`null` without one). */
+const storedReplica = async () => {
+  const bytes = await page.evaluate((path) => {
+    const stored = window.devHost.history.replica(path)
+    return stored ? Array.from(new Uint8Array(stored.snapshot)) : null
+  }, path)
+  return bytes ? Replica.load(parseSchema(schema), new Uint8Array(bytes)) : null
+}
 
 /** Another program's save: the file opened without its replica, a bookmark appended, saved. */
 function outsideChange(bytes) {
@@ -67,7 +76,7 @@ function outsideChange(bytes) {
 }
 
 try {
-  await page.goto(`${origin}/dev.html?replica=1&replica-merges-file=1`)
+  await page.goto(`${origin}/dev.html?replica=1`)
   await page.waitForFunction(() => document.getElementById('status')?.textContent?.includes(' open in '), null, { timeout: 60000 })
   const kit = page.frameLocator('#kit')
   await until(async () => Array.isArray(await titles()))
@@ -97,11 +106,16 @@ try {
   const comments = (await ask('comment_list')).comments
   step('the comment is there', comments.some((comment) => comment.contents === 'kept'), JSON.stringify(comments))
   step('the document keeps its replica id', (await docId()) === id, String(await docId()))
-  const since = await changesSince(before)
-  step("the replica's history still holds the version from before the change", since.changes !== null, why(since))
-  const kept = createdIds(since.changes)
-  step('the objects made before the change keep their ids', made.length > 0 && made.every((object) => kept.includes(object)), `${made.join(' ')} in ${kept.join(' ')}`)
   step('the outside change moved the replica on', (await version()) !== before)
+  // Edited and saved again, the replica it reopened with holds the objects made before the change.
+  await ask('bookmark_add', { page: 1, title: 'After' })
+  const stamp = await fileVersion()
+  await kit.getByTestId('pdf-save').click()
+  await until(async () => (await fileVersion()) > stamp)
+  const reopened = await storedReplica()
+  step('the next save stores the same document', reopened?.docId === id, String(reopened?.docId))
+  const kept = made.filter((object) => reopened?.exists(object))
+  step('the objects made before the change keep their ids', made.length > 0 && kept.length === made.length, `${kept.length} of ${made.join(' ')}`)
   step('the stored replica is still kept', await page.evaluate((path) => window.devHost.history.replica(path) !== null, path))
 
   // The control: the same file opened alone starts another history, which does not hold it.

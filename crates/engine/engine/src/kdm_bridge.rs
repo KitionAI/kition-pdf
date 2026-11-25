@@ -27,8 +27,9 @@
 //! own: never written.
 //!
 //! A replica that refuses a write or an undo is left ([`Session::kdm_resets`]): the document keeps
-//! working from its own history snapshots, and the next edit makes a fresh replica. Edits a peer
-//! made against a base that a concurrent rebase replaced are dropped, and counted
+//! working from its own history snapshots, and the next edit makes a fresh replica. Changes reach
+//! a replica in one order (an import that does not follow on is refused), so no edit is written
+//! against a base a rebase replaced; one that appears is dropped, and counted
 //! ([`Session::kdm_dropped`]).
 
 use std::sync::Arc;
@@ -281,12 +282,6 @@ impl Document {
         self.link.dropped()
     }
 
-    /// The replica's unresolved conflict objects (standard 2.0 M22); none before the document
-    /// has made a replica.
-    pub fn kdm_conflicts(&self) -> Vec<kdm_model::conflict::ConflictSummary> {
-        self.link.kdm.as_ref().map_or_else(Vec::new, PdfSession::conflicts)
-    }
-
     /// The password the replica opens protected bases with: the strongest this state knows.
     pub(crate) fn replica_password(&self) -> Option<String> {
         self.editor.as_ref().and_then(|e| e.keys.reopen.clone().or_else(|| e.keys.render.clone())).or_else(|| self.password.clone())
@@ -361,11 +356,6 @@ impl Session {
     /// rewrite replaced the base they were made against. Hosts show it.
     pub fn kdm_dropped(&self, id: DocId) -> u64 {
         self.get(id).map_or(0, Document::kdm_dropped)
-    }
-
-    /// The document's unresolved conflict objects, as [`Document::kdm_conflicts`] answers them.
-    pub fn kdm_conflicts(&self, id: DocId) -> Vec<kdm_model::conflict::ConflictSummary> {
-        self.get(id).map_or_else(Vec::new, Document::kdm_conflicts)
     }
 
     /// The document's KDM identity, `None` before it has made a replica.

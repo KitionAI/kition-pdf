@@ -187,7 +187,7 @@ features:
     cases: [pdf.editor.display-modes/mode-smoke, regressions/issue-focus-tool-find-bar]
     since: "2026-11-17"
   - id: pdf.editor.replica-merges-file
-    title: "A PDF changed outside Kition opens with its stored replica: the change shows, recorded as one import, and the document keeps its replica id and history (Kit UI protocol UI-R1, replicaMergesFile)"
+    title: "A PDF changed outside Kition opens with its stored replica: the change shows, recorded as one import, and the document keeps its replica id and object ids (Kit UI protocol UI-R1)"
     dimension: [platform, data-safety]
     priority: P1
     status: has

@@ -18,7 +18,6 @@ kition-pdf-forms = { workspace = true }
 kition-pdf-organize = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-sha2 = "0.10"
 
 [dev-dependencies]
 kition-pdf-create = { workspace = true }

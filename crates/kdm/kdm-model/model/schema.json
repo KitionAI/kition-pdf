@@ -105,15 +105,6 @@
         "actions": { "kind": "string", "label": "actions", "sample": false },
         "widgets": { "kind": "json", "label": "widgets", "sample": false }
       }
-    },
-    "Conflict": {
-      "fields": {
-        "kind": { "kind": "string" },
-        "summary": { "kind": "string" },
-        "objects": { "kind": "json" },
-        "kept": { "kind": "json", "optional": true },
-        "by": { "kind": "string", "optional": true }
-      }
     }
   }
 }

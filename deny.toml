@@ -32,9 +32,8 @@ allow-wildcard-paths = true
 [sources]
 unknown-registry = "deny"
 unknown-git = "deny"
-# The Kition platform crates (kition-kit, kition-kdm, kition-headless, ...) and the loro fork the
-# KDM (kition-kdm) builds on, each pinned to a commit.
-allow-git = ["https://github.com/KitionAI/kition-sdk", "https://github.com/KitionPkg/loro"]
+# The Kition platform crates (kition-kit, kition-kdm, kition-headless, ...), pinned to a commit.
+allow-git = ["https://github.com/KitionAI/kition-sdk"]
 
 [advisories]
 yanked = "warn"

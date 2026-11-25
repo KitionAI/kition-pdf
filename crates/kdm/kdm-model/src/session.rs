@@ -120,18 +120,9 @@ impl PdfSession {
     }
 
     /// How many overlay entries the repair dropped because a rebase replaced the base they were
-    /// written against (a peer's edit made while another peer rewrote the file in full). The
-    /// replica that made the edit always counts it (it merges the rebase after its edit); another
-    /// replica counts it only if it merged the edit before its drop. Hosts show it; Kition Server's
-    /// lease for full-save operations prevents it.
+    /// written against. Changes apply in one order, so this stays 0; hosts show it if it does not.
     pub fn dropped(&self) -> u64 {
         self.dropped
-    }
-
-    /// The document's unresolved conflict objects (standard 2.0 M22): peer edits a full rewrite's
-    /// repair could not keep, among others.
-    pub fn conflicts(&self) -> Vec<crate::conflict::ConflictSummary> {
-        crate::conflict::conflicts(&self.replica)
     }
 
     /// Writes what differs between the view and `after` as one transaction of `origin`, then
