@@ -831,6 +831,41 @@
    "type": "object"
   }
  },
+ "file.listRevisions": {
+  "output": {
+   "additionalProperties": true,
+   "properties": {
+    "revisions": {
+     "items": {
+      "additionalProperties": true,
+      "properties": {
+       "bytes": {
+        "type": "number"
+       },
+       "end": {
+        "type": "number"
+       },
+       "revision": {
+        "type": "number"
+       },
+       "signed_by": {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       }
+      },
+      "type": "object"
+     },
+     "type": "array"
+    },
+    "unsaved_changes": {
+     "type": "boolean"
+    }
+   },
+   "type": "object"
+  }
+ },
  "file.render": {
   "output": {
    "additionalProperties": true,
