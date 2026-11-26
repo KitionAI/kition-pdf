@@ -57,7 +57,7 @@ tier = "P0"
 milestone = "M1"
 status = "partial"
 commands = []
-tools = ["doc_info"]
+tools = ["file.getInfo"]
 evidence = []
 notes = "a notice says the file was repaired; Document Properties ▸ Advanced lists the repairs; doc_info reports them"
 
@@ -93,7 +93,7 @@ tier = "P0"
 milestone = "M1"
 status = "shipped"
 commands = ["file.properties"]
-tools = ["doc_revisions"]
+tools = ["file.listRevisions"]
 evidence = ["crates/engine/cos/src/document.rs::looping_revision_chains_stop", "crates/engine/cos/src/document.rs::revision_ends_split_incremental_updates"]
 notes = "/Prev chains followed newest first with a visited set (loops stop and are logged); revisions listed and opened (doc_revisions, doc_open_revision)"
 
@@ -369,7 +369,7 @@ tier = "P1"
 milestone = "M1"
 status = "shipped"
 commands = ["file.properties"]
-tools = ["doc_revisions"]
+tools = ["file.listRevisions"]
 evidence = ["crates/engine/cos/src/document.rs::revision_ends_split_incremental_updates", "crates/engine/automation/tests/automation.rs::digital_ids_signing_and_validation_through_tools"]
 notes = "revision ends from the xref chain (linearized first-page sections fold into their revision); listed in Document Properties ▸ Advanced and by doc_revisions with the signatures covering each"
 
@@ -697,7 +697,7 @@ tier = "P0"
 milestone = "M2"
 status = "partial"
 commands = []
-tools = ["page_render"]
+tools = ["page.render"]
 evidence = ["crates/render/render/src/raster.rs::renders_a_blue_rectangle", "crates/engine/automation/tests/automation.rs::open_inspect_render_and_find", "crates/render/render/src/raster.rs::user_unit_scales_the_page_and_everything_on_it", "crates/render/render/tests/hairline_transform.rs::zero_width_strokes_keep_device_minimum_under_equivalent_transforms", "crates/render/render/tests/hairline_transform.rs::solid_hairline_caps_joins_closed_paths_and_existing_clips_are_transform_invariant", "crates/render/render/tests/dashed_hairline.rs::dashed_hairlines_keep_user_space_runs_and_device_width_in_one_paint", "crates/render/render/tests/dashed_hairline.rs::zero_dash_caps_follow_transformed_straight_tangents", "crates/render/render/tests/mixed_dashed_hairline.rs::mixed_dash_hairlines_keep_semantic_dots_and_positive_runs_under_transforms", "crates/render/render/tests/separated_dashed_hairline.rs::separated_mixed_dash_hairlines_restart_phase_and_keep_one_device_paint", "crates/render/render/tests/pure_zero_separated_hairline.rs::pure_zero_separated_hairlines_restart_phase_and_keep_one_device_paint"]
 notes = "hayro bootstrap renderer; DisplayList replacement and corpus fidelity remain partial. Ordinary zero-width color strokes retain device width and user-space dash phase. Mixed capped single and separate straight sources are supported within bounded preparation. Pure even zero-on patterns now support separate straight subpaths with positive off gaps: 24 exact native/WASM/Chromium/WebKit pairs, all 345 earlier WASM outputs unchanged. The current full native library records 198 passed / 0 failed / 0 ignored (exit 0). Scoped strict lint passes; nine inherited vendor diagnostics remain. Single-source pure-dot behavior is preserved. Pure zero-gap separate paths, connected/curved capped sources, exact positive-on-end and terminal-zero boundaries, general overlap antialiasing, pattern/text/Type3 and nonzero-width fidelity remain open. Boundary diagnostics retain competing hypotheses without choosing a cap rule. Coincident square-cap diagnostics reproduce 264 native/WASM rasters and validate 120 independent fill controls, but 42 of 72 one-stroke overlap observations differ from geometric union; no production fix or general AA acceptance is claimed. Round/noncollinear diagnostics add 246 identical native/WASM rasters and 111 independent controls; all 108 round samples differ from union fills, including single-cap calibrations, so shape approximation must be isolated before an overlap fix. Single-round stage diagnostics add 144 identical native/WASM rasters and 72 polygon controls: stroke/curves match 36/36 exactly, while finely flattened copies match independent capsules within one level in 36/36. Downstream curve flattening dominates the tested loss; production remains unchanged and this is not general AA acceptance. External geometry differences, all 23 corpus candidates and historical failed runs remain recorded. No full-corpus or optimized-performance claim."
 
@@ -1249,7 +1249,7 @@ tier = "P0"
 milestone = "M3"
 status = "partial"
 commands = []
-tools = ["doc_info"]
+tools = ["file.getInfo"]
 evidence = []
 notes = "A bookmark goes to its destination's position and zoom, not just its page. The panel shows the first 10,000 bookmarks, nested 33 levels deep at most, and says so; bookmark_list pages through every bookmark in the file (up to 33 levels deep)."
 
@@ -1273,7 +1273,7 @@ tier = "P0"
 milestone = "M3"
 status = "shipped"
 commands = []
-tools = ["doc_info"]
+tools = ["file.getInfo"]
 evidence = ["crates/render/render/src/inspect.rs::attachments_of_both_kinds_are_listed_and_extracted"]
 notes = ""
 
@@ -1285,7 +1285,7 @@ tier = "P0"
 milestone = "M3"
 status = "shipped"
 commands = []
-tools = ["doc_info"]
+tools = ["file.getInfo"]
 evidence = ["crates/render/render/src/raster.rs::layer_override_hides_content", "crates/engine/engine/src/tests.rs::layer_choices_survive_edits"]
 notes = ""
 
@@ -1345,7 +1345,7 @@ tier = "P0"
 milestone = "M3"
 status = "shipped"
 commands = []
-tools = ["doc_info"]
+tools = ["file.getInfo"]
 evidence = ["crates/render/render/src/inspect.rs::roman_and_alpha_labels", "crates/engine/automation/tests/automation.rs::open_inspect_render_and_find"]
 notes = ""
 
@@ -1357,7 +1357,7 @@ tier = "P0"
 milestone = "M3"
 status = "shipped"
 commands = ["edit.find"]
-tools = ["text_find"]
+tools = ["text.find"]
 evidence = ["crates/engine/automation/tests/automation.rs::open_inspect_render_and_find", "crates/render/render/src/text.rs::identity_v_columns_are_searchable_in_reading_order"]
 notes = "Horizontal and WMode 1 vertical text are grouped independently, including a horizontal heading above right-to-left vertical columns. Complex interleaved flows still use a geometric reading-order heuristic."
 
@@ -1405,7 +1405,7 @@ tier = "P1"
 milestone = "M3"
 status = "partial"
 commands = ["edit.advanced_search"]
-tools = ["text_find"]
+tools = ["text.find"]
 evidence = []
 notes = "Search panel (⇧⌘F): every match grouped by page with its context, whole words / case options, click to go; shares the find bar's search (closing the panel moves it to the bar)"
 
@@ -1417,7 +1417,7 @@ tier = "P1"
 milestone = "M12"
 status = "partial"
 commands = ["edit.advanced_search"]
-tools = ["text_find"]
+tools = ["text.find"]
 evidence = []
 notes = "in the current document, as a side panel; searching other open documents, folders and indexes is still to come"
 
@@ -1477,7 +1477,7 @@ tier = "P0"
 milestone = "M3"
 status = "shipped"
 commands = []
-tools = ["text_select"]
+tools = ["text.select"]
 evidence = ["crates/engine/automation/tests/text_selection.rs::inclusive_full_partial_reverse_and_single_glyph_ranges_follow_rotations_and_crops"]
 notes = "Drag to select; ⇧-click extends the selection to the click, keeping its anchor (same page only); with the Select tool, quick clicks select a word (two), the line (three) or all the text on the page (four). The markup and Redact tools mark a double-clicked word and stop there. Missing: selection across pages (dragging or ⇧-clicking onto another page), paragraph selection, and ⌘A across the whole document (it selects the current page). In the kit, mouse drag selects inclusive glyph ranges across up to 64 pages through read-only text_select, with live rotation/crop/zoom highlights, cancellation and revision cleanup. The browser harness is web/tests/selection.mjs. Shift extension, multiple-click word/line selection, automatic edge scrolling, touch/pen and real-font fidelity are not covered; preceding notes describe the historical native UI."
 
@@ -1489,7 +1489,7 @@ tier = "P2"
 milestone = "M3"
 status = "shipped"
 commands = ["edit.column_select"]
-tools = ["text_extract", "text_select"]
+tools = ["text.extract", "text.select"]
 evidence = ["crates/render/render/src/text.rs::a_column_selection_takes_one_table_column", "crates/render/render/src/text.rs::a_column_selection_across_columns_reads_row_by_row", "crates/render/render/src/text.rs::right_to_left_rows_read_right_to_left", "crates/render/render/src/text.rs::vertical_lines_keep_reading_order", "crates/engine/automation/tests/automation.rs::text_extract_with_a_rect_takes_one_column", "crates/engine/automation/tests/text_selection.rs::column_selection_uses_glyph_centers_and_retains_only_selected_line_runs"]
 notes = "Holding Alt (Option on macOS) when a drag starts selects only the text inside the rectangle drawn, with the Select tool, the text markup tools and Redact (with Highlight and Redact the drag must start on text, since off text they draw an area box). Edit ▸ Column select does the same with a plain drag. A glyph counts when its centre is inside. Copy gives one row per visual line, top to bottom; pieces side by side (table cells) are separated by a tab, right to left in right-to-left rows; vertical text keeps reading order. text_extract takes the same rectangle as rect. Platforms: on Linux desktops whose window manager moves windows with Alt-drag (Xfce, Cinnamon and MATE by default; KDE Plasma 5 and other setups with Alt as the window modifier; GNOME and Plasma 6 use Super) the drag never reaches Kition PDF, so use Edit ▸ Column select or change that setting. On Windows, releasing Alt does not open a system menu (the window has no native menu). The web build has the same Linux caveat in the browser. Checked by hand on Linux (Fedora) with the Column select tool; Alt/Option-drag, and macOS and Windows generally, rest on the kittest tests. Missing: selection across pages, ⇧-click extending a column, a default shortcut, and a check of Acrobat's own copied-text format (not observed). In the kit, Alt-drag uses text_select column mode and clamps to the anchor page; copy retains existing visual row order (180-degree rows reverse visually). Mouse fixture coverage is in web/tests/selection.mjs. Cross-page columns, modifier-free column mode and real table/script fidelity remain open for this kit; preceding notes describe the historical native UI."
 
@@ -1501,7 +1501,7 @@ tier = "P0"
 milestone = "M3"
 status = "shipped"
 commands = []
-tools = ["text_select"]
+tools = ["text.select"]
 evidence = ["crates/engine/automation/tests/text_selection.rs::selection_is_read_only_in_tool_metadata_bytes_history_and_document_summary"]
 notes = "Copy selection writes current selected plain text inside the click activation; native copy events from the canvas supply text/plain without intercepting input fields. web/tests/selection.mjs verifies trusted keyboard events and separately classifies system clipboard reads. Native evidence covers read-only selection text; clipboard behavior requires browser evidence. Rich HTML/layout clipboard formats are not implemented."
 
@@ -1537,7 +1537,7 @@ tier = "P1"
 milestone = "M3"
 status = "partial"
 commands = ["edit.snapshot"]
-tools = ["page_render"]
+tools = ["page.render"]
 evidence = []
 notes = "copies the area at the current zoom to the clipboard as an image"
 
@@ -1817,7 +1817,7 @@ tier = "P0"
 milestone = "M7"
 status = "partial"
 commands = ["edit.edit_text"]
-tools = ["text_lines", "text_paragraphs", "text_edit"]
+tools = ["text.listLines", "text.listParagraphs", "text.edit"]
 evidence = ["crates/engine/edit/src/tests.rs::paragraphs_are_found_and_rewrapped", "crates/engine/edit/src/tests.rs::text_lines_are_found_and_replaced_in_place", "crates/engine/automation/tests/automation.rs::editing_existing_text_through_tools", "crates/engine/edit/src/tests.rs::a_line_whose_operator_starts_the_next_stream_can_be_edited", "crates/engine/automation/tests/automation.rs::a_line_split_across_content_streams_is_listed_and_edited"]
 notes = "click a paragraph box and retype it in place (font reused or Helvetica substituted, colour and spacing kept, rewrapped); a page's /Contents pieces are parsed joined, so a line whose operands and operator sit in different pieces is listed and edited (lines and paragraphs still don't join across pieces; Edit image still parses each piece alone); drag a box to move it or its right-edge handle to rewrap it (edit.text-move-resize); per-character formatting changes are next"
 
@@ -1829,7 +1829,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.edit_text"]
-tools = ["text_edit"]
+tools = ["text.edit"]
 evidence = ["crates/engine/edit/src/tests.rs::japanese_fallback_reports_the_face_after_save_and_reopen", "crates/engine/edit/src/tests.rs::japanese_paragraph_keeps_ideographic_spaces", "crates/engine/edit/src/tests.rs::paragraphs_are_found_and_rewrapped", "crates/engine/edit/src/tests.rs::text_lines_are_found_and_replaced_in_place", "crates/engine/automation/tests/automation.rs::editing_existing_text_through_tools"]
 notes = "edited paragraphs are rewrapped to the box width with the font's own advance widths and the original line spacing, starting at the original text matrix; text state and fill colour restored after; a single line grows to the right margin; U+3000 ideographic spaces are preserved (including paragraph edges and repeated spaces); Japanese Type 3 fallback reports its face through FontDescriptor/FontName after editing and save/reopen; source family/weight matching remains limited"
 
@@ -1841,7 +1841,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.edit_text"]
-tools = ["text_edit"]
+tools = ["text.edit"]
 evidence = ["crates/engine/edit/src/tests.rs::paragraphs_move_and_rewrap_to_a_new_width", "crates/engine/automation/tests/automation.rs::editing_existing_text_through_tools"]
 notes = "existing paragraphs: drag the box to move it, drag the handle on its right edge to rewrap it to a new width (upright pages); the move is applied in page space through the paragraph's CTM, in its own q … Q; a click still opens it for typing"
 
@@ -1853,7 +1853,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.edit_text"]
-tools = ["text_paragraphs"]
+tools = ["text.listParagraphs"]
 evidence = ["crates/engine/edit/src/tests.rs::paragraphs_are_found_and_rewrapped", "crates/engine/edit/src/tests.rs::text_lines_are_found_and_replaced_in_place", "crates/engine/automation/tests/automation.rs::editing_existing_text_through_tools"]
 notes = "lines grouped into paragraphs by stream, font, size, left alignment and regular baseline spacing; hyphenated line ends are joined"
 
@@ -1865,7 +1865,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.edit_text"]
-tools = ["text_edit"]
+tools = ["text.edit"]
 evidence = ["crates/engine/edit/src/tests.rs::missing_glyphs_substitute_helvetica_and_impossible_text_is_refused", "crates/support/fonts/src/pdf.rs::subset_fonts_only_encode_the_glyphs_they_have", "crates/support/fonts/src/pdf.rs::composite_fonts_use_to_unicode"]
 notes = "the line's font is reused when every character has a code and a glyph (ToUnicode, encodings, Differences; subset glyph checks); otherwise Helvetica (WinAnsi) is used and reported; text no font can show is refused"
 
@@ -1877,7 +1877,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.edit_text", "edit.text"]
-tools = ["text_edit", "content_update"]
+tools = ["text.edit", "content.set"]
 evidence = ["crates/engine/edit/src/tests.rs::paragraphs_take_new_formatting", "crates/engine/automation/tests/automation.rs::editing_existing_text_through_tools"]
 notes = "existing paragraphs and added text: font family (Helvetica, Times, Courier) with bold and italic, size, colour; existing paragraphs are rewrapped"
 
@@ -1889,7 +1889,7 @@ tier = "P1"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.edit_text"]
-tools = ["text_edit"]
+tools = ["text.edit"]
 evidence = ["crates/engine/edit/src/tests.rs::justify_underline_and_spacing", "crates/engine/edit/src/tests.rs::paragraphs_take_new_formatting"]
 notes = "bold and italic through the standard families; underline drawn under each line in the text colour"
 
@@ -1913,7 +1913,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.edit_text", "edit.text"]
-tools = ["text_edit", "content_update"]
+tools = ["text.edit", "content.set"]
 evidence = ["crates/engine/edit/src/tests.rs::justify_underline_and_spacing", "crates/engine/edit/src/tests.rs::paragraphs_take_new_formatting"]
 notes = "left, centre, right and justify (word spacing per line, last line left) for existing paragraphs and added text"
 
@@ -1925,7 +1925,7 @@ tier = "P1"
 milestone = "M7"
 status = "partial"
 commands = ["edit.edit_text"]
-tools = ["text_edit"]
+tools = ["text.edit"]
 evidence = ["crates/engine/edit/src/tests.rs::justify_underline_and_spacing", "crates/engine/edit/src/tests.rs::paragraphs_take_new_formatting"]
 notes = "line spacing (1, 1.15, 1.5, 2 × size or any multiple); space between paragraphs is not adjustable yet"
 
@@ -1937,7 +1937,7 @@ tier = "P1"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.edit_text"]
-tools = ["text_edit"]
+tools = ["text.edit"]
 evidence = ["crates/engine/edit/src/tests.rs::justify_underline_and_spacing", "crates/engine/edit/src/tests.rs::paragraphs_take_new_formatting"]
 notes = "character spacing in points and horizontal scaling in percent for a paragraph (Tc, Tz), rewrapped"
 
@@ -1961,7 +1961,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.text"]
-tools = ["page_add_text", "content_update"]
+tools = ["page.addText", "content.set"]
 evidence = ["crates/engine/automation/tests/automation.rs::adding_content_through_tools", "crates/engine/edit/src/tests.rs::added_text_and_images_are_page_content_that_stays_editable", "crates/engine/engine/src/tests.rs::added_text_and_images_render_and_stay_editable", "crates/engine/edit/src/tests.rs::added_arabic_text_is_shaped_in_display_order_and_stays_searchable", "bindings/wasm/tests/document_fonts.rs::added_text_uses_the_hosts_fonts"]
 notes = "page content, editable later (retype, move, restyle); standard fonts, Windows-1252 text, or a document font (kition-fonts, or one the host added) by family; characters the standard fonts lack (Chinese, Japanese) come from a document font that has them, and the standard families from Arimo, Tinos and Cousine when present, all as Type 3 outlines with ToUnicode, so the page embeds what it shows. Arabic text is shaped with the kition-fonts Arab face (Type 3 outlines with ToUnicode) and laid out in bidirectional display order; it is drawn regular whatever the bold/italic setting, Hebrew and other right-to-left scripts are not covered, and typing in the box is still left to right (misc.rtl-ui). Each click on the page keeps the box being typed and starts a new one; Done and Discard beside the box"
 
@@ -2033,7 +2033,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.edit_text", "edit.image"]
-tools = ["image_edit"]
+tools = ["image.edit"]
 evidence = ["crates/engine/edit/src/tests.rs::page_images_move_turn_replace_and_delete", "crates/engine/automation/tests/automation.rs::editing_page_images_through_tools"]
 notes = "existing page images (right-click ▸ Replace Image) and added images: the new picture is drawn in the same place"
 
@@ -2045,7 +2045,7 @@ tier = "P0"
 milestone = "M7"
 status = "partial"
 commands = ["edit.image"]
-tools = ["content_update"]
+tools = ["content.set"]
 evidence = ["crates/engine/engine/src/tests.rs::added_images_rotate_flip_and_crop_as_drawn", "crates/engine/automation/tests/automation.rs::adding_content_through_tools"]
 notes = "for added images: trim each side, clipped"
 
@@ -2057,7 +2057,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.edit_text"]
-tools = ["image_edit"]
+tools = ["image.edit"]
 evidence = ["crates/engine/edit/src/tests.rs::page_images_move_turn_replace_and_delete", "crates/engine/automation/tests/automation.rs::editing_page_images_through_tools"]
 notes = "existing raster images and grouped Form artwork: rotate either way about the centre, flip horizontally or vertically (a q/cm/Q wrapper); Forms stay intact as groups; added images too"
 
@@ -2069,7 +2069,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.edit_text"]
-tools = ["image_edit"]
+tools = ["image.edit"]
 evidence = ["crates/engine/edit/src/tests.rs::form_artwork_edits_only_the_selected_placement", "crates/engine/automation/tests/automation.rs::editing_form_artwork_through_tools", "crates/engine/edit/src/tests.rs::page_images_move_turn_replace_and_delete", "crates/engine/automation/tests/automation.rs::editing_page_images_through_tools"]
 notes = "existing raster images and grouped Form artwork: select, drag to move, drag a corner to resize keeping proportions; Delete removes one placement. Forms include their nested content as a group; individual internal elements and inline images are not supported. See docs/features/editing-images.md; added images too"
 
@@ -2141,7 +2141,7 @@ tier = "P1"
 milestone = "M11"
 status = "partial"
 commands = ["edit.edit_text"]
-tools = ["object_list", "object_move"]
+tools = ["object.list", "object.move"]
 evidence = ["crates/engine/automation/tests/automation.rs::mixed_objects_move_through_tools_with_generation_and_one_undo", "crates/engine/edit/src/tests.rs::group_moves_preserve_glyph_bytes_and_unselected_text_state", "crates/engine/engine/src/tests.rs::mixed_object_moves_are_one_undo_step_and_survive_save_reopen"]
 notes = "Same-page mixed selection: Shift/Ctrl/Command-click toggles, empty-space marquee (additive with modifiers), drag previews and one atomic undo step for existing paragraphs, Image/Form XObjects and added text/images. Source glyph bytes, fonts and kerning retained; unselected text and shared Form resources stay put. Generation-scoped references with optional automation guard; count and geometry bounded; unsupported vertical/clipping text refused without partial changes. Still missing: arbitrary paths, inline images, cross-page movement, group resizing, arrange/align and a general object editor. See docs/features/editing-multiple-objects.md."
 
@@ -2165,7 +2165,7 @@ tier = "P1"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.link"]
-tools = ["link_add"]
+tools = ["link.add"]
 evidence = ["crates/engine/automation/tests/automation.rs::links_through_tools", "crates/engine/annot/src/tests.rs::links_are_added_edited_listed_and_removed"]
 notes = "drag a rectangle; go to a page or open a web page"
 
@@ -2177,7 +2177,7 @@ tier = "P1"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.link"]
-tools = ["link_edit"]
+tools = ["link.edit"]
 evidence = ["crates/engine/automation/tests/automation.rs::links_through_tools", "crates/engine/annot/src/tests.rs::links_are_added_edited_listed_and_removed"]
 notes = "visible/invisible rectangle, highlight, thickness, solid/dashed/underline, colour; action"
 
@@ -2189,7 +2189,7 @@ tier = "P1"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.links_from_urls"]
-tools = ["links_from_urls"]
+tools = ["link.addFromUrls"]
 evidence = ["crates/engine/engine/src/tests.rs::links_from_urls_and_link_edits", "crates/engine/automation/tests/automation.rs::links_through_tools", "crates/engine/annot/src/tests.rs::urls_are_found_in_text"]
 notes = "http(s):// and www. addresses; already-linked text skipped"
 
@@ -2213,7 +2213,7 @@ tier = "P1"
 milestone = "M7"
 status = "partial"
 commands = ["edit.link"]
-tools = ["link_add"]
+tools = ["link.add"]
 evidence = ["crates/engine/annot/src/tests.rs::links_are_added_edited_listed_and_removed"]
 notes = "go to a page (Fit view); named destinations and zoom pending"
 
@@ -2225,7 +2225,7 @@ tier = "P1"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.link"]
-tools = ["link_add"]
+tools = ["link.add"]
 evidence = ["crates/engine/annot/src/tests.rs::links_are_added_edited_listed_and_removed", "crates/engine/automation/tests/automation.rs::links_through_tools"]
 notes = "Opening a document's link or button URI asks first; only http, https and mailto addresses are offered, and an email address that asks the email app to attach or insert a local file is refused. The prompt shows the host as the browser receives it: international hosts in punycode, lookalikes that mix alphabets flagged, numeric hosts in their usual form."
 
@@ -2333,7 +2333,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.header_footer"]
-tools = ["doc_header_footer"]
+tools = ["file.setHeaderFooter"]
 evidence = ["crates/engine/edit/src/tests.rs::header_and_footer_are_drawn_in_display_space_and_wrap_the_original_content", "crates/engine/engine/src/tests.rs::headers_footers_watermarks_and_backgrounds_show_update_and_remove"]
 notes = "Helvetica only (no font choice yet); drawn in display space on rotated pages; artifact-tagged"
 
@@ -2345,7 +2345,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.header_footer.update", "edit.header_footer.remove"]
-tools = ["doc_header_footer", "doc_remove_marks"]
+tools = ["file.setHeaderFooter", "file.removeMarks"]
 evidence = ["crates/engine/edit/src/tests.rs::replace_and_remove_restore_the_original_content"]
 notes = "recognises Kition PDF marks; Acrobat-made headers are not detected yet"
 
@@ -2357,7 +2357,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.header_footer"]
-tools = ["doc_header_footer"]
+tools = ["file.setHeaderFooter"]
 evidence = ["crates/engine/edit/src/tests.rs::tokens_expand", "crates/engine/engine/src/tests.rs::headers_footers_watermarks_and_backgrounds_show_update_and_remove"]
 notes = "<<1>>, <<n>>, <<1 of n>>, <<Page 1 of n>>, dates, Bates"
 
@@ -2369,7 +2369,7 @@ tier = "P1"
 milestone = "M7"
 status = "partial"
 commands = ["edit.header_footer"]
-tools = ["doc_header_footer"]
+tools = ["file.setHeaderFooter"]
 evidence = []
 notes = "all / from–to, all / even / odd"
 
@@ -2393,7 +2393,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.watermark"]
-tools = ["doc_watermark"]
+tools = ["file.setWatermark"]
 evidence = ["crates/engine/edit/src/tests.rs::watermarks_rotate_fade_and_can_go_behind", "crates/engine/automation/tests/automation.rs::headers_watermarks_and_backgrounds_through_tools"]
 notes = "Helvetica; fit-to-page or a size"
 
@@ -2405,7 +2405,7 @@ tier = "P1"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.watermark"]
-tools = ["doc_watermark"]
+tools = ["file.setWatermark"]
 evidence = ["crates/engine/engine/src/tests.rs::backgrounds_and_watermarks_from_files"]
 notes = "an image or a page of a PDF, scaled relative to the page, rotated, with opacity, behind or on top"
 
@@ -2417,7 +2417,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.watermark.update", "edit.watermark.remove"]
-tools = ["doc_watermark", "doc_remove_marks"]
+tools = ["file.setWatermark", "file.removeMarks"]
 evidence = ["crates/engine/edit/src/tests.rs::replace_and_remove_restore_the_original_content", "crates/engine/engine/src/tests.rs::headers_footers_watermarks_and_backgrounds_show_update_and_remove"]
 notes = ""
 
@@ -2429,7 +2429,7 @@ tier = "P1"
 milestone = "M7"
 status = "partial"
 commands = ["edit.watermark"]
-tools = ["doc_watermark"]
+tools = ["file.setWatermark"]
 evidence = ["crates/engine/edit/src/tests.rs::watermarks_rotate_fade_and_can_go_behind"]
 notes = "rotation, opacity, behind/on top; no position offsets, scale or print/screen-only variants in the UI yet"
 
@@ -2441,7 +2441,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.background"]
-tools = ["doc_background"]
+tools = ["file.setBackground"]
 evidence = ["crates/engine/engine/src/tests.rs::headers_footers_watermarks_and_backgrounds_show_update_and_remove", "crates/engine/engine/src/tests.rs::backgrounds_and_watermarks_from_files", "crates/engine/organize/src/tests.rs::a_page_becomes_a_form_xobject_upright"]
 notes = "colour, or a picture from a file (an image or a page of a PDF) scaled relative to the page"
 
@@ -2453,7 +2453,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.background.update", "edit.background.remove"]
-tools = ["doc_background", "doc_remove_marks"]
+tools = ["file.setBackground", "file.removeMarks"]
 evidence = ["crates/engine/edit/src/tests.rs::replace_and_remove_restore_the_original_content", "crates/engine/engine/src/tests.rs::headers_footers_watermarks_and_backgrounds_show_update_and_remove"]
 notes = ""
 
@@ -2477,7 +2477,7 @@ tier = "P1"
 milestone = "M7"
 status = "partial"
 commands = ["edit.bates", "edit.header_footer"]
-tools = ["doc_header_footer"]
+tools = ["file.setHeaderFooter"]
 evidence = ["crates/engine/edit/src/tests.rs::tokens_expand"]
 notes = "Bates ▸ Add opens Header & Footer with a Bates number; no multi-file batch yet"
 
@@ -2537,7 +2537,7 @@ tier = "P0"
 milestone = "M7"
 status = "shipped"
 commands = ["edit.edit_text"]
-tools = ["text_edit"]
+tools = ["text.edit"]
 evidence = ["crates/engine/edit/src/tests.rs::paragraphs_take_new_formatting", "crates/engine/automation/tests/automation.rs::editing_existing_text_through_tools"]
 notes = "Edit a PDF ▸ Format text shows the paragraph being edited (family, bold/italic guessed from its font, size) and applies changes at once as one undo step each, keeping the paragraph open"
 
@@ -2589,7 +2589,7 @@ tier = "P0"
 milestone = "M4"
 status = "shipped"
 commands = ["page.rotate", "page.rotate_ccw"]
-tools = ["page_rotate"]
+tools = ["page.rotate"]
 evidence = ["crates/engine/organize/src/tests.rs::rotate_uses_inherited_rotation_and_round_trips"]
 notes = ""
 
@@ -2601,7 +2601,7 @@ tier = "P1"
 milestone = "M4"
 status = "shipped"
 commands = ["page.rotate_dialog"]
-tools = ["page_rotate"]
+tools = ["page.rotate"]
 evidence = ["crates/engine/automation/tests/automation.rs::organizing_with_filters_bookmark_splits_and_extract_options", "crates/engine/engine/src/tests.rs::split_by_size_and_bookmarks_and_page_filters"]
 notes = "Rotate Pages: all/selection/range; even/odd; landscape/portrait"
 
@@ -2613,7 +2613,7 @@ tier = "P0"
 milestone = "M4"
 status = "shipped"
 commands = ["page.delete"]
-tools = ["page_delete"]
+tools = ["page.delete"]
 evidence = ["crates/engine/organize/src/tests.rs::delete_keeps_inherited_attributes_on_survivors", "crates/engine/organize/src/tests.rs::cannot_delete_every_page_or_missing_pages"]
 notes = ""
 
@@ -2625,7 +2625,7 @@ tier = "P0"
 milestone = "M4"
 status = "shipped"
 commands = []
-tools = ["page_move"]
+tools = ["page.move"]
 evidence = ["crates/engine/organize/src/tests.rs::move_pages_reorders"]
 notes = ""
 
@@ -2649,7 +2649,7 @@ tier = "P0"
 milestone = "M4"
 status = "shipped"
 commands = ["page.insert_blank"]
-tools = ["page_insert_blank"]
+tools = ["page.insertBlank"]
 evidence = ["crates/engine/organize/src/tests.rs::inserts_blank_page", "crates/engine/engine/src/tests.rs::insert_blank_between_pages_keeps_both_neighbours"]
 notes = ""
 
@@ -2769,7 +2769,7 @@ tier = "P0"
 milestone = "M4"
 status = "shipped"
 commands = ["page.duplicate"]
-tools = ["page_duplicate"]
+tools = ["page.duplicate"]
 evidence = ["crates/engine/organize/src/tests.rs::duplicate_pages_inserts_copies_after_the_last"]
 notes = "copies share fonts and images with the originals"
 
@@ -2817,7 +2817,7 @@ tier = "P1"
 milestone = "M4"
 status = "partial"
 commands = ["page.organize"]
-tools = ["page_rotate"]
+tools = ["page.rotate"]
 evidence = ["crates/engine/engine/src/tests.rs::split_by_size_and_bookmarks_and_page_filters"]
 notes = "Organize ▸ Select: all, odd, even, landscape, portrait; ranges via the page tools"
 
@@ -3081,7 +3081,7 @@ tier = "P1"
 milestone = "M4"
 status = "shipped"
 commands = ["page.number"]
-tools = ["page_number"]
+tools = ["page.number"]
 evidence = ["crates/engine/organize/src/tests.rs::number_pages_like_acrobat", "crates/engine/engine/src/tests.rs::number_pages_shows_in_the_viewer_and_undoes", "crates/engine/automation/tests/automation.rs::numbering_pages_through_tools"]
 notes = ""
 
@@ -3093,7 +3093,7 @@ tier = "P1"
 milestone = "M4"
 status = "shipped"
 commands = ["page.boxes"]
-tools = ["page_set_box"]
+tools = ["page.setBox"]
 evidence = ["crates/engine/organize/src/tests.rs::page_boxes_default_inherit_and_set"]
 notes = "crop/trim/bleed/art/media, margins in pt/in/mm, page ranges, preview; no Remove white margins yet"
 
@@ -3105,7 +3105,7 @@ tier = "P1"
 milestone = "M4"
 status = "partial"
 commands = ["page.crop"]
-tools = ["page_set_box"]
+tools = ["page.setBox"]
 evidence = []
 notes = "drag to crop; double-click opens Set Page Boxes"
 
@@ -3189,7 +3189,7 @@ tier = "P0"
 milestone = "M4"
 status = "shipped"
 commands = ["bookmark.add"]
-tools = ["bookmark_add"]
+tools = ["bookmark.add"]
 evidence = ["crates/engine/organize/src/tests.rs::bookmarks_add_rename_move_delete", "crates/engine/engine/src/tests.rs::bookmark_edits_show_in_the_viewer_undo_and_save", "crates/engine/automation/tests/automation.rs::bookmarks_through_tools"]
 notes = ""
 
@@ -3285,7 +3285,7 @@ tier = "P1"
 milestone = "M4"
 status = "shipped"
 commands = ["bookmark.from_structure"]
-tools = ["bookmark_from_structure"]
+tools = ["bookmark.addFromStructure"]
 evidence = ["crates/engine/a11y/src/tests.rs::headings_are_found_with_their_levels_titles_and_pages", "crates/engine/organize/src/tests.rs::a_bookmark_tree_nests_entries_by_level_under_a_new_first_bookmark", "crates/engine/engine/src/tests.rs::bookmarks_from_structure_nest_the_headings_and_undo", "crates/engine/automation/tests/automation.rs::bookmarks_from_structure_through_tools"]
 notes = "Bookmark options ▸ New bookmarks from structure: tagged headings (H1–H6 through the role map; a plain H takes its Sect/Part/Art nesting) become bookmarks nested by level under a new first \"Untitled\" bookmark, each linked to its element (/SE). Titles come from /ActualText, the marked text drawn directly on the page (not inside Form XObjects), /Alt or /T. Not yet: Acrobat's choice of element types (only headings), and destinations go to the heading's page rather than its position on it"
 
@@ -3381,7 +3381,7 @@ tier = "P0"
 milestone = "M3"
 status = "partial"
 commands = ["file.properties"]
-tools = ["doc_info"]
+tools = ["file.getInfo"]
 evidence = []
 notes = ""
 
@@ -3405,7 +3405,7 @@ tier = "P1"
 milestone = "M3"
 status = "partial"
 commands = ["file.properties"]
-tools = ["doc_info"]
+tools = ["file.getInfo"]
 evidence = []
 notes = ""
 
@@ -3417,7 +3417,7 @@ tier = "P1"
 milestone = "M4"
 status = "shipped"
 commands = ["file.properties"]
-tools = ["doc_initial_view"]
+tools = ["file.setInitialView"]
 evidence = ["crates/engine/organize/src/tests.rs::initial_view_round_trips_and_keeps_scripts", "crates/engine/automation/tests/automation.rs::initial_view_through_tools"]
 notes = "navigation panel, layout, magnification, page, window and interface options; honoured on open; script open actions kept"
 
@@ -3453,7 +3453,7 @@ tier = "P1"
 milestone = "M4"
 status = "shipped"
 commands = ["file.properties"]
-tools = ["doc_initial_view"]
+tools = ["file.setInitialView"]
 evidence = ["crates/engine/organize/src/tests.rs::initial_view_round_trips_and_keeps_scripts", "crates/engine/automation/tests/automation.rs::initial_view_through_tools"]
 notes = "Advanced ▸ Reading Options: binding and language"
 
@@ -3493,7 +3493,7 @@ tier = "P0"
 milestone = "M3"
 status = "partial"
 commands = ["comment.list"]
-tools = ["comment_list"]
+tools = ["comment.list"]
 evidence = []
 notes = "cards grouped by page with replies, status badges, selection, reply box and an Add a comment box"
 
@@ -3505,7 +3505,7 @@ tier = "P0"
 milestone = "M5"
 status = "partial"
 commands = []
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment", "crates/engine/engine/src/tests.rs::highlight_multiplies_over_text", "crates/engine/annot/src/tests.rs::polygons_clouds_connected_lines_callouts_and_carets_are_drawn"]
 notes = "appearances for every type Kition PDF creates (highlight multiplies; clouds, callouts, stamps, polygons, carets); rich text not yet"
 
@@ -3517,7 +3517,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.note"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
 notes = "our own Comment/Note icon drawings, with a pop-up"
 
@@ -3529,7 +3529,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.highlight"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/engine/src/tests.rs::highlight_multiplies_over_text"]
 notes = "drag over text, or pick the tool with text selected; a new highlight opens its note for typing in the Comments panel; agents can highlight by text search"
 
@@ -3541,7 +3541,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.underline"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
 notes = ""
 
@@ -3553,7 +3553,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.strikeout"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
 notes = ""
 
@@ -3565,7 +3565,7 @@ tier = "P2"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.squiggly"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
 notes = "Highlight ▸ Squiggly underline (with Underline and Strikethrough), the agent tool and the engine"
 
@@ -3577,7 +3577,7 @@ tier = "P1"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.replace"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::replace_text_groups_a_strikeout_and_a_caret", "crates/engine/automation/tests/automation.rs::drawing_comments_through_tools"]
 notes = "strikeout (/IT StrikeOutTextEdit) and a grouped caret (/RT /Group) with the replacement"
 
@@ -3589,7 +3589,7 @@ tier = "P1"
 milestone = "M5"
 status = "partial"
 commands = ["comment.caret"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::polygons_clouds_connected_lines_callouts_and_carets_are_drawn", "crates/engine/automation/tests/automation.rs::drawing_comments_through_tools"]
 notes = "caret at a click; not yet snapped to the text insertion point"
 
@@ -3601,7 +3601,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["sign.fill.text"]
-tools = ["fill_sign_add"]
+tools = ["fillSign.add"]
 evidence = ["crates/engine/annot/src/tests.rs::fill_and_sign_items_are_drawn"]
 notes = ""
 
@@ -3613,7 +3613,7 @@ tier = "P0"
 milestone = "M5"
 status = "partial"
 commands = ["comment.freetext"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::text_box_text_and_colour_changes_are_drawn"]
 notes = "Helvetica text with colour, size and alignment; /RC (XHTML) and /DS are written and kept in step with edits; per-run formatting (bold/italic spans) is not yet"
 
@@ -3625,7 +3625,7 @@ tier = "P1"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.callout"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::polygons_clouds_connected_lines_callouts_and_carets_are_drawn", "crates/engine/annot/src/tests.rs::editing_a_callout_refits_the_box_and_keeps_the_leader", "crates/engine/automation/tests/automation.rs::drawing_comments_through_tools"]
 notes = "drag from the target to the box; resizing re-attaches the leader, and so does editing the text"
 
@@ -3637,7 +3637,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.ink"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::ink_strokes_are_smooth_curves_through_their_points", "crates/engine/annot/src/tests.rs::drawings_resize_by_scaling_their_strokes"]
 notes = "one ink annotation per stroke; strokes are drawn as smooth curves through their points, as in Acrobat; resize with the 8 handles (the strokes scale into the new box)"
 
@@ -3661,7 +3661,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.line"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
 notes = ""
 
@@ -3673,7 +3673,7 @@ tier = "P0"
 milestone = "M5"
 status = "partial"
 commands = ["comment.arrow"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = []
 notes = ""
 
@@ -3685,7 +3685,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.square"]
-tools = ["comment_add", "comment_edit"]
+tools = ["comment.add", "comment.edit"]
 evidence = ["crates/engine/annot/src/tests.rs::restyle_and_resize_redraw_the_appearance", "crates/engine/annot/src/tests.rs::shapes_can_be_filled_and_unfilled"]
 notes = "resize with the 8 handles; fill colour or no fill from the quick bar, Properties and comment_edit `fill`; fill swatches are the comment palette only (no custom colour picker yet)"
 
@@ -3697,7 +3697,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.circle"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
 notes = ""
 
@@ -3709,7 +3709,7 @@ tier = "P1"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.polygon"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::polygons_clouds_connected_lines_callouts_and_carets_are_drawn", "crates/engine/automation/tests/automation.rs::drawing_comments_through_tools"]
 notes = "click the corners; Enter, double-click or the first point finishes"
 
@@ -3721,7 +3721,7 @@ tier = "P1"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.polyline"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::polygons_clouds_connected_lines_callouts_and_carets_are_drawn", "crates/engine/automation/tests/automation.rs::drawing_comments_through_tools"]
 notes = ""
 
@@ -3733,7 +3733,7 @@ tier = "P1"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.cloud"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::polygons_clouds_connected_lines_callouts_and_carets_are_drawn", "crates/engine/annot/src/tests.rs::cloud_paths_bulge_outwards_either_way_round", "crates/engine/automation/tests/automation.rs::drawing_comments_through_tools"]
 notes = "polygon with a cloudy border (/BE /S /C, /IT /PolygonCloud)"
 
@@ -3745,7 +3745,7 @@ tier = "P1"
 milestone = "M5"
 status = "partial"
 commands = ["comment.highlight"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = []
 notes = "drag the highlighter off text to highlight a box"
 
@@ -3757,7 +3757,7 @@ tier = "P1"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.attach"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::files_attach_as_comments", "crates/engine/automation/tests/automation.rs::drawing_comments_through_tools"]
 notes = "push pin, paperclip, graph or tag icon; the file is embedded and listed in the Attachments panel"
 
@@ -3793,7 +3793,7 @@ tier = "P1"
 milestone = "M5"
 status = "partial"
 commands = []
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_line_ending_is_drawn", "crates/engine/automation/tests/automation.rs::line_endings_through_the_tool"]
 notes = "All ten /LE styles (None, Square, Circle, Diamond, OpenArrow, ClosedArrow, Butt, ROpenArrow, RClosedArrow, Slash) are drawn on lines, polylines and callouts. comment_add endings and Comment properties set them. Dashed borders are drawn. Cloudy borders are still polygon-only."
 
@@ -3805,7 +3805,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.list"]
-tools = ["comment_edit"]
+tools = ["comment.edit"]
 evidence = ["crates/engine/annot/src/tests.rs::author_subject_and_note_icon_change"]
 notes = "Appearance (colour, fill colour for rectangles/ovals/polygons, opacity, thickness, note icon), General (author, subject), Review History"
 
@@ -3817,7 +3817,7 @@ tier = "P1"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.note"]
-tools = ["comment_edit"]
+tools = ["comment.edit"]
 evidence = ["crates/engine/annot/src/tests.rs::restyle_and_resize_redraw_the_appearance"]
 notes = "quick-bar colour swatches, fill colour (rectangle, oval, polygon, cloud), opacity (10–100 %) and line thickness per tool; colour from the context menu"
 
@@ -3829,7 +3829,7 @@ tier = "P1"
 milestone = "M5"
 status = "shipped"
 commands = []
-tools = ["comment_lock"]
+tools = ["comment.lock"]
 evidence = ["crates/engine/engine/src/tests.rs::comments_lock_take_checkmarks_hide_and_summarize", "crates/engine/automation/tests/automation.rs::comment_checkmarks_locks_hiding_and_summaries_through_tools"]
 notes = "Comment Properties ▸ Locked; locked comments refuse move, resize, restyle and delete; text stays editable"
 
@@ -3853,7 +3853,7 @@ tier = "P1"
 milestone = "M5"
 status = "partial"
 commands = []
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = []
 notes = "Preferences ▸ Identity: the name on new comments (default the login name, as Acrobat), remembered across restarts"
 
@@ -3865,7 +3865,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.list"]
-tools = ["comment_reply"]
+tools = ["comment.reply"]
 evidence = ["crates/engine/annot/src/tests.rs::replies_and_status_thread_onto_the_parent"]
 notes = ""
 
@@ -3877,7 +3877,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.list"]
-tools = ["comment_set_status"]
+tools = ["comment.setStatus"]
 evidence = ["crates/engine/annot/src/tests.rs::replies_and_status_thread_onto_the_parent", "crates/engine/engine/src/tests.rs::comments_are_added_drawn_threaded_and_undone"]
 notes = "status replies (/State, /StateModel Review), shown as a badge"
 
@@ -3889,7 +3889,7 @@ tier = "P1"
 milestone = "M5"
 status = "shipped"
 commands = []
-tools = ["comment_mark"]
+tools = ["comment.mark"]
 evidence = ["crates/engine/engine/src/tests.rs::comments_lock_take_checkmarks_hide_and_summarize", "crates/engine/automation/tests/automation.rs::comment_checkmarks_locks_hiding_and_summaries_through_tools"]
 notes = "hidden /StateModel /Marked reply; card toggle and context menu"
 
@@ -3901,7 +3901,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.list"]
-tools = ["comment_delete"]
+tools = ["comment.delete"]
 evidence = ["crates/engine/annot/src/tests.rs::delete_takes_popup_and_reply_chain"]
 notes = "deletes the pop-up and the reply thread"
 
@@ -3913,7 +3913,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.list"]
-tools = ["comment_edit"]
+tools = ["comment.edit"]
 evidence = ["crates/engine/annot/src/tests.rs::text_box_text_and_colour_changes_are_drawn", "crates/engine/annot/src/tests.rs::editing_a_text_box_refits_its_rectangle", "crates/engine/automation/tests/automation.rs::comments_through_tools"]
 notes = "double-click a comment or card, or Edit in the menus; a text box's rectangle follows the new text (wrap width and top edge stay, the height fits the wrapped lines)"
 
@@ -3937,7 +3937,7 @@ tier = "P0"
 milestone = "M5"
 status = "partial"
 commands = ["comment.list"]
-tools = ["comment_list"]
+tools = ["comment.list"]
 evidence = []
 notes = "type, author, status, colour and checkmark"
 
@@ -3949,7 +3949,7 @@ tier = "P0"
 milestone = "M5"
 status = "partial"
 commands = ["comment.list"]
-tools = ["comment_list"]
+tools = ["comment.list"]
 evidence = []
 notes = "page, author, date, type, colour, with group headers"
 
@@ -3961,7 +3961,7 @@ tier = "P1"
 milestone = "M5"
 status = "partial"
 commands = ["comment.list"]
-tools = ["comment_list"]
+tools = ["comment.list"]
 evidence = []
 notes = "search by author, text and type in the panel; not yet in the Find bar"
 
@@ -3973,7 +3973,7 @@ tier = "P1"
 milestone = "M5"
 status = "partial"
 commands = ["comment.hide_all"]
-tools = ["comments_hide"]
+tools = ["comment.hide"]
 evidence = ["crates/engine/engine/src/tests.rs::comments_lock_take_checkmarks_hide_and_summarize", "crates/engine/automation/tests/automation.rs::comment_checkmarks_locks_hiding_and_summaries_through_tools"]
 notes = "hide/show all comments (fields and links still draw); per-type hiding not yet"
 
@@ -4009,7 +4009,7 @@ tier = "P2"
 milestone = "M5"
 status = "partial"
 commands = ["comment.list"]
-tools = ["comment_list"]
+tools = ["comment.list"]
 evidence = []
 notes = "status changes listed in Comment Properties"
 
@@ -4021,7 +4021,7 @@ tier = "P1"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.stamp"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::stamps_draw_their_label_and_by_line", "crates/engine/automation/tests/automation.rs::stamps_through_tools"]
 notes = "12 standard business stamps in Kition PDF's own design; ISO 32000 stamp names where defined"
 
@@ -4033,7 +4033,7 @@ tier = "P1"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.stamp"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::stamps_draw_their_label_and_by_line", "crates/engine/automation/tests/automation.rs::stamps_through_tools"]
 notes = "Accepted, Initial Here, Rejected, Sign Here, Witness as pointed tags"
 
@@ -4045,7 +4045,7 @@ tier = "P1"
 milestone = "M6"
 status = "shipped"
 commands = ["comment.stamp"]
-tools = ["comment_add"]
+tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::stamps_draw_their_label_and_by_line", "crates/engine/automation/tests/automation.rs::stamps_through_tools"]
 notes = "Approved, Confidential, Received, Reviewed, Revised with a By author at time, date line (local time)"
 
@@ -4153,7 +4153,7 @@ tier = "P1"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.flatten"]
-tools = ["doc_flatten"]
+tools = ["file.flatten"]
 evidence = ["crates/engine/edit/src/tests.rs::flattening_draws_appearances_into_the_page_and_removes_the_comments", "crates/engine/engine/src/tests.rs::flattening_keeps_the_look_and_drops_the_objects", "crates/engine/automation/tests/automation.rs::flattening_through_tools"]
 notes = "appearances become page content; pop-ups and replies removed"
 
@@ -4177,7 +4177,7 @@ tier = "P2"
 milestone = "M12"
 status = "partial"
 commands = ["measure.distance"]
-tools = ["measure_distance"]
+tools = ["measure.distance"]
 evidence = ["crates/engine/automation/tests/automation.rs::measurements_calibrate_draw_save_reopen_and_export", "crates/engine/measure/src/tests.rs::calibrated_lengths_concave_areas_and_axis_scales"]
 notes = "Two-point distance annotations with saved numeric captions and rectilinear scales. Partial: only single-unit decimal formats; compound (ft-in) and fractional formats are not supported (listed as unsupported, data kept), no leader lines or caption placement options, geospatial scales unsupported, and interop with Acrobat-authored measurements (reading theirs, Acrobat reading ours) is untested."
 
@@ -4189,7 +4189,7 @@ tier = "P2"
 milestone = "M12"
 status = "shipped"
 commands = ["measure.perimeter"]
-tools = ["measure_perimeter"]
+tools = ["measure.perimeter"]
 evidence = ["crates/engine/automation/tests/automation.rs::measurements_calibrate_draw_save_reopen_and_export", "crates/engine/measure/src/tests.rs::calibrated_lengths_concave_areas_and_axis_scales"]
 notes = "Connected-line lengths with click vertices and double-click/Enter finish. Repeat the first point to include a closing edge. Saved standard PolyLineDimension annotations."
 
@@ -4201,7 +4201,7 @@ tier = "P2"
 milestone = "M12"
 status = "shipped"
 commands = ["measure.area"]
-tools = ["measure_area"]
+tools = ["measure.area"]
 evidence = ["crates/engine/automation/tests/automation.rs::measurements_calibrate_draw_save_reopen_and_export", "crates/engine/measure/src/tests.rs::calibrated_lengths_concave_areas_and_axis_scales"]
 notes = "Simple polygon areas, including concave boundaries and either winding. Self-intersecting boundaries are refused. Saved PolygonDimension annotations; no 3D surface measurement."
 
@@ -4213,7 +4213,7 @@ tier = "P2"
 milestone = "M12"
 status = "partial"
 commands = ["measure.scale"]
-tools = ["measure_scale"]
+tools = ["measure.setScale"]
 evidence = ["crates/engine/measure/src/tests.rs::viewport_precedence_first_point_user_unit_and_roundtrip", "crates/engine/measure/src/tests.rs::coordinates_roundtrip_for_crop_rotation_and_user_unit", "crates/engine/automation/tests/automation.rs::measurements_calibrate_draw_save_reopen_and_export"]
 notes = "Persistent rectangular viewports with last-containing-viewport precedence, numeric scale and two-point calibration. First vertex selects the scale; prior annotations retain theirs. Partial: single-unit decimal rectilinear scales only; compound (ft-in), fractional and differing distance units can't be authored or imported, no viewport editing/removal UI, and interop with Acrobat's scale ratio dialog and its saved viewports is untested."
 
@@ -4225,7 +4225,7 @@ tier = "P2"
 milestone = "M12"
 status = "shipped"
 commands = ["measure.snap"]
-tools = ["measure_snap"]
+tools = ["measure.setSnap"]
 evidence = ["crates/engine/automation/tests/automation.rs::measurement_snap_tool_covers_all_targets", "crates/engine/measure/src/tests.rs::nested_forms_transforms_curves_and_cycles_are_bounded", "crates/engine/measure/src/tests.rs::snap_paths_endpoints_midpoints_and_intersections"]
 notes = "Paths, endpoints, midpoints and intersections of painted vector geometry, including transformed Form XObjects. Cubics flattened to 0.2 user units. Bounded extraction and dense-intersection limits are reported. Raster/text outlines, clipping and optional-content visibility are not interpreted."
 
@@ -4237,7 +4237,7 @@ tier = "P2"
 milestone = "M12"
 status = "shipped"
 commands = ["measure.info"]
-tools = ["measure_info", "measure_list"]
+tools = ["measure.getInfo", "measure.list"]
 evidence = ["crates/engine/automation/tests/automation.rs::measurements_calibrate_draw_save_reopen_and_export"]
 notes = "Live value, units, X/Y deltas, angle and selected scale while drawing; saved measurements can be selected from the panel. Rectilinear 2D readings only."
 
@@ -4325,7 +4325,7 @@ tier = "P0"
 milestone = "M3"
 status = "shipped"
 commands = ["form.fields"]
-tools = ["doc_info"]
+tools = ["file.getInfo"]
 evidence = ["crates/render/render/src/inspect.rs::fields_listed_only_on_the_pages_are_listed"]
 notes = "list with jump-to-field; in Prepare a form, Shift/Ctrl/Command-click selects several fields and Properties edits their shared properties; double-click opens field properties; fields a file lists only as page widgets (empty /Fields) are adopted too"
 
@@ -4361,7 +4361,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.fields"]
-tools = ["form_fill", "form_fields"]
+tools = ["form.fill", "form.listFields"]
 evidence = ["crates/engine/forms/src/tests.rs::text_fields_get_new_appearances", "crates/engine/engine/src/tests.rs::filling_a_form_shows_saves_and_undoes", "crates/engine/automation/tests/automation.rs::orphan_form_fields_through_tools"]
 notes = "in-place editor; Enter or clicking away commits, Escape cancels; no format/keystroke JavaScript yet (M6.4)"
 
@@ -4373,7 +4373,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.fields"]
-tools = ["form_fill"]
+tools = ["form.fill"]
 evidence = ["crates/engine/forms/src/tests.rs::check_boxes_and_radios_switch_states"]
 notes = "NoToggleToOff honoured; widgets without appearances get our own"
 
@@ -4385,7 +4385,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.fields"]
-tools = ["form_fill"]
+tools = ["form.fill"]
 evidence = ["crates/engine/forms/src/tests.rs::choices_accept_exports_or_display_text"]
 notes = "combo and list boxes, multi-select lists; editable combo boxes accept free text"
 
@@ -4421,7 +4421,7 @@ tier = "P0"
 milestone = "M6"
 status = "partial"
 commands = ["form.fields"]
-tools = ["form_fill", "form_set_props"]
+tools = ["form.fill", "form.setProps"]
 evidence = ["crates/engine/forms/src/tests.rs::text_fields_get_new_appearances", "crates/engine/forms/src/tests.rs::choices_accept_exports_or_display_text", "crates/engine/forms/src/tests.rs::rotated_fields_draw_in_their_quadrant", "crates/engine/engine/tests/form_rotation.rs::a_rotated_field_draws_along_the_vertical_edge", "crates/engine/automation/tests/automation.rs::rotating_a_field_through_tools"]
 notes = "auto-size, comb, multiline, password, quadding, /MK colours and /MK /R rotation (0, 90, 180, 270); approximate Helvetica metrics"
 
@@ -4445,7 +4445,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.field.properties"]
-tools = ["form_set_props", "form_fill"]
+tools = ["form.setProps", "form.fill"]
 evidence = ["crates/engine/forms/src/af.rs::numbers_format_like_acrobat", "crates/engine/forms/src/tests.rs::formats_validation_and_calculations_run_like_acrobat", "crates/engine/automation/tests/automation.rs::form_formats_and_calculations_through_tools"]
 notes = "AFNumber_Format/Keystroke run natively: decimals, 5 separator styles, currency before/after, negative styles (red shown as minus/parentheses)"
 
@@ -4457,7 +4457,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.field.properties"]
-tools = ["form_set_props", "form_fill"]
+tools = ["form.setProps", "form.fill"]
 evidence = ["crates/engine/forms/src/af.rs::numbers_format_like_acrobat"]
 notes = "AFPercent_Format/Keystroke"
 
@@ -4469,7 +4469,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.field.properties"]
-tools = ["form_set_props", "form_fill"]
+tools = ["form.setProps", "form.fill"]
 evidence = ["crates/engine/forms/src/af.rs::dates_times_and_masks", "crates/engine/forms/src/tests.rs::formats_validation_and_calculations_run_like_acrobat"]
 notes = "AFDate_FormatEx/KeystrokeEx, AFDate_Format presets, AFTime_Format(Ex): lenient parsing, month and day names, impossible dates refused"
 
@@ -4481,7 +4481,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.field.properties"]
-tools = ["form_set_props", "form_fill"]
+tools = ["form.setProps", "form.fill"]
 evidence = ["crates/engine/forms/src/af.rs::dates_times_and_masks"]
 notes = "zip, zip+4, phone, SSN, arbitrary masks (9 A O X)"
 
@@ -4493,7 +4493,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.field.properties"]
-tools = ["form_set_props", "form_fill"]
+tools = ["form.setProps", "form.fill"]
 evidence = ["crates/engine/forms/src/af.rs::validation_and_calculation", "crates/engine/forms/src/tests.rs::formats_validation_and_calculations_run_like_acrobat", "crates/engine/automation/tests/automation.rs::form_formats_and_calculations_through_tools"]
 notes = "AFRange_Validate with Acrobat's messages"
 
@@ -4505,7 +4505,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.field.properties"]
-tools = ["form_set_props", "form_fill"]
+tools = ["form.setProps", "form.fill"]
 evidence = ["crates/engine/forms/src/af.rs::validation_and_calculation", "crates/engine/forms/src/tests.rs::formats_validation_and_calculations_run_like_acrobat"]
 notes = "SUM, PRD, AVG, MIN, MAX over fields and groups"
 
@@ -4517,7 +4517,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.field.properties"]
-tools = ["form_set_props", "form_fill"]
+tools = ["form.setProps", "form.fill"]
 evidence = ["crates/engine/forms/src/af.rs::validation_and_calculation", "crates/engine/forms/src/tests.rs::formats_validation_and_calculations_run_like_acrobat", "crates/engine/automation/tests/automation.rs::form_formats_and_calculations_through_tools"]
 notes = "BVCALC expressions with + - * / and parentheses, escaped names"
 
@@ -4529,7 +4529,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.prepare"]
-tools = ["form_set_script"]
+tools = ["form.setScript"]
 evidence = ["crates/engine/engine/src/tests.rs::form_javascript_validates_calculates_and_formats", "crates/engine/automation/tests/automation.rs::javascript_through_tools"]
 notes = "Custom keystroke (commit), validate, calculate and format scripts run in Acrobat's event order; AF calls still run natively."
 
@@ -4541,7 +4541,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.field.properties"]
-tools = ["form_set_props", "form_fill"]
+tools = ["form.setProps", "form.fill"]
 evidence = ["crates/engine/forms/src/tests.rs::formats_validation_and_calculations_run_like_acrobat"]
 notes = "/CO order, then other calculated fields; recalculated after every fill and Clear form"
 
@@ -4553,7 +4553,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.prepare"]
-tools = ["form_fill"]
+tools = ["form.fill"]
 evidence = ["crates/engine/engine/src/tests.rs::form_javascript_validates_calculates_and_formats"]
 notes = "Keystroke (commit) \u2192 Validate \u2192 value \u2192 Calculate (in /CO order) \u2192 Format, for AF calls and custom scripts."
 
@@ -4565,7 +4565,7 @@ tier = "P1"
 milestone = "M6"
 status = "partial"
 commands = []
-tools = ["form_fill"]
+tools = ["form.fill"]
 evidence = []
 notes = "a month calendar under date fields; the pick is written in the field's own date format"
 
@@ -4589,7 +4589,7 @@ tier = "P1"
 milestone = "M6"
 status = "partial"
 commands = []
-tools = ["form_set_props"]
+tools = ["form.setProps"]
 evidence = []
 notes = "required fields get a red border when fields are highlighted"
 
@@ -4601,7 +4601,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.clear"]
-tools = ["form_reset"]
+tools = ["form.reset"]
 evidence = ["crates/engine/forms/src/tests.rs::reset_restores_defaults"]
 notes = "back to /DV; undoable"
 
@@ -4673,7 +4673,7 @@ tier = "P1"
 milestone = "M6"
 status = "shipped"
 commands = ["form.flatten"]
-tools = ["doc_flatten"]
+tools = ["file.flatten"]
 evidence = ["crates/engine/edit/src/tests.rs::flattening_draws_appearances_into_the_page_and_removes_the_comments", "crates/engine/engine/src/tests.rs::flattening_keeps_the_look_and_drops_the_objects", "crates/engine/automation/tests/automation.rs::flattening_through_tools"]
 notes = "widgets drawn into content and pruned from the field tree"
 
@@ -4685,7 +4685,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.prepare"]
-tools = ["form_add_field", "form_set_props", "form_delete_field"]
+tools = ["form.addField", "form.setProps", "form.deleteField"]
 evidence = ["crates/engine/engine/src/tests.rs::preparing_a_form_adds_renames_and_deletes_fields"]
 notes = "fields shown with blue fill and name tags; select, move, resize by corners, Delete (every selected field, one undo step); field tools return to Select after one field. Shared General, Appearance and applicable Options edits are atomic and opt-in; Ctrl/Command+A selects the current page, rectangle and panel selection are supported. Names, positions, choices/defaults and script tabs remain individual GUI edits"
 
@@ -4697,7 +4697,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.add.text"]
-tools = ["form_add_field"]
+tools = ["form.addField"]
 evidence = ["crates/engine/forms/src/tests.rs::every_field_type_can_be_added_named_and_drawn", "crates/engine/automation/tests/automation.rs::preparing_a_form_through_tools"]
 notes = "click for the default size or drag; named Text1, Text2…"
 
@@ -4709,7 +4709,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.add.checkbox"]
-tools = ["form_add_field"]
+tools = ["form.addField"]
 evidence = ["crates/engine/forms/src/tests.rs::every_field_type_can_be_added_named_and_drawn"]
 notes = "Check Box1…, Yes/Off appearance states"
 
@@ -4721,7 +4721,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.add.radio"]
-tools = ["form_add_field"]
+tools = ["form.addField"]
 evidence = ["crates/engine/forms/src/tests.rs::every_field_type_can_be_added_named_and_drawn", "crates/engine/automation/tests/automation.rs::preparing_a_form_through_tools"]
 notes = "new group Group1… or join the selected group with the next ChoiceN"
 
@@ -4733,7 +4733,7 @@ tier = "P1"
 milestone = "M6"
 status = "shipped"
 commands = ["form.field.properties"]
-tools = ["form_set_props", "form_fields"]
+tools = ["form.setProps", "form.listFields"]
 evidence = ["crates/engine/forms/src/tests.rs::check_box_styles_change_the_mark", "crates/engine/automation/tests/automation.rs::preparing_a_form_through_tools"]
 notes = "Field Properties ▸ Options: check, circle, cross, diamond, square, star (/MK /CA, Acrobat's codes), drawn as paths; defaults check (check boxes) and circle (radio buttons)"
 
@@ -4745,7 +4745,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.add.combo"]
-tools = ["form_add_field"]
+tools = ["form.addField"]
 evidence = ["crates/engine/forms/src/tests.rs::every_field_type_can_be_added_named_and_drawn", "crates/engine/automation/tests/automation.rs::preparing_a_form_through_tools"]
 notes = "Dropdown1…; items in Field Properties ▸ Options"
 
@@ -4757,7 +4757,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.add.list"]
-tools = ["form_add_field"]
+tools = ["form.addField"]
 evidence = ["crates/engine/forms/src/tests.rs::every_field_type_can_be_added_named_and_drawn"]
 notes = "List Box1…"
 
@@ -4769,7 +4769,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.add.button"]
-tools = ["form_add_field"]
+tools = ["form.addField"]
 evidence = ["crates/engine/forms/src/tests.rs::every_field_type_can_be_added_named_and_drawn"]
 notes = "Button1…; actions arrive with the JavaScript engine"
 
@@ -4781,7 +4781,7 @@ tier = "P1"
 milestone = "M6"
 status = "shipped"
 commands = ["form.add.image"]
-tools = ["form_add_field", "form_set_image"]
+tools = ["form.addField", "form_set_image"]
 evidence = ["crates/engine/forms/src/tests.rs::image_fields_ask_for_a_picture_and_show_it", "crates/engine/automation/tests/automation.rs::preparing_a_form_through_tools"]
 notes = "icon-only push button with event.target.buttonImportIcon(), recognised natively; clicking asks for a PNG/JPEG/TIFF/GIF/BMP that becomes /MK /I, scaled proportionally and centred"
 
@@ -4793,7 +4793,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.add.date"]
-tools = ["form_add_field"]
+tools = ["form.addField"]
 evidence = ["crates/engine/forms/src/tests.rs::every_field_type_can_be_added_named_and_drawn"]
 notes = "text field with AFDate_FormatEx(\"mm/dd/yyyy\") format/keystroke actions"
 
@@ -4805,7 +4805,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.add.signature"]
-tools = ["form_add_field"]
+tools = ["form.addField"]
 evidence = ["crates/engine/forms/src/tests.rs::every_field_type_can_be_added_named_and_drawn"]
 notes = "unsigned /Sig field; signing is M9"
 
@@ -4829,7 +4829,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.field.properties"]
-tools = ["form_set_props"]
+tools = ["form.setProps"]
 evidence = ["crates/engine/forms/src/tests.rs::properties_rename_and_delete", "crates/engine/automation/tests/automation.rs::preparing_a_form_through_tools"]
 notes = "name, tooltip, read only, required, locked; shared tooltip/flags are opt-in, mixed values preserved, failures keep the draft and roll back the batch (visibility pending)"
 
@@ -4841,7 +4841,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.field.properties"]
-tools = ["form_set_props"]
+tools = ["form.setProps"]
 evidence = ["crates/engine/forms/src/tests.rs::appearance_properties_restyle_every_widget", "crates/engine/automation/tests/automation.rs::tab_order_and_field_appearance_through_tools", "crates/engine/forms/src/tests.rs::partial_appearance_keeps_custom_default_appearance_and_font_resources", "crates/engine/forms/src/tests.rs::partial_appearance_preserves_each_widgets_indirect_colours_and_border_extensions", "crates/engine/automation/tests/form_bulk.rs::bulk_properties_are_one_undo_step_preserve_other_looks_and_survive_save"]
 notes = "border/fill colour, line width, solid/dashed/beveled/inset/underline, text colour, Helvetica/Times/Courier, font size; shared GUI and partial tool edits preserve untouched custom fonts, widget styles and unknown keys. Appearance regeneration still uses approximate metrics"
 
@@ -4853,7 +4853,7 @@ tier = "P1"
 milestone = "M6"
 status = "shipped"
 commands = ["form.field.properties"]
-tools = ["form_set_props"]
+tools = ["form.setProps"]
 evidence = ["crates/engine/forms/src/tests.rs::properties_rename_and_delete"]
 notes = "left/bottom/width/height in points; drag to move, corners to resize"
 
@@ -4865,7 +4865,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.field.properties"]
-tools = ["form_set_props"]
+tools = ["form.setProps"]
 evidence = ["crates/engine/forms/src/tests.rs::properties_rename_and_delete", "crates/engine/automation/tests/automation.rs::preparing_a_form_through_tools", "crates/engine/forms/src/tests.rs::options_tab_flags_alignment_and_defaults", "crates/engine/automation/tests/form_bulk.rs::bulk_options_apply_per_field_and_refuse_an_invalid_comb_atomically"]
 notes = "text: alignment, default, multi-line, scroll, rich text flag, limit, password, file selection, spell check, comb; choices: items, default, sort, custom text, multiple selection, commit immediately; check boxes and radios: checked by default, radios in unison. Shared GUI offers applicable text/choice flags, alignment, text limits and check styles; choices/defaults remain individual GUI edits"
 
@@ -4877,7 +4877,7 @@ tier = "P1"
 milestone = "M6"
 status = "shipped"
 commands = ["form.prepare"]
-tools = ["form_actions", "form_set_actions"]
+tools = ["form.listActions", "form.setActions"]
 evidence = ["crates/engine/forms/src/tests.rs::field_actions_round_trip_on_every_trigger", "crates/engine/automation/tests/automation.rs::field_actions_through_tools"]
 notes = "Six triggers; Run a JavaScript, Open a web link, Reset a form, Execute a menu item, Go to a page view, Show/hide a field, Submit a form. Other action types are kept."
 
@@ -4889,7 +4889,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.field.properties"]
-tools = ["form_set_props", "form_fill"]
+tools = ["form.setProps", "form.fill"]
 evidence = ["crates/engine/automation/tests/automation.rs::form_formats_and_calculations_through_tools"]
 notes = "None/Number/Percentage/Date/Time/Special with a live example; writes Acrobat's AF scripts"
 
@@ -4901,7 +4901,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.field.properties"]
-tools = ["form_set_props", "form_fill"]
+tools = ["form.setProps", "form.fill"]
 evidence = ["crates/engine/automation/tests/automation.rs::form_formats_and_calculations_through_tools"]
 notes = "range from/to"
 
@@ -4913,7 +4913,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.field.properties"]
-tools = ["form_set_props", "form_fill"]
+tools = ["form.setProps", "form.fill"]
 evidence = ["crates/engine/automation/tests/automation.rs::form_formats_and_calculations_through_tools"]
 notes = "sum/product/average/min/max of picked fields, simplified field notation; custom script pending"
 
@@ -4949,7 +4949,7 @@ tier = "P1"
 milestone = "M6"
 status = "partial"
 commands = ["form.prepare"]
-tools = ["form_set_props"]
+tools = ["form.setProps"]
 evidence = []
 notes = "Shift/⌘-click to select several; right-click: Align (left, right, top, bottom, centres), Distribute, Set Fields to Same Size; the right-clicked field is the anchor"
 
@@ -4985,7 +4985,7 @@ tier = "P1"
 milestone = "M6"
 status = "shipped"
 commands = ["form.prepare"]
-tools = ["form_set_props"]
+tools = ["form.setProps"]
 evidence = ["crates/engine/forms/src/tests.rs::locked_fields_only_take_unlocking"]
 notes = "rename in Field Properties ▸ General; Locked sets the widgets' annotation Locked flag (/F bit 8) and greys out the properties until unlocked; values can still be filled in"
 
@@ -4997,7 +4997,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["form.tab_order.row", "form.tab_order.column", "form.tab_order.structure"]
-tools = ["form_tab_order"]
+tools = ["form.setTabOrder"]
 evidence = ["crates/engine/forms/src/tests.rs::tab_order_follows_the_page_setting", "crates/engine/automation/tests/automation.rs::tab_order_and_field_appearance_through_tools", "crates/engine/forms/src/tests.rs::ordering_tabs_manually"]
 notes = "rows, columns, structure/annotation order (page /Tabs), and manual order from the Fields panel while preparing a form; honoured by Tab"
 
@@ -5033,7 +5033,7 @@ tier = "P1"
 milestone = "M6"
 status = "partial"
 commands = ["form.detect", "form.prepare"]
-tools = ["form_detect_fields"]
+tools = ["form.detectFields"]
 evidence = ["crates/engine/forms/src/tests.rs::detection_finds_blanks_rules_boxes_and_names_them", "crates/engine/engine/src/tests.rs::detecting_fields_on_a_printed_form", "crates/engine/automation/tests/automation.rs::detecting_form_fields_through_tools"]
 notes = "Underscore runs, rules, empty boxes and small squares (check boxes); runs when Prepare a form starts on a document without fields, and from Prepare a form ▸ Detect form fields at any time (existing fields are skipped). Not yet: comb boxes, tables of cells, scanned forms (needs OCR first), radio groups."
 
@@ -5045,7 +5045,7 @@ tier = "P1"
 milestone = "M6"
 status = "shipped"
 commands = ["form.detect"]
-tools = ["form_detect_fields"]
+tools = ["form.detectFields"]
 evidence = ["crates/engine/forms/src/tests.rs::detection_finds_blanks_rules_boxes_and_names_them", "crates/engine/engine/src/tests.rs::detecting_fields_on_a_printed_form", "crates/engine/automation/tests/automation.rs::detecting_form_fields_through_tools"]
 notes = "Names come from the label to the left (or above; right of check boxes), unique like Acrobat's (Name2, Text1)."
 
@@ -5057,7 +5057,7 @@ tier = "P1"
 milestone = "M6"
 status = "shipped"
 commands = ["tools.document_js"]
-tools = ["js_document_scripts", "js_set_document_script"]
+tools = ["script.list", "script.set"]
 evidence = ["crates/engine/automation/tests/automation.rs::javascript_through_tools", "crates/engine/engine/src/tests.rs::form_javascript_validates_calculates_and_formats"]
 notes = "Names /JavaScript tree: list, add, edit, delete; functions are available to field scripts."
 
@@ -5081,7 +5081,7 @@ tier = "P0"
 milestone = "M6"
 status = "partial"
 commands = ["tools.js_console"]
-tools = ["js_run"]
+tools = ["script.run"]
 evidence = ["crates/engine/js/src/tests.rs::calculate_scripts_read_fields_and_set_the_value", "crates/engine/engine/src/tests.rs::form_javascript_validates_calculates_and_formats", "crates/engine/automation/tests/automation.rs::javascript_through_tools"]
 notes = "boa (pure Rust) with the forms object model: event, getField/Field (value, readonly, display, colours, items, check boxes), app, util.printf/printd/printx, console, display, color; no annotations, layers or dialogs (app.response returns null) yet."
 
@@ -5093,7 +5093,7 @@ tier = "P1"
 milestone = "M6"
 status = "shipped"
 commands = ["tools.js_console"]
-tools = ["js_run"]
+tools = ["script.run"]
 evidence = ["crates/engine/automation/tests/automation.rs::javascript_through_tools"]
 notes = "\u2318J: run JavaScript against the document, with console output, results and errors."
 
@@ -5129,7 +5129,7 @@ tier = "P0"
 milestone = "M6"
 status = "shipped"
 commands = ["app.preferences"]
-tools = ["js_enabled"]
+tools = ["script.enabled"]
 evidence = ["crates/engine/js/src/tests.rs::the_sandbox_has_no_host_access", "crates/engine/js/src/tests.rs::errors_and_runaway_scripts_are_contained"]
 notes = "Preferences \u25b8 JavaScript \u25b8 Enable Acrobat JavaScript (remembered); no host access; loop and recursion limits; app.launchURL asks before opening and only offers http, https and mailto addresses."
 
@@ -5153,7 +5153,7 @@ tier = "P1"
 milestone = "M12"
 status = "partial"
 commands = ["file.open"]
-tools = ["doc_open", "form_fill"]
+tools = ["doc_open", "form.fill"]
 evidence = ["crates/engine/engine/src/tests.rs::static_xfa_forms_take_their_values_from_the_datasets_and_write_them_back", "crates/engine/xfa/src/tests.rs::static_forms_read_their_values_from_the_datasets", "crates/engine/xfa/src/tests.rs::writing_values_keeps_the_data_no_field_binds_to", "crates/engine/xfa/src/tests.rs::utf16_packets_are_read_and_written_back_as_utf16", "crates/engine/engine/src/tests.rs::xfa_data_no_field_binds_to_survives_an_edit_and_save"]
 notes = "the AcroForm fields are shown and filled as in any form; on open their values come from the XFA datasets (what another viewer saved) by the fields' Designer names (recorded as a document warning), and every edit merges the values back into the datasets, keeping data no field binds to, so Acrobat shows the same values; values that can't be written are warnings. Missing: no template semantics (no scripts, calculations or hidden subforms), explicit bind refs are not followed"
 
@@ -5165,7 +5165,7 @@ tier = "P1"
 milestone = "M12"
 status = "partial"
 commands = ["file.open"]
-tools = ["doc_open", "doc_info", "form_fields", "form_fill", "js_run"]
+tools = ["doc_open", "file.getInfo", "form.listFields", "form.fill", "script.run"]
 evidence = ["crates/engine/xfa/src/tests.rs::layout_places_captions_fields_and_sizes_containers_to_their_content", "crates/engine/xfa/src/tests.rs::tables_break_across_pages_and_repeat_their_header_row", "crates/engine/xfa/src/tests.rs::rendering_into_the_pdf_replaces_the_placeholder_page_and_adds_fields", "crates/engine/engine/src/tests.rs::dynamic_xfa_forms_are_laid_out_on_open_filled_and_saved_incrementally", "crates/engine/automation/tests/automation.rs::dynamic_xfa_forms_open_render_fill_and_save_through_tools", "crates/engine/xfa/src/tests.rs::nested_width_less_subforms_lay_out_in_polynomial_time", "crates/engine/js/src/tests.rs::instance_managers_add_remove_and_count", "crates/engine/xfa/src/tests.rs::the_form_tree_carries_values_presence_instances_and_the_events", "crates/engine/engine/src/tests.rs::xfa_scripts_initialize_calculate_validate_toggle_and_add_rows", "crates/engine/automation/tests/automation.rs::xfa_scripts_run_for_buttons_and_field_changes_through_tools", "crates/engine/engine/src/tests.rs::hostile_xfa_open_scripts_are_merged_capped_kept_from_printing_and_noted", "crates/engine/engine/src/tests.rs::runaway_xfa_calculations_at_open_end_quickly_with_a_report", "crates/engine/xfa/src/tests.rs::the_live_form_of_nested_repeating_subforms_stops_at_its_node_budget", "crates/engine/xfa/src/tests.rs::data_ops_of_one_event_are_one_datasets_rewrite", "crates/engine/xfa/src/tests.rs::choice_lists_signatures_passwords_and_pictures_become_fields_and_images", "crates/engine/xfa/src/tests.rs::choice_values_come_from_the_data_as_saved_values_and_several_for_lists", "crates/engine/xfa/src/tests.rs::pictures_are_sized_from_their_headers_and_hostile_ones_are_refused_unallocated", "crates/engine/engine/src/tests.rs::xfa_choice_lists_signature_and_picture_fields_open_fill_script_and_save", "crates/engine/xfa/src/tests.rs::repeating_subforms_inside_positioned_content_get_their_instances", "crates/engine/engine/src/tests.rs::xfa_rows_in_areas_are_laid_out_read_calculated_and_written_where_adobe_binds_them"]
 notes = "laid out from the template on open by the xfa crate (positioned, tb, lr-tb, table/row, page masters, breaks, repeated header rows, captions, rich text, JPEG/PNG/GIF images) into real pages and AcroForm fields (text, password, date with AFDate formats, check boxes, radio groups, drop-downs and list boxes with shown/saved item pairs and multi-select, signature fields, image fields showing their picture (pictures decoded once per document, at most 20 million pixels, and reused across re-layouts), buttons with reset/print/save/URL), filled from the datasets packet (including rows another viewer added), saved as an incremental revision with the values merged into the datasets so Adobe's viewers show them; doc_info reports xfa_layout. XFA JavaScript and FormCalc (form.xfa-formcalc) run in the js crate's XFA object model (xfa.form, SOM resolution, rawValue, presence, access, instance managers, xfa.host, xfa.layout, xfa.event): initialize and calculate on open, exit, validate and calculate after a field changes, click for buttons (through js_run and the app), with rows added and removed, subforms shown and hidden, and the form laid out again, all as one undo step and kept in the file. Hostile scripts are bounded per event (merged and capped effects, messages and console lines, lower loop limits and a time budget on open and calculate, one datasets rewrite per event, print/save/links/focus from clicks only, a runaway script abandoned and the form's scripts turned off) and what open-time scripts changed is noted. Missing: loops inside nested calls are only stopped by abandoning their thread, and script memory is not capped; the change event per keystroke; xfa.template, connections and data descriptions; a hidden instance of a repeating subform hides them all; choosing a new picture for an image field; barcodes are drawn as their text, not bars; keep rules; metrics are approximate and Acrobat fidelity is eyeballed on real forms, not measured"
 
@@ -5177,7 +5177,7 @@ tier = "P1"
 milestone = "M12"
 status = "partial"
 commands = ["file.open"]
-tools = ["doc_open", "form_fill", "js_run"]
+tools = ["doc_open", "form.fill", "script.run"]
 evidence = ["crates/engine/js/src/tests.rs::arithmetic_strings_and_comparisons_follow_formcalc_rules", "crates/engine/js/src/tests.rs::built_in_functions_cover_the_common_set", "crates/engine/js/src/tests.rs::control_flow_variables_and_functions_work", "crates/engine/js/src/tests.rs::form_objects_resolve_assign_and_record_effects", "crates/engine/js/src/tests.rs::hostile_formcalc_scripts_end_with_an_error_and_bounded_output", "crates/engine/js/src/tests.rs::formcalc_values_results_and_errors_stay_bounded", "crates/engine/engine/src/tests.rs::dynamic_xfa_forms_run_formcalc_scripts", "crates/engine/engine/src/tests.rs::hostile_formcalc_scripts_cannot_hang_or_bloat_the_document", "crates/engine/engine/src/tests.rs::a_formcalc_calculate_result_is_cut_before_it_is_saved"]
 notes = "a native FormCalc interpreter (crates/engine/js/src/formcalc.rs) over the same form table, effects and budgets as the XFA JavaScript model: expressions and FormCalc coercions, var, if/while/for/foreach/func, accessors ($, $host, $form, $record, $layout, $event, xfa., .., [n], [*], _name instance managers) and the arithmetic, logical, string, date/time, financial and unit built-ins. Bounded: steps and loop iterations, statement and expression nesting, operator/accessor chain length, strings (1 MiB; messages and thrown errors clipped to 4 KiB, field values and calculate results to 64 KiB, noted; copying and comparing long strings is charged to the step budget, so it ends on wasm, which has no clock), lists (each object once), clamped dates, the instance cap, and a deadline the script itself honours after the engine stops waiting. Missing: locale-aware pictures beyond simple number and date ones, Format/Parse time and text pictures, Get/Post/Put (refused), $template/$connectionSet, user-defined functions across scripts, a cap on a script's total memory (each string and list is capped, but many variables can each hold one), real Uuid() values (deterministic, from the step count) and the wall clock on wasm (Date() reads 1970-01-01 and Time() midnight there), and checking against Acrobat on real Designer forms beyond the fixtures"
 
@@ -5189,7 +5189,7 @@ tier = "P2"
 milestone = "M12"
 status = "partial"
 commands = ["file.open", "file.save"]
-tools = ["doc_open", "form_fill", "doc_save"]
+tools = ["doc_open", "form.fill", "doc_save"]
 evidence = ["crates/engine/xfa/src/tests.rs::the_datasets_packet_is_written_from_the_fields_and_read_back", "crates/engine/xfa/src/tests.rs::data_fills_the_fields_and_adds_rows", "crates/engine/engine/src/tests.rs::dynamic_xfa_forms_are_laid_out_on_open_filled_and_saved_incrementally", "crates/engine/xfa/src/tests.rs::data_paths_leave_areas_out", "crates/engine/engine/src/tests.rs::xfa_rows_in_areas_are_laid_out_read_calculated_and_written_where_adobe_binds_them"]
 notes = "the datasets packet inside the PDF: read on open (values, dates in ISO form, check and radio states, extra rows for repeating subforms) and rewritten after every form edit from the fields' SOM paths (/PCSom), with areas left out of data paths as Adobe binds them. Missing: importing or exporting a standalone XML/XDP data file, explicit bind refs, data descriptions"
 
@@ -5213,7 +5213,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["sign.fill.text"]
-tools = ["fill_sign_add"]
+tools = ["fillSign.add"]
 evidence = ["crates/engine/annot/src/tests.rs::fill_and_sign_items_are_drawn", "crates/engine/automation/tests/automation.rs::fill_and_sign_through_tools"]
 notes = "typewriter FreeText, 10 pt Helvetica"
 
@@ -5225,7 +5225,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["sign.fill.check", "sign.fill.cross", "sign.fill.dot", "sign.fill.line"]
-tools = ["fill_sign_add"]
+tools = ["fillSign.add"]
 evidence = ["crates/engine/annot/src/tests.rs::fill_and_sign_items_are_drawn"]
 notes = "Kition PDF-drawn stamps"
 
@@ -5237,7 +5237,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["sign.fill.date"]
-tools = ["fill_sign_add", "fill_sign_date_format"]
+tools = ["fillSign.add", "fillSign.setDateFormat"]
 evidence = ["crates/engine/automation/tests/automation.rs::fill_and_sign_through_tools", "crates/engine/engine/src/dates.rs::presets_write_the_day_in_their_own_order", "crates/engine/engine/src/dates.rs::names_follow_the_date_language"]
 notes = "local date in Preferences ▸ Date format (default m/d/yyyy; 12 presets or any pattern in Acrobat date letters with \\ escapes, checked and previewed as typed, remembered; only whole date codes accepted; month and weekday names in the interface languages, Czech months in the genitive after a day, following the interface language unless one is picked; fill_sign_add takes a one-off format and language). Beyond Acrobat: its Fill & Sign has no format setting (only Acrobat Sign accounts do). Missing: Fill & Sign text is Helvetica/WinAnsi, so a date with letters outside Western European (Czech ř, Japanese, Chinese names) is refused with a warning instead of being saved as ?; the OS locale's format isn't offered as a preset; names in languages without an interface translation"
 
@@ -5249,7 +5249,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["sign.fill.signature", "sign.fill.initials", "sign.fill.signature.change", "sign.fill.initials.change", "sign.fill.signature.remove", "sign.fill.initials.remove"]
-tools = ["fill_sign_add", "comment_edit", "comment_image_preview"]
+tools = ["fillSign.add", "comment.edit", "comment.previewImage"]
 evidence = ["crates/engine/automation/tests/automation.rs::typed_signatures_stay_upright_on_rotated_pages", "crates/engine/automation/tests/automation.rs::image_signature_preview_layers_are_read_only_and_survive_encrypted_save", "crates/engine/engine/src/signature_image.rs::embedded_signature_preview_preserves_alpha_without_editing_the_document", "crates/engine/engine/src/signature_image.rs::oversized_embedded_signature_preview_is_rejected_before_decoding", "crates/support/fonts/src/script.rs::a_name_becomes_outlines", "crates/support/fonts/src/script.rs::long_names_keep_every_glyph_with_bounded_outline_work", "crates/engine/automation/tests/automation.rs::fill_and_sign_through_tools", "crates/engine/engine/src/signature_image.rs::image_signatures_preserve_alpha_and_fit_the_signature_box", "crates/engine/engine/src/signature_image.rs::invalid_and_oversized_signature_images_are_rejected", "crates/engine/engine/src/signature_image.rs::jpeg_signatures_are_normalized_to_png", "crates/engine/engine/src/signature_image.rs::jpeg_signature_orientation_is_applied_before_preview_and_embedding", "crates/engine/engine/src/signature_image.rs::very_wide_image_signatures_keep_the_requested_rectangle", "crates/engine/automation/tests/automation.rs::image_signatures_through_tools_preserve_transparency_and_survive_save"]
 notes = "signature and initials, typed (Dancing Script outlines as filled paths, no font embedded), drawn or imported from local PNG/JPEG images; all three are placed upright and anchored as displayed on pages with /Rotate; saved in settings with preview cards and add/change/remove controls; changes leave placed annotations untouched; images preserve alpha, aspect ratio and EXIF orientation, fit within 150 pt by 32 pt (24 pt for initials), and are normalized without source paths or metadata; image previews follow the pointer at placement size with zoom and rotation; signatures/initials place once then select the new annotation; while a Fill & Sign tool is active, marks already placed are picked up as with Select (hover shows the move cursor, a click selects, a drag moves, the selected mark's handles resize) and the tool places only away from them; embedded image signatures resize and move live, hiding the frame during movement and restoring it on release; corner handles preserve the original aspect ratio of the embedded image with the opposite corner anchored, while edge midpoint handles stretch width or height independently; cached background layers preserve page content and alpha, including reopened/encrypted documents; Escape cancels a gesture without committing; stamps resize through selection handles or comment_edit with their original appearance; native and web asynchronous pickers; fill_sign_add accepts path instead of text; image imports capped at 4 MiB, 4 megapixels and 4096 pixels per side"
 
@@ -5261,7 +5261,7 @@ tier = "P0"
 milestone = "M5"
 status = "shipped"
 commands = ["comment.flatten"]
-tools = ["doc_save", "doc_flatten"]
+tools = ["doc_save", "file.flatten"]
 evidence = ["crates/engine/edit/src/tests.rs::fill_sign_flatten_bakes_marks_keeps_other_comments_and_does_not_reuse_pcfl0", "crates/engine/engine/src/tests.rs::flattening_fill_and_sign_keeps_other_comments_fields_and_undoes", "crates/engine/engine/src/tests.rs::flattening_fill_and_sign_is_refused_without_permission_to_change", "crates/engine/automation/tests/automation.rs::saving_with_flatten_fill_sign_bakes_marks_and_leaves_other_comments"]
 notes = "Preferences ▸ Fill & Sign, and doc_save flatten_fill_sign, bake text, marks and signatures into the page. The option defaults off, so a normal save leaves them editable. Other comments and form fields stay. Flatten comments still flattens every comment."
 
@@ -5313,7 +5313,7 @@ tier = "P0"
 milestone = "M3"
 status = "partial"
 commands = ["protect.properties"]
-tools = ["doc_info"]
+tools = ["file.getInfo"]
 evidence = []
 notes = ""
 
@@ -5325,7 +5325,7 @@ tier = "P0"
 milestone = "M8"
 status = "shipped"
 commands = ["protect.password"]
-tools = ["doc_protect"]
+tools = ["file.protect"]
 evidence = ["crates/engine/engine/src/tests.rs::protect_with_an_open_password_then_save_reopen_and_undo", "crates/engine/automation/tests/automation.rs::protecting_through_tools"]
 notes = "Protect Using Password (Viewing); applied by the next save"
 
@@ -5337,7 +5337,7 @@ tier = "P0"
 milestone = "M8"
 status = "shipped"
 commands = ["protect.password"]
-tools = ["doc_protect"]
+tools = ["file.protect"]
 evidence = ["crates/engine/engine/src/tests.rs::permissions_password_restricts_others_but_not_this_session", "crates/engine/automation/tests/automation.rs::protecting_through_tools"]
 notes = "Protect Using Password (Editing); the author keeps full rights after saving"
 
@@ -5349,7 +5349,7 @@ tier = "P0"
 milestone = "M8"
 status = "shipped"
 commands = ["protect.password"]
-tools = ["doc_protect"]
+tools = ["file.protect"]
 evidence = ["crates/engine/engine/src/tests.rs::permissions_password_restricts_others_but_not_this_session"]
 notes = "Advanced Options: printing (none/low/high), changes (5 levels), copying, screen readers"
 
@@ -5361,7 +5361,7 @@ tier = "P1"
 milestone = "M8"
 status = "shipped"
 commands = ["protect.password"]
-tools = ["doc_protect"]
+tools = ["file.protect"]
 evidence = ["crates/engine/engine/src/tests.rs::protection_is_validated_undoable_and_never_logged"]
 notes = "AES-256 (default), AES-128, RC4-128, RC4-40"
 
@@ -5373,7 +5373,7 @@ tier = "P1"
 milestone = "M8"
 status = "shipped"
 commands = ["protect.password"]
-tools = ["doc_protect"]
+tools = ["file.protect"]
 evidence = ["crates/engine/engine/src/tests.rs::protection_is_validated_undoable_and_never_logged"]
 notes = "Advanced Options; disabled for RC4 levels as in Acrobat"
 
@@ -5409,7 +5409,7 @@ tier = "P0"
 milestone = "M8"
 status = "shipped"
 commands = ["protect.remove"]
-tools = ["doc_unprotect"]
+tools = ["file.unprotect"]
 evidence = ["crates/engine/engine/src/tests.rs::protect_with_an_open_password_then_save_reopen_and_undo", "crates/engine/automation/tests/automation.rs::protecting_through_tools"]
 notes = "needs the permissions password (or none set)"
 
@@ -5493,7 +5493,7 @@ tier = "P0"
 milestone = "M8"
 status = "shipped"
 commands = ["redact.mark"]
-tools = ["redact_mark"]
+tools = ["redaction.mark"]
 evidence = ["crates/engine/automation/tests/automation.rs::redacting_through_tools", "crates/engine/redact/src/tests.rs::glyphs_under_a_mark_go_and_the_rest_stays_put"]
 notes = "drag across text (or select first) with the Redact tool"
 
@@ -5505,7 +5505,7 @@ tier = "P0"
 milestone = "M8"
 status = "shipped"
 commands = ["redact.mark"]
-tools = ["redact_mark"]
+tools = ["redaction.mark"]
 evidence = ["crates/engine/redact/src/tests.rs::images_are_removed_or_have_their_pixels_cleared"]
 notes = "drag a box anywhere else"
 
@@ -5517,7 +5517,7 @@ tier = "P0"
 milestone = "M8"
 status = "partial"
 commands = ["redact.pages"]
-tools = ["redact_mark"]
+tools = ["redaction.mark"]
 evidence = []
 notes = "Mark Page Range: current page or a range"
 
@@ -5529,7 +5529,7 @@ tier = "P0"
 milestone = "M8"
 status = "shipped"
 commands = ["redact.search"]
-tools = ["redact_mark"]
+tools = ["redaction.mark"]
 evidence = ["crates/engine/automation/tests/automation.rs::redacting_through_tools"]
 notes = "single word or phrase, every match on every page"
 
@@ -5541,7 +5541,7 @@ tier = "P1"
 milestone = "M8"
 status = "shipped"
 commands = ["redact.search"]
-tools = ["redact_mark"]
+tools = ["redaction.mark"]
 evidence = ["crates/engine/redact/src/patterns.rs::word_lists_are_trimmed_unique_and_bounded", "crates/engine/automation/tests/automation.rs::redacting_word_lists_through_tools"]
 notes = "Find text and redact ▸ Multiple words or phrases: one per line, typed or imported from a .txt file (at most 1 MB, 1,000 entries of 256 characters); every match of each is marked in one undo step; redact_mark words reports marks per word. Not yet: whole-words-only and case-sensitive options, exporting the list"
 
@@ -5553,7 +5553,7 @@ tier = "P0"
 milestone = "M8"
 status = "shipped"
 commands = ["redact.search"]
-tools = ["redact_mark"]
+tools = ["redaction.mark"]
 evidence = ["crates/engine/redact/src/patterns.rs::phone_numbers", "crates/engine/redact/src/patterns.rs::credit_cards_need_a_valid_checksum", "crates/engine/automation/tests/automation.rs::redacting_through_tools"]
 notes = "phone (North American, E.164 with + country code, national with trunk 0), e-mail, credit card (Luhn), SSN, dates (English US forms)"
 
@@ -5601,7 +5601,7 @@ tier = "P0"
 milestone = "M8"
 status = "partial"
 commands = ["redact.properties"]
-tools = ["redact_mark"]
+tools = ["redaction.mark"]
 evidence = ["crates/engine/redact/src/tests.rs::overlay_text_takes_its_font_size_colour_alignment_and_repeats"]
 notes = "fill colour or none; overlay text with font, size or auto-size, colour, alignment and repeat, or redaction codes (protect.redaction-codes)"
 
@@ -5613,7 +5613,7 @@ tier = "P1"
 milestone = "M8"
 status = "partial"
 commands = ["redact.properties"]
-tools = ["redact_mark"]
+tools = ["redaction.mark"]
 evidence = ["crates/engine/redact/src/tests.rs::redaction_codes_join_in_set_order_and_reject_strangers", "crates/engine/automation/tests/automation.rs::redacting_with_codes_through_tools"]
 notes = "built-in U.S. FOIA (5 U.S.C. 552(b)) and U.S. Privacy Act (552a) sets; picked codes become the overlay text, in the set's order. Missing: Edit Codes, custom code sets, import/export of code sets"
 
@@ -5625,7 +5625,7 @@ tier = "P0"
 milestone = "M8"
 status = "shipped"
 commands = ["redact.apply"]
-tools = ["redact_apply"]
+tools = ["redaction.apply"]
 evidence = ["crates/engine/engine/src/tests.rs::redaction_marks_apply_for_good_and_undo", "crates/engine/automation/tests/automation.rs::redacting_through_tools"]
 notes = "confirmation; one undo step; next save is a full rewrite"
 
@@ -5637,7 +5637,7 @@ tier = "P0"
 milestone = "M8"
 status = "shipped"
 commands = ["redact.apply"]
-tools = ["redact_apply"]
+tools = ["redaction.apply"]
 evidence = ["crates/engine/redact/src/tests.rs::glyphs_under_a_mark_go_and_the_rest_stays_put", "crates/engine/redact/src/tests.rs::kerning_spacing_scaling_and_line_operators_are_honoured", "crates/engine/redact/src/tests.rs::rotated_text_and_composite_fonts", "crates/engine/redact/src/tests.rs::shared_form_xobjects_are_copied_not_changed"]
 notes = "TJ displacement keeps the rest in place; simple, composite (CMaps), Type 3 fonts"
 
@@ -5649,7 +5649,7 @@ tier = "P0"
 milestone = "M8"
 status = "shipped"
 commands = ["redact.apply"]
-tools = ["redact_apply"]
+tools = ["redaction.apply"]
 evidence = ["crates/engine/redact/src/tests.rs::images_are_removed_or_have_their_pixels_cleared"]
 notes = "covered pixels cleared in a copy; DCT/JPX/JBIG2/CCITT images removed whole"
 
@@ -5661,7 +5661,7 @@ tier = "P0"
 milestone = "M8"
 status = "shipped"
 commands = ["redact.apply"]
-tools = ["redact_apply"]
+tools = ["redaction.apply"]
 evidence = ["crates/engine/redact/src/tests.rs::vectors_are_removed_or_clipped_and_inline_images_go"]
 notes = "covered paths removed, others clipped; shadings clipped"
 
@@ -5673,7 +5673,7 @@ tier = "P0"
 milestone = "M8"
 status = "shipped"
 commands = ["redact.apply"]
-tools = ["redact_apply"]
+tools = ["redaction.apply"]
 evidence = ["crates/engine/redact/src/tests.rs::comments_links_and_fields_under_a_mark_go"]
 notes = "with pop-ups; fields lose all widgets"
 
@@ -5685,7 +5685,7 @@ tier = "P0"
 milestone = "M8"
 status = "shipped"
 commands = ["redact.apply"]
-tools = ["redact_apply"]
+tools = ["redaction.apply"]
 evidence = ["crates/engine/redact/src/tests.rs::tags_lose_what_redaction_removed"]
 notes = "marked content changed by redaction is found by comparing each MCID before and after; its elements lose Alt, ActualText and E, and references to now-empty marked content are dropped; untouched tags stay"
 
@@ -5697,7 +5697,7 @@ tier = "P0"
 milestone = "M8"
 status = "shipped"
 commands = ["redact.apply"]
-tools = ["redact_apply"]
+tools = ["redaction.apply"]
 evidence = ["crates/engine/redact/src/tests.rs::unreadable_content_fails_closed", "crates/engine/engine/src/tests.rs::redaction_marks_apply_for_good_and_undo"]
 notes = "re-reads redacted pages; residue or unreadable content fails the whole operation"
 
@@ -5733,7 +5733,7 @@ tier = "P1"
 milestone = "M8"
 status = "shipped"
 commands = ["protect.remove_hidden"]
-tools = ["doc_hidden_info", "doc_remove_hidden"]
+tools = ["file.getHiddenInfo", "file.removeHidden"]
 evidence = ["crates/engine/redact/src/tests.rs::hidden_information_is_counted_and_removed", "crates/engine/automation/tests/automation.rs::removing_hidden_information_through_tools"]
 notes = "metadata, attachments, comments, form fields (flattened), hidden text, hidden layers, bookmarks, links/actions/scripts, private data; overlapping objects and cropped content pending"
 
@@ -5745,7 +5745,7 @@ tier = "P1"
 milestone = "M8"
 status = "shipped"
 commands = ["redact.sanitize"]
-tools = ["doc_remove_hidden"]
+tools = ["file.removeHidden"]
 evidence = ["crates/engine/redact/src/tests.rs::hidden_information_is_counted_and_removed", "crates/engine/automation/tests/automation.rs::removing_hidden_information_through_tools"]
 notes = "every category, then a full rewrite on save"
 
@@ -5977,7 +5977,7 @@ tier = "P0"
 milestone = "M9"
 status = "shipped"
 commands = ["sign.validate"]
-tools = ["sign_list"]
+tools = ["signature.list"]
 evidence = ["crates/engine/sign/tests/pdf.rs::validates_a_signature_made_by_openssl", "crates/engine/sign/tests/pdf.rs::validates_signatures_written_with_ber_indefinite_lengths", "crates/engine/sign/tests/ber.rs::deeply_nested_segmented_content_is_an_error_not_a_stack_overflow", "crates/engine/sign/tests/ber.rs::indefinite_length_nesting_bombs_are_refused"]
 notes = "validated, including BER-encoded CMS (indefinite lengths and segmented strings, as DocuSign, Documenso, Adobe PPKMS and Windows write it; the BER is reported in the details); new signatures use CAdES. Not read: BER high tag numbers. Still missing: multiple SignerInfos, counter-signatures, CMS with the signer's cert referenced but absent"
 
@@ -6121,7 +6121,7 @@ tier = "P0"
 milestone = "M9"
 status = "shipped"
 commands = ["sign.validate"]
-tools = ["sign_list"]
+tools = ["signature.list"]
 evidence = ["crates/engine/sign/tests/pdf.rs::signing_then_validating_with_and_without_trust", "crates/engine/automation/tests/automation.rs::digital_ids_signing_and_validation_through_tools", "crates/engine/sign/tests/chain.rs::a_trusted_signer_whose_certificate_may_not_sign_is_not_valid"]
 notes = "The signer's key usage, extended key usage and critical extensions are checked; name constraints are not"
 
@@ -6133,7 +6133,7 @@ tier = "P0"
 milestone = "M9"
 status = "partial"
 commands = ["sign.panel"]
-tools = ["sign_list"]
+tools = ["signature.list"]
 evidence = []
 notes = "per-signature tree with details and actions; no per-revision page outline yet"
 
@@ -6145,7 +6145,7 @@ tier = "P0"
 milestone = "M9"
 status = "partial"
 commands = ["sign.panel"]
-tools = ["sign_list"]
+tools = ["signature.list"]
 evidence = []
 notes = ""
 
@@ -6169,7 +6169,7 @@ tier = "P0"
 milestone = "M9"
 status = "partial"
 commands = ["sign.panel"]
-tools = ["sign_list"]
+tools = ["signature.list"]
 evidence = []
 notes = "validity summary, signer, issuer, time, algorithm in the panel; no separate properties dialog"
 
@@ -6181,7 +6181,7 @@ tier = "P1"
 milestone = "M9"
 status = "partial"
 commands = ["sign.panel"]
-tools = ["sign_list"]
+tools = ["signature.list"]
 evidence = []
 notes = "Signatures panel ▸ Show certificate: the chain (root on top) and Summary, Details (serial, key, constraints, usage, SHA-1/SHA-256 digests) and Trust tabs; add to trusted certificates; export"
 
@@ -6253,7 +6253,7 @@ tier = "P0"
 milestone = "M9"
 status = "shipped"
 commands = ["sign.panel"]
-tools = ["sign_list"]
+tools = ["signature.list"]
 evidence = ["crates/engine/sign/tests/pdf.rs::later_changes_are_classified_under_the_signature_permissions", "crates/engine/sign/tests/pdf.rs::signing_an_existing_field_and_counter_signing", "crates/engine/engine/src/tests.rs::signing_saving_trusting_and_commenting_afterwards", "crates/engine/sign/tests/pdf.rs::validation_data_and_xmp_added_after_signing_are_not_tampering", "crates/engine/sign/tests/pdf.rs::a_dss_entry_does_not_make_the_object_it_names_part_of_the_store", "crates/engine/sign/tests/pdf.rs::an_existing_dictionary_is_not_a_store_part_because_the_store_names_it", "crates/engine/sign/tests/pdf.rs::an_existing_array_stays_what_it_is_when_the_store_points_at_it", "crates/engine/sign/tests/pdf.rs::a_signed_store_may_grow_but_not_lose_or_swap_entries", "crates/engine/sign/tests/pdf.rs::a_dictionary_labelled_metadata_is_not_a_metadata_change", "crates/engine/sign/tests/pdf.rs::a_stream_already_labelled_metadata_when_signed_is_not_metadata_unless_the_catalog_names_it", "crates/engine/sign/tests/pdf.rs::the_catalogs_own_xmp_stream_may_still_be_rewritten_after_signing"]
 notes = "revision diff classified as signing, form fill, comments, metadata, page content or structure. Later revisions that add DSS data (new /Certs, /CRLs, /OCSPs, /VRI objects, or ones of the signed store that only grew) or rewrite the catalog's XMP are permitted changes; a /DSS entry that names other objects, or a /Type /DSS or /Type /Metadata label on an existing dictionary or stream, does not excuse changing them (negative tests at every DocMDP level)"
 
@@ -6289,7 +6289,7 @@ tier = "P1"
 milestone = "M9"
 status = "shipped"
 commands = []
-tools = ["sign_list"]
+tools = ["signature.list"]
 evidence = ["crates/engine/engine/src/tests.rs::signing_saving_trusting_and_commenting_afterwards"]
 notes = "validated when opened and after every edit"
 
@@ -6401,7 +6401,7 @@ tier = "P0"
 milestone = "M10"
 status = "shipped"
 commands = ["ocr.recognize"]
-tools = ["ocr_recognize", "ocr_status"]
+tools = ["ocr.recognize", "ocr.status"]
 evidence = ["crates/engine/engine/src/tests.rs::recognize_text_makes_a_scanned_page_searchable", "crates/engine/automation/tests/automation.rs::ocr_tools_make_a_scan_searchable"]
 notes = "ocrs engine (MIT/Apache) with CC-BY-SA models fetched by `cargo xtask models`; the desktop release packages ship them (packaging/env.sh stage_models), the web build does not yet; runs on a worker thread with progress; one undoable step; pages with text are skipped."
 
@@ -6413,7 +6413,7 @@ tier = "P0"
 milestone = "M10"
 status = "shipped"
 commands = ["ocr.recognize"]
-tools = ["ocr_recognize"]
+tools = ["ocr.recognize"]
 evidence = ["crates/engine/automation/tests/automation.rs::ocr_tools_make_a_scan_searchable"]
 notes = "All pages, current page or a range."
 
@@ -6437,7 +6437,7 @@ tier = "P0"
 milestone = "M10"
 status = "partial"
 commands = ["ocr.recognize"]
-tools = ["ocr_recognize"]
+tools = ["ocr.recognize"]
 evidence = []
 notes = "Language choice exists, but the models read only the Latin alphabet without accents (English)."
 
@@ -6449,7 +6449,7 @@ tier = "P0"
 milestone = "M10"
 status = "partial"
 commands = ["ocr.recognize"]
-tools = ["ocr_recognize"]
+tools = ["ocr.recognize"]
 evidence = ["crates/engine/engine/src/tests.rs::recognize_text_makes_a_scanned_page_searchable"]
 notes = "Invisible text (Tr 3) fitted to each word box; the image is not deskewed or downsampled (exact mode only)."
 
@@ -6461,7 +6461,7 @@ tier = "P1"
 milestone = "M10"
 status = "shipped"
 commands = ["ocr.recognize"]
-tools = ["ocr_recognize"]
+tools = ["ocr.recognize"]
 evidence = ["crates/engine/engine/src/tests.rs::recognize_text_makes_a_scanned_page_searchable"]
 notes = "The image is left untouched."
 
@@ -6497,7 +6497,7 @@ tier = "P1"
 milestone = "M10"
 status = "shipped"
 commands = ["ocr.recognize"]
-tools = ["ocr_recognize"]
+tools = ["ocr.recognize"]
 evidence = ["crates/engine/engine/src/tests.rs::recognize_text_makes_a_scanned_page_searchable", "crates/engine/automation/tests/automation.rs::ocr_tools_make_a_scan_searchable"]
 notes = "Pages that already have text are skipped and reported (skip_text_pages false reads them anyway)."
 
@@ -6729,7 +6729,7 @@ tier = "P0"
 milestone = "M10"
 status = "shipped"
 commands = ["create.images"]
-tools = ["doc_create"]
+tools = ["file.new"]
 evidence = ["crates/engine/create/src/tests.rs::jpeg_2000_images_are_embedded_as_is", "crates/engine/create/src/tests.rs::images_export_as_jpeg_unchanged_and_others_as_png", "crates/engine/create/src/tests.rs::embedded_icc_profiles_tag_the_image_colour_space"]
 notes = "PNG, JPEG, TIFF (multi-page), GIF (first frame), BMP, and JPEG 2000 (JP2 or codestream, embedded as JPXDecode with its capture resolution). JPEG and PNG ICC profiles are kept as /ICCBased; TIFF profiles are not read yet"
 
@@ -6741,7 +6741,7 @@ tier = "P0"
 milestone = "M10"
 status = "shipped"
 commands = ["create.images", "create.file"]
-tools = ["doc_create"]
+tools = ["file.new"]
 evidence = ["crates/engine/create/src/tests.rs::bmp_gif_and_multi_page_tiff_images"]
 notes = "every page; 1-bit scans stay 1-bit; resolution from the TIFF"
 
@@ -6753,7 +6753,7 @@ tier = "P0"
 milestone = "M10"
 status = "shipped"
 commands = ["create.file"]
-tools = ["doc_create"]
+tools = ["file.new"]
 evidence = ["crates/engine/create/src/tests.rs::text_is_wrapped_and_paginated", "crates/engine/automation/tests/automation.rs::creating_and_reducing_through_tools"]
 notes = "Helvetica 11 pt on US Letter; form feeds start pages"
 
@@ -6801,7 +6801,7 @@ tier = "P0"
 milestone = "M10"
 status = "shipped"
 commands = ["create.blank"]
-tools = ["doc_create"]
+tools = ["file.new"]
 evidence = ["crates/engine/create/src/tests.rs::blank_documents", "crates/engine/automation/tests/automation.rs::creating_and_reducing_through_tools"]
 notes = ""
 
@@ -6861,7 +6861,7 @@ tier = "P2"
 milestone = "M10"
 status = "partial"
 commands = ["create.images"]
-tools = ["doc_create"]
+tools = ["file.new"]
 evidence = ["crates/engine/create/src/tests.rs::image_resolution_override_changes_size_without_resampling", "crates/engine/automation/tests/automation.rs::creating_images_with_dpi_through_tools"]
 notes = "Page sizing: embedded resolution (72 dpi fallback), fixed 72 dpi, or custom 1–1200 dpi; pixels are not resampled. Compression options are still absent. Windows image context menu opens the same chooser; other OS context-menu integration not yet."
 
@@ -6957,7 +6957,7 @@ tier = "P0"
 milestone = "M10"
 status = "shipped"
 commands = ["export.image"]
-tools = ["doc_export_images", "page_render"]
+tools = ["doc_export_images", "page.render"]
 evidence = ["crates/engine/engine/src/tests.rs::export_images_and_text_follow_the_working_file", "crates/engine/automation/tests/automation.rs::exporting_images_and_text_through_tools"]
 notes = "PNG at 72–600 dpi, page ranges; includes unsaved edits; background thread with progress"
 
@@ -7017,7 +7017,7 @@ tier = "P0"
 milestone = "M10"
 status = "shipped"
 commands = ["export.text"]
-tools = ["doc_export_text", "text_extract"]
+tools = ["doc_export_text", "text.extract"]
 evidence = ["crates/engine/automation/tests/automation.rs::exporting_images_and_text_through_tools"]
 notes = "plain reading-order text; accessible text (tags) comes with M12"
 
@@ -7113,7 +7113,7 @@ tier = "P0"
 milestone = "M2"
 status = "shipped"
 commands = []
-tools = ["text_extract"]
+tools = ["text.extract"]
 evidence = ["crates/render/render/src/text.rs::rtl_runs_come_out_in_logical_order_and_cjk_has_no_spaces", "crates/render/render/src/text.rs::lines_words_and_search", "crates/engine/automation/tests/automation.rs::parallel_text_extraction_keeps_page_order_and_follows_edits"]
 notes = ""
 
@@ -7513,7 +7513,7 @@ tier = "P1"
 milestone = "M11"
 status = "shipped"
 commands = ["optimize.advanced"]
-tools = ["doc_audit_space"]
+tools = ["file.auditSpace"]
 evidence = ["crates/engine/optimize/tests/optimize.rs::space_audit_shares_the_file_out_by_kind", "crates/engine/automation/tests/automation.rs::auditing_space_through_tools"]
 notes = "PDF Optimizer ▸ Audit space usage: 16 categories (images, content streams, fonts, X Object forms, structure, bookmarks, thumbnails, comments, forms, named destinations, colour spaces, shadings, patterns, graphics states, embedded files, overhead) with bytes and percentages"
 
@@ -7693,7 +7693,7 @@ tier = "P1"
 milestone = "M11"
 status = "partial"
 commands = ["standards.pdfa"]
-tools = ["pdfa_verify"]
+tools = ["pdfa.verify"]
 evidence = ["crates/engine/preflight/src/tests.rs::verify_reports_what_breaks_pdfa", "crates/engine/preflight/src/tests.rs::convert_fixes_all_but_fonts", "crates/engine/preflight/src/tests.rs::verify_reports_an_output_intent_that_does_not_match_device_colour", "crates/engine/automation/tests/automation.rs::pdfa_through_tools"]
 notes = "PDF/A-2b/3b structural rules: identification, encryption, output intent (present, and RGB/CMYK to match DeviceRGB/DeviceCMYK use), fonts embedded, annotations, actions, images, embedded files. Not yet: content-stream operator checks, transparency details, PDF/A-1 and -4, a veraPDF comparison."
 
@@ -7705,7 +7705,7 @@ tier = "P1"
 milestone = "M11"
 status = "partial"
 commands = ["standards.pdfa"]
-tools = ["pdfa_convert"]
+tools = ["pdfa.convert"]
 evidence = ["crates/engine/preflight/src/tests.rs::convert_fixes_all_but_fonts", "crates/engine/preflight/src/tests.rs::convert_does_not_give_cmyk_documents_an_srgb_output_intent", "crates/engine/automation/tests/automation.rs::pdfa_through_tools"]
 notes = "Fixes XMP, output intent (generated sRGB ICC profile, only for documents without DeviceCMYK; CMYK documents need a user-chosen CMYK output intent, not yet offered), forbidden actions, annotation flags, interpolation, encryption, AFRelationship. Not yet: embedding fonts, converting device CMYK, flattening transparency for PDF/A-1."
 
@@ -7753,7 +7753,7 @@ tier = "P1"
 milestone = "M11"
 status = "partial"
 commands = ["standards.pdfa"]
-tools = ["pdfa_convert", "pdfa_verify"]
+tools = ["pdfa.convert", "pdfa.verify"]
 evidence = ["crates/engine/preflight/src/tests.rs::convert_fixes_all_but_fonts", "crates/engine/automation/tests/automation.rs::pdfa_through_tools"]
 notes = "sRGB output intent added and listed; no choice of other conditions yet."
 
@@ -7801,7 +7801,7 @@ tier = "P1"
 milestone = "M11"
 status = "partial"
 commands = ["standards.pdfa"]
-tools = ["pdfa_verify"]
+tools = ["pdfa.verify"]
 evidence = ["crates/engine/automation/tests/automation.rs::pdfa_through_tools"]
 notes = "Declared PDF/A, PDF/UA and output intents shown in the PDF/A dialog and returned by pdfa_verify."
 
@@ -8349,7 +8349,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::an_untagged_document_fails_the_document_rules", "crates/engine/a11y/src/tests.rs::a_well_tagged_document_passes", "crates/engine/automation/tests/automation.rs::accessibility_check_report_and_fixes_through_tools"]
 notes = "full check: options dialog (report, page range, 32 rules by category, 31 on by default), results panel by category with Passed / Failed / Needs manual check / Skipped and findings that go to their page"
 
@@ -8373,7 +8373,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_fix"]
+tools = ["accessibility.fix"]
 evidence = ["crates/engine/automation/tests/automation.rs::accessibility_check_report_and_fixes_through_tools"]
 notes = "right-click a rule: Fix (language via Document Properties, title, tab order), Skip Rule (kept on Check Again), Explain, Check Again, Show Report, Options"
 
@@ -8385,7 +8385,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::an_untagged_document_fails_the_document_rules"]
 notes = "rule permission-flag: the file's /P bit 10 whichever password opened it"
 
@@ -8397,7 +8397,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::scans_identity_fonts_and_long_documents"]
 notes = "rule image-only: images and no text on the checked pages"
 
@@ -8409,7 +8409,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::an_untagged_document_fails_the_document_rules"]
 notes = "rule tagged-pdf: StructTreeRoot and MarkInfo Marked true"
 
@@ -8421,7 +8421,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::a_well_tagged_document_passes"]
 notes = "rule logical-reading-order: needs manual check"
 
@@ -8433,7 +8433,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/automation/tests/automation.rs::accessibility_check_report_and_fixes_through_tools"]
 notes = "rule primary-language: catalog /Lang; fix via Document Properties or accessibility_fix"
 
@@ -8445,7 +8445,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/automation/tests/automation.rs::accessibility_check_report_and_fixes_through_tools"]
 notes = "rule title: Info Title and DisplayDocTitle; Fix sets both"
 
@@ -8457,7 +8457,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::scans_identity_fonts_and_long_documents"]
 notes = "rule bookmarks: more than 20 pages need bookmarks"
 
@@ -8469,7 +8469,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/automation/tests/automation.rs::accessibility_check_report_and_fixes_through_tools"]
 notes = "rule color-contrast: needs manual check; off by default as in Acrobat"
 
@@ -8481,7 +8481,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::page_content_and_annotation_problems_are_found"]
 notes = "rule tagged-content: painting outside MCID or Artifact marked content, through form XObjects; counted per page"
 
@@ -8493,7 +8493,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::page_content_and_annotation_problems_are_found"]
 notes = "rule tagged-annotations: annotations other than popups, widgets and multimedia need /StructParent"
 
@@ -8505,7 +8505,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::page_content_and_annotation_problems_are_found"]
 notes = "rule tab-order: pages with annotations need /Tabs /S; Fix sets it on every page"
 
@@ -8517,7 +8517,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::scans_identity_fonts_and_long_documents"]
 notes = "rule character-encoding: ToUnicode, a standard encoding, or a predefined CJK collection; each font once"
 
@@ -8529,7 +8529,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::a_well_tagged_document_passes"]
 notes = "rule tagged-multimedia: Screen, Movie, Sound, RichMedia and 3D annotations need /StructParent"
 
@@ -8541,7 +8541,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::a_well_tagged_document_passes"]
 notes = "rule screen-flicker: needs manual check"
 
@@ -8553,7 +8553,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/automation/tests/automation.rs::accessibility_check_report_and_fixes_through_tools"]
 notes = "rule scripts: needs manual check"
 
@@ -8565,7 +8565,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::a_well_tagged_document_passes"]
 notes = "rule timed-responses: needs manual check"
 
@@ -8577,7 +8577,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::a_well_tagged_document_passes"]
 notes = "rule navigation-links: needs manual check"
 
@@ -8589,7 +8589,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::a_well_tagged_document_passes"]
 notes = "rule tagged-form-fields: widgets need /StructParent"
 
@@ -8601,7 +8601,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::page_content_and_annotation_problems_are_found"]
 notes = "rule field-descriptions: fields need a tooltip (/TU)"
 
@@ -8613,7 +8613,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::structure_problems_are_found"]
 notes = "rule figures-alt-text: Figure elements need Alt or ActualText (or an ancestor's)"
 
@@ -8625,7 +8625,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::structure_problems_are_found"]
 notes = "rule nested-alt-text: Alt inside an element with Alt"
 
@@ -8637,7 +8637,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::structure_problems_are_found"]
 notes = "rule alt-text-associated: Alt on an element with no content beneath it"
 
@@ -8649,7 +8649,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::structure_problems_are_found"]
 notes = "rule alt-text-hides-annotation: Alt on an element containing an OBJR"
 
@@ -8661,7 +8661,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::structure_problems_are_found"]
 notes = "rule other-elements-alt-text: Formula elements need Alt"
 
@@ -8673,7 +8673,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::structure_problems_are_found"]
 notes = "rule table-rows: TR parent is Table, THead, TBody or TFoot"
 
@@ -8685,7 +8685,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::structure_problems_are_found"]
 notes = "rule table-cells: TH/TD parent is TR"
 
@@ -8697,7 +8697,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::structure_problems_are_found"]
 notes = "rule table-headers: at least one TH"
 
@@ -8709,7 +8709,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::row_and_column_spans_keep_a_table_regular"]
 notes = "rule table-regularity: equal row widths counting ColSpan and RowSpan"
 
@@ -8721,7 +8721,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::structure_problems_are_found"]
 notes = "rule table-summary: Summary table attribute"
 
@@ -8733,7 +8733,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::structure_problems_are_found"]
 notes = "rule list-items: LI parent is L"
 
@@ -8745,7 +8745,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::structure_problems_are_found"]
 notes = "rule lbl-lbody: Lbl/LBody parent is LI (TOCI and notes allowed)"
 
@@ -8757,7 +8757,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.check"]
-tools = ["accessibility_check"]
+tools = ["accessibility.check"]
 evidence = ["crates/engine/a11y/src/tests.rs::structure_problems_are_found"]
 notes = "rule heading-nesting: H1–H6 never skip a level going down; the first is H1"
 
@@ -8925,7 +8925,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["a11y.alt_text"]
-tools = ["accessibility_figures", "accessibility_set_alt"]
+tools = ["accessibility.listFigures", "accessibility.setAlt"]
 evidence = ["crates/engine/a11y/src/tests.rs::figures_are_listed_with_their_alt_text_and_place", "crates/engine/a11y/src/tests.rs::setting_alt_text_and_marking_decorative", "crates/engine/automation/tests/automation.rs::accessibility_check_report_and_fixes_through_tools"]
 notes = "Set Alternate Text dialog: each tagged figure (role map honoured) with a preview of where it is drawn, its alternate text, Decorative figure (content becomes /Artifact, element leaves the tags and parent tree), Previous/Next, Save & Close as one undo step"
 
@@ -8949,7 +8949,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["file.properties"]
-tools = ["doc_initial_view"]
+tools = ["file.setInitialView"]
 evidence = ["crates/engine/organize/src/tests.rs::initial_view_round_trips_and_keeps_scripts", "crates/engine/automation/tests/automation.rs::initial_view_through_tools"]
 notes = "Document Properties ▸ Initial View ▸ Language (catalog /Lang)"
 
@@ -8961,7 +8961,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["file.properties"]
-tools = ["doc_initial_view"]
+tools = ["file.setInitialView"]
 evidence = ["crates/engine/automation/tests/automation.rs::initial_view_through_tools"]
 notes = "Initial View ▸ Show: Document Title (/DisplayDocTitle); the tab and window then show the title"
 
@@ -9061,7 +9061,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["doc.compare"]
-tools = ["doc_compare", "doc_compare_mark"]
+tools = ["file.compare", "file.compareMark"]
 evidence = ["crates/engine/compare/src/lib.rs::insertions_deletions_and_replacements", "crates/engine/engine/src/tests.rs::comparing_two_versions_of_a_document", "crates/engine/automation/tests/automation.rs::comparing_documents_through_tools"]
 notes = "Word-level Myers diff with patience anchors for long files; replaced/inserted/deleted shaded on the new file, listed in the Compare panel, or added as comments."
 
@@ -9073,7 +9073,7 @@ tier = "P1"
 milestone = "M12"
 status = "shipped"
 commands = ["doc.compare"]
-tools = ["doc_compare"]
+tools = ["file.compare"]
 evidence = ["crates/engine/compare/src/lib.rs::finds_changed_regions", "crates/engine/engine/src/tests.rs::comparing_two_versions_of_a_document", "crates/engine/automation/tests/automation.rs::comparing_documents_through_tools"]
 notes = "Pages rendered at 72 dpi and compared page by page; differing regions shaded orange where no text change explains them."
 
@@ -9145,7 +9145,7 @@ tier = "P1"
 milestone = "M13"
 status = "shipped"
 commands = ["actions.wizard"]
-tools = ["action_list", "action_run"]
+tools = ["action.list", "action_run"]
 evidence = ["crates/engine/engine/src/tests.rs::actions_run_their_steps_on_files", "crates/engine/automation/tests/automation.rs::actions_through_tools"]
 notes = "Desktop output filenames receive numbered suffixes when occupied, preserving every batch result and previous outputs. Pick an action and files; results go to a chosen folder, in the background with progress."
 
@@ -9313,7 +9313,7 @@ tier = "P0"
 milestone = "M2"
 status = "na"
 commands = []
-tools = ["doc_info", "page_render", "text_extract"]
+tools = ["file.getInfo", "page.render", "text.extract"]
 evidence = ["crates/engine/automation/tests/automation.rs::open_inspect_render_and_find"]
 notes = "Not in the kit: there is no CLI, desktop shell or installer here; agents use the KHP pdf_* tools and the host ships and updates the app (W1-41)."
 
@@ -9325,7 +9325,7 @@ tier = "P0"
 milestone = "M4"
 status = "na"
 commands = []
-tools = ["page_rotate", "page_delete", "doc_combine", "page_extract", "doc_split"]
+tools = ["page.rotate", "page.delete", "doc_combine", "page_extract", "doc_split"]
 evidence = ["crates/engine/automation/tests/automation.rs::combine_extract_and_split", "crates/engine/automation/tests/automation.rs::edit_undo_redo_and_save_round_trip"]
 notes = "Not in the kit: there is no CLI, desktop shell or installer here; agents use the KHP pdf_* tools and the host ships and updates the app (W1-41)."
 
@@ -9685,7 +9685,7 @@ tier = "P1"
 milestone = "M14"
 status = "partial"
 commands = ["app.preferences"]
-tools = ["js_enabled"]
+tools = ["script.enabled"]
 evidence = []
 notes = "Preferences dialog with Interface language, Documents and view (persistent default workspace with session override), Identity, Fill & Sign (flatten on save, off by default) and JavaScript; other categories still live in their tools, and it isn't generated from a schema yet."
 
@@ -9877,7 +9877,7 @@ tier = "P1"
 milestone = "M14"
 status = "partial"
 commands = ["app.preferences"]
-tools = ["js_enabled"]
+tools = ["script.enabled"]
 evidence = []
 notes = "Enable Acrobat JavaScript, remembered between runs."
 
