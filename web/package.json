@@ -16,6 +16,7 @@
     "test:flow": "node tests/flow.mjs chromium && node tests/flow.mjs webkit",
     "test:modes": "node tests/modes.mjs chromium && node tests/modes.mjs webkit",
     "test:focus": "node tests/focus.mjs chromium && node tests/focus.mjs webkit",
+    "test:drafts": "node tests/drafts.mjs chromium && node tests/drafts.mjs webkit",
     "test:performance": "node tests/performance.mjs",
     "test:cache": "node tests/ci.mjs cache",
     "test:geometry": "node tests/ci.mjs geometry",

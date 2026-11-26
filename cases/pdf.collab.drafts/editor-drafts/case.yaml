@@ -1,0 +1,32 @@
+format: 1
+id: pdf.collab.drafts/editor-drafts
+feature: pdf.collab.drafts
+intent: >-
+  Through the development host with a replica and checkpoints (`?replica=1&checkpoints=1`) on the
+  sample PDF, the person adds sticky notes with the Sticky note button. An agent's draft adds a
+  comment on page 2; its comparison lists the comment and changes nothing; the person comments on
+  page 1 meanwhile; the merged draft and both of the person's comments show in the Comments panel.
+  The editor's Undo takes back the draft's comment only, and Redo brings it back. A draft and the
+  person both commenting on page 1 are refused (stale, naming the overlay key both wrote) and the
+  document is unchanged. A labelled checkpoint restored over a later comment takes it away, and one
+  Undo brings it back. Saved and reloaded, the comments are as saved and the checkpoint is still
+  listed. In Chromium and WebKit.
+layer: gate
+source:
+  kind: probe
+  from: web/tests/drafts.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/drafts.mjs, chromium]
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/drafts.mjs, webkit]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium, webkit]
+tags: [browser]
+timeout_s: 180
+since: "2026-11-26"

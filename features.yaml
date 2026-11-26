@@ -191,16 +191,17 @@ features:
     dimension: [collab, data-safety]
     priority: P1
     status: partial
-    paths: [bindings/wasm/src/collab.rs, bindings/wasm/src/lib.rs, crates/engine/engine/src/kdm_bridge.rs, crates/kdm/kdm-model/src/session.rs, web/src/droppedEdits.ts, web/src/App.tsx]
+    paths: [bindings/wasm/src/collab.rs, bindings/wasm/src/lib.rs, crates/engine/engine/src/kdm_bridge.rs, crates/kdm/kdm-model/src/session.rs, web/src/droppedEdits.ts, web/src/App.tsx, web/tests/drafts.mjs]
     cases:
       - pdf.collab.drafts/merge-and-restore
+      - pdf.collab.drafts/editor-drafts
       - regressions/issue-pdf-agent-draft-undo-scope
       - regressions/issue-pdf-merge-changing-nothing
       - regressions/issue-pdf-merge-follow-up-in-step
       - regressions/issue-pdf-draft-before-rewrite
       - regressions/issue-pdf-dropped-edits-shown
       - regressions/issue-pdf-dropped-edits-notice
-    gap: "Engine tests merge a draft, compare it first and restore a version. A draft merges with later edits of the document object by object (overlay key); a draft and a later edit that both rewrite one object (comments on one page, which both write the page) are refused, not merged, and so are two sides adding to one list (a page's annotations or the page tree is one overlay entry). A draft made before a full rewrite is refused, not merged. The person's undo of a full rewrite under an agent's later edit still drops that edit: the editor says so, it does not prevent it. No case drives a draft or a restore in the editor yet."
+    gap: "Engine tests merge a draft, compare it first and restore a version. A draft merges with later edits of the document object by object (overlay key); a draft and a later edit that both rewrite one object (comments on one page, which both write the page) are refused, not merged, and so are two sides adding to one list (a page's annotations or the page tree is one overlay entry). A draft made before a full rewrite is refused, not merged. The person's undo of a full rewrite under an agent's later edit still drops that edit: the editor says so, it does not prevent it. The editor has no draft bar and no control to save a labelled version: the host compares, merges and records them (web/tests/drafts.mjs drives them through the development host)."
     since: "2026-11-25"
   - id: pdf.editor.replica-merges-file
     title: "A PDF changed outside Kition opens with its stored replica: the change shows, recorded as one import, and the document keeps its replica id and object ids (Kit UI protocol UI-R1)"
