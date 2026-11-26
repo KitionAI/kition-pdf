@@ -388,10 +388,10 @@ impl PdfSession {
         }
         let before = self.replica.version();
         let result = self.replica.transact(origin, |tx| {
-            let written = kition_kit::session::write_state(tx, &schema, &now, &then).map_err(crate::kdm_err)?;
+            kition_kit::session::write_state(tx, &schema, &now, &then).map_err(crate::kdm_err)?;
             // The repair reads only the root (its epoch and overlay): asked about it, it finds
             // whatever the restore wrote there.
-            repair(tx, &BTreeSet::from([crate::root_id()])).map(|()| written)
+            repair(tx, &BTreeSet::from([crate::root_id()]))
         });
         if let Err(error) = result {
             self.replica.take_changed();
