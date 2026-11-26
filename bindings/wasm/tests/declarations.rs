@@ -259,7 +259,7 @@ fn a_seeded_sample_of_writes_holds_every_object_it_changes() {
         println!("sampled: {command} {params}");
         let mut doc = fixture();
         let mut params = params;
-        if command.starts_with("link_") {
+        if command.starts_with("link.") {
             // A link's index counts every annotation of its page: read it.
             let links = doc.execute("link.list", json!({})).unwrap();
             let link = links["links"].as_array().unwrap().iter().find(|link| link["page"] == params["page"]).unwrap().clone();
