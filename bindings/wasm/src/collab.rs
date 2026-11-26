@@ -184,15 +184,16 @@ impl PdfDocument {
     /// person who accepts it, whoever made the draft (`mergeChanges`, as `kition-sdk`'s
     /// `export_kit_session!` answers it; KitModel M12a: `origin` is who the change is recorded
     /// as, the host passes the agent's): the engine's document follows, and the person's Undo
-    /// takes the whole draft back. Add the draft's blobs first. Answers `{"damage", "summary"}`,
+    /// takes the whole draft back. Add the draft's blobs first. Answers `{"damage", "summary", "scope"}`,
     /// `summary` the `StateDiff` of the replicated state before and after. A refused merge
     /// changes nothing and fails with its reason: the KDM's, or that the document was rewritten
     /// since the draft was made ([`kdm_model::REWRITTEN_SINCE`]), which the editor shows.
     pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<Value, String> {
         let before = self.replicated_state()?;
-        let damage = self.auto.session_mut().merge_changes(self.id, bytes, origin).map_err(engine_error)?;
+        let (scope, damage) = self.auto.session_mut().merge_changes(self.id, bytes, origin).map_err(engine_error)?;
         let after = self.replicated_state()?;
-        Ok(json!({ "damage": damage, "summary": kition_kit::kdm::diff::diff_states(&before, &after).to_json() }))
+        let summary = kition_kit::kdm::diff::diff_states(&before, &after).to_json();
+        Ok(json!({ "damage": damage, "summary": summary, "scope": scope.map(kition_kit::kdm::UndoScope::as_str) }))
     }
 
     /// What merging a draft's changes would change in the document now, as `StateDiff` JSON;
@@ -207,7 +208,7 @@ impl PdfDocument {
     /// the engine's document follows. Add the blobs it references first. Nothing changes when the
     /// states are equal; another document's snapshot is refused.
     pub fn restore_state(&mut self, snapshot: &[u8], origin: &Origin) -> Result<Damage, String> {
-        self.auto.session_mut().restore_state(self.id, snapshot, origin).map_err(engine_error)
+        self.auto.session_mut().restore_state(self.id, snapshot, origin).map(|(_, damage)| damage).map_err(engine_error)
     }
 
     /// An agent's reply (JSON text) with every KDM object id it holds as a value or a key named as
@@ -795,6 +796,7 @@ mod tests {
         let before = view(&mut doc);
         let answer = doc.merge_changes(&changes, &agent).unwrap();
         assert_ne!(answer["damage"], json!({ "kind": "none" }), "{answer}");
+        assert_eq!(answer["scope"], json!("person"), "the merge answers the person's history, as the replica records it: {answer}");
         assert_eq!(contents(&mut doc), ["before", "from the agent", "meanwhile"], "both sides' comments are there");
         let merged = view(&mut doc);
         let kdm = doc.auto.session().kdm(doc.id).unwrap();
@@ -918,7 +920,7 @@ mod tests {
         let state = doc.replicated_state().unwrap();
         let every: Vec<String> = state["objects"].as_object().unwrap().keys().cloned().collect();
         assert!(every.len() > 40, "{}", every.len());
-        let full = |doc: &PdfDocument, reply: &Value| ToolIds::of_replica(doc.auto.session().kdm(doc.id).unwrap().replica()).show_json(reply);
+        let full = |doc: &PdfDocument, reply: &Value| ToolIds::of_replica(doc.auto.session().kdm(doc.id).unwrap().replica()).show_reply_json(reply);
         let keyed: serde_json::Map<String, Value> = [(object.clone(), json!(1))].into_iter().collect();
         for reply in [json!({ "target": object, "note": format!("about {object}") }), json!({ "objects": every, "by": keyed })] {
             let shown: Value = serde_json::from_str(&doc.model_reply(&reply.to_string()).unwrap()).unwrap();

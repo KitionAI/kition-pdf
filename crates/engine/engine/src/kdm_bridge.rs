@@ -468,8 +468,8 @@ impl Session {
     /// draft's blobs first ([`Session::add_blobs`]). A draft made against an older base than the
     /// document's (a full rewrite since) is refused, saying so ([`kdm_model::PdfSession::merged_state`]).
     /// A refused merge changes nothing.
-    pub fn merge_changes(&mut self, id: DocId, bytes: &[u8], origin: &Origin) -> Result<Damage, EditError> {
-        self.take_in(id, UndoScope::Person, "Merge Draft", |kdm| kdm.merge_changes(bytes, origin))
+    pub fn merge_changes(&mut self, id: DocId, bytes: &[u8], origin: &Origin) -> Result<(Option<UndoScope>, Damage), EditError> {
+        self.take_in(id, "Merge Draft", |kdm| kdm.merge_changes(bytes, origin))
     }
 
     /// What merging a draft's changes would change in the document now (a `StateDiff`);
@@ -485,25 +485,23 @@ impl Session {
     /// the document by object id, as one undo step of `origin`'s scope (the replica records the
     /// restore as `origin`'s transaction), taken in as a merged draft is ([`Session::merge_changes`]). Add the blobs it references first. Nothing changes when the
     /// states are equal; another document's snapshot is refused.
-    pub fn restore_state(&mut self, id: DocId, snapshot: &[u8], origin: &Origin) -> Result<Damage, EditError> {
-        let history = UndoScope::of(origin.kind).unwrap_or(UndoScope::Person);
-        self.take_in(id, history, "Restore Version", |kdm| kdm.restore_state(snapshot, origin))
+    pub fn restore_state(&mut self, id: DocId, snapshot: &[u8], origin: &Origin) -> Result<(Option<UndoScope>, Damage), EditError> {
+        self.take_in(id, "Restore Version", |kdm| kdm.restore_state(snapshot, origin))
     }
 
     /// One transaction `write` makes on the document's replica, taken into the document as a
     /// command's step: the document follows the replica, and its history gets the step (whose
-    /// undo steps the replica back) when the transaction is one, in `history`: the scope the
-    /// replica recorded it in. A merged draft is the person's whatever its origin (the KDM records
-    /// it in the person's history, `Replica::merge_changes`, M12a), so the document's history must
-    /// put it there too, or the person's Undo would not find it and an agent's would step the
-    /// replica's person history.
+    /// undo steps the replica back) when the transaction is one, in the scope the replica recorded
+    /// it in (`write` answers it; `None`: no step). A merged draft is the person's whatever its
+    /// origin (the KDM records it in the person's history, `DraftMerge::scope`, M12a), so the
+    /// document's history puts it there too, or the person's Undo would not find it and an
+    /// agent's would step the replica's person history. Answers that scope and the damage.
     fn take_in(
         &mut self,
         id: DocId,
-        history: UndoScope,
         label: &str,
-        write: impl FnOnce(&mut PdfSession) -> kdm_model::kition_kit::session::Result<(u32, Damage)>,
-    ) -> Result<Damage, EditError> {
+        write: impl FnOnce(&mut PdfSession) -> kdm_model::kition_kit::session::Result<(Option<UndoScope>, Damage)>,
+    ) -> Result<(Option<UndoScope>, Damage), EditError> {
         let now = self.now();
         let kdm = self.active_kdm(id)?;
         let before = kdm.version();
@@ -512,8 +510,7 @@ impl Session {
         let follow = changed && (result.is_ok() || kdm.view_loaded());
         let doc = self.doc_mut(id)?;
         if follow {
-            let steps = result.as_ref().map_or(0, |(steps, _)| *steps);
-            if steps > 0
+            if let Some(history) = result.as_ref().ok().and_then(|(scope, _)| *scope)
                 && let Some(editor) = doc.editor.as_mut()
             {
                 let entry = (label.to_owned(), editor.cos.clone(), editor.keys.clone(), crate::Scope::Full, history, editor.edited);
@@ -526,14 +523,14 @@ impl Session {
                 editor.redo.retain(|u| u.4 != history);
                 let len = editor.undo.len();
                 doc.link.keep_redo(&keep);
-                doc.link.pushed(steps, len);
+                doc.link.pushed(1, len);
             }
             doc.follow_kdm(now)?;
         } else if changed && let Some(cos) = doc.editor.as_ref().map(|e| e.cos.clone()) {
             doc.link.detach(&cos);
         }
         doc.link.trim();
-        result.map(|(_, damage)| damage).map_err(replica_error)
+        result.map_err(replica_error)
     }
 
     /// Opens another replica's snapshot (with the blobs it references) as a new document, a

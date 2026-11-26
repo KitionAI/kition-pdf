@@ -314,10 +314,11 @@ impl PdfSession {
     }
 
     /// Takes a draft's changes (made on a fork of this replica) in as one transaction of `origin`
-    /// (`Replica::merge_changes`): one undo step of its scope unless `origin` is a `system` or
-    /// `import` one. Repairs the result and reloads the view as an import does; add the draft's
-    /// blobs first ([`PdfSession::add_blobs`]). Answers the undo steps it made (1 or 0) and the
-    /// damage. A refused merge changes nothing.
+    /// (`Replica::merge_changes_repaired`, the kit's repair inside it): one undo step of the
+    /// person's unless `origin` is a `system` or `import` one, even for an agent's draft (M12a).
+    /// Reloads the view as an import does; add the draft's blobs first
+    /// ([`PdfSession::add_blobs`]). Answers the undo scope the step went to (`None`: no step) and
+    /// the damage. A refused merge changes nothing.
     ///
     /// Refused too, before the KDM's rules are asked, is a draft whose edits the document could
     /// not keep ([`PdfSession::merged_state`]): one made against an older base than the
@@ -325,11 +326,12 @@ impl PdfSession {
     /// signing), and one that rewrote the file in full while the document was edited. The overlay
     /// entries either brings are of another base than the merged one, and the repair would delete
     /// them without a word.
-    pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<(u32, Damage)> {
+    pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<(Option<UndoScope>, Damage)> {
         self.merged_state(bytes)?;
         let before = self.replica.version();
-        self.replica.merge_changes(bytes, origin).map_err(kit_err)?;
-        self.took_in(&before, origin)
+        let merged = self.replica.merge_changes_repaired(bytes, origin, repair).map_err(kit_err)?;
+        let (steps, damage) = self.took_in(&before, origin)?;
+        Ok((merged.scope.filter(|_| steps > 0), damage))
     }
 
     /// What merging a draft's changes would make of the replicated state, changing nothing.
@@ -372,7 +374,9 @@ impl PdfSession {
     /// (`kition_kit::session::write_state`), so every object the two share keeps its id: one undo
     /// step of its scope unless `origin` is a `system` or `import` one. Nothing changes when the
     /// states are equal. Refuses another document's snapshot. Add the blobs it references first.
-    pub fn restore_state(&mut self, snapshot: &[u8], origin: &Origin) -> Result<(u32, Damage)> {
+    /// The kit's repair runs inside the same transaction. Answers the undo scope the step went to
+    /// (`None`: no step) and the damage.
+    pub fn restore_state(&mut self, snapshot: &[u8], origin: &Origin) -> Result<(Option<UndoScope>, Damage)> {
         let schema = PdfModel::schema();
         let loaded = Replica::load(Arc::clone(&schema), snapshot, ActorId::random()).map_err(kit_err)?;
         if loaded.doc_id() != self.replica.doc_id() {
@@ -380,15 +384,21 @@ impl PdfSession {
         }
         let (now, then) = (kition_kit::session::state(&self.replica)?, kition_kit::session::state(&loaded)?);
         if now == then {
-            return Ok((0, Damage::None));
+            return Ok((None, Damage::None));
         }
         let before = self.replica.version();
-        let result = self.replica.transact(origin, |tx| kition_kit::session::write_state(tx, &schema, &now, &then).map_err(crate::kdm_err));
+        let result = self.replica.transact(origin, |tx| {
+            let written = kition_kit::session::write_state(tx, &schema, &now, &then).map_err(crate::kdm_err)?;
+            // The repair reads only the root (its epoch and overlay): asked about it, it finds
+            // whatever the restore wrote there.
+            repair(tx, &BTreeSet::from([crate::root_id()])).map(|()| written)
+        });
         if let Err(error) = result {
             self.replica.take_changed();
             return Err(kit_err(error));
         }
-        self.took_in(&before, origin)
+        let (steps, damage) = self.took_in(&before, origin)?;
+        Ok(((steps > 0).then(|| UndoScope::of(origin.kind)).flatten(), damage))
     }
 
     /// After a merge or a restore wrote one transaction of `origin` since `before`: repairs and
@@ -541,6 +551,12 @@ pub const REWRITTEN_SINCE: &str = "the document was rewritten since this draft w
 
 /// Why a draft that rewrote the file in full while the document was edited is refused.
 pub const REWRITE_LOSES_EDITS: &str = "the draft rewrites the whole file and the document was edited since the draft was made: merging would lose those edits; make the draft again on the document as it is now";
+
+/// The kit's repair of a merged draft or a restored state, inside that change and its undo step
+/// (data model 6.6, D9): one Undo gives back the exact state before it.
+fn repair(tx: &mut Tx<'_>, changed: &BTreeSet<ObjectId>) -> kition_kit::kdm::Result<()> {
+    crate::validate::validate(tx, changed).map(|_| ())
+}
 
 /// The epoch (which base the overlay is written against) of the replica's root, if it has one.
 fn epoch_of(replica: &Replica) -> Option<String> {
