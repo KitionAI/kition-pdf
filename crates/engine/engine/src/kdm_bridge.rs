@@ -473,12 +473,10 @@ impl Session {
     }
 
     /// What merging a draft's changes would change in the document now (a `StateDiff`);
-    /// nothing changes. Refuses what [`Session::merge_changes`] refuses.
+    /// nothing changes. The kit's repair runs on the merge as it does when the draft is accepted
+    /// ([`kdm_model::PdfSession::compare_changes`]). Refuses what [`Session::merge_changes`] refuses.
     pub fn compare_changes(&mut self, id: DocId, bytes: &[u8]) -> Result<kdm_model::kition_kit::kdm::diff::StateDiff, EditError> {
-        let kdm = self.active_kdm(id)?;
-        let before = kdm.replica().state_json().map_err(replica_error)?;
-        let after = kdm.merged_state(bytes).map_err(replica_error)?;
-        Ok(kdm_model::kition_kit::kdm::diff::diff_states(&before, &after))
+        self.active_kdm(id)?.compare_changes(bytes).map_err(replica_error)
     }
 
     /// Writes the state a snapshot holds (a checkpoint of this document, `replica/restore`) over

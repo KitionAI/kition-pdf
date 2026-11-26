@@ -612,6 +612,36 @@ mod tests {
         assert_eq!(contents(&mut doc), ["also meanwhile", "before", "meanwhile"]);
     }
 
+    /// A draft's preview (`compareChanges`, from the session's merged state) runs the kit's repair
+    /// on its copy of the merge, as accepting the draft does: the previewed merged state is the
+    /// replicated state after actually merging, for a draft alone and for one made while the
+    /// document edited another page. (The kit's repair deletes overlay entries of another base;
+    /// a draft whose merge would hold any is refused by the preview and the merge alike, in the
+    /// two tests below, so an accepted draft's repair finds nothing to delete.)
+    #[test]
+    fn a_drafts_preview_is_the_state_merging_gives() {
+        let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
+        note(&mut doc, 1, "before");
+        let (changes, blobs) = draft_with(&mut doc, |draft| note(draft, 2, "from the draft"));
+        doc.add_blobs(&blobs).unwrap();
+        let previewed = doc.auto.session().kdm(doc.id).unwrap().merged_state(&changes).unwrap();
+        let summary = doc.compare_changes(&changes).unwrap();
+        let answer = doc.merge_changes(&changes, &person()).unwrap();
+        assert_eq!(answer["summary"], summary, "{answer}");
+        assert_eq!(doc.replicated_state().unwrap(), previewed, "the preview's merged state is the state after merging");
+
+        let (changes, blobs) = draft_with(&mut doc, |draft| note(draft, 2, "late"));
+        doc.add_blobs(&blobs).unwrap();
+        note(&mut doc, 1, "meanwhile");
+        let previewed = doc.auto.session().kdm(doc.id).unwrap().merged_state(&changes).unwrap();
+        let summary = doc.compare_changes(&changes).unwrap();
+        let answer = doc.merge_changes(&changes, &person()).unwrap();
+        assert_eq!(answer["summary"], summary, "{answer}");
+        assert_eq!(doc.replicated_state().unwrap(), previewed, "with the document's own edit meanwhile too");
+        assert_eq!(contents(&mut doc), ["before", "from the draft", "late", "meanwhile"]);
+        assert_eq!(doc.kdm_dropped(), 0);
+    }
+
     /// The keys of the document's replica's `overlay` map (the objects its edits wrote).
     fn overlay_keys(doc: &mut PdfDocument) -> Vec<String> {
         let state = doc.replicated_state().unwrap();

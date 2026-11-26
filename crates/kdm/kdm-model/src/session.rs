@@ -327,19 +327,39 @@ impl PdfSession {
     /// entries either brings are of another base than the merged one, and the repair would delete
     /// them without a word.
     pub fn merge_changes(&mut self, bytes: &[u8], origin: &Origin) -> Result<(Option<UndoScope>, Damage)> {
-        self.merged_state(bytes)?;
+        self.check_draft(bytes)?;
         let before = self.replica.version();
         let merged = self.replica.merge_changes_repaired(bytes, origin, repair).map_err(kit_err)?;
         let (steps, damage) = self.took_in(&before, origin)?;
         Ok((merged.scope.filter(|_| steps > 0), damage))
     }
 
-    /// What merging a draft's changes would make of the replicated state, changing nothing.
-    /// Refuses what [`PdfSession::merge_changes`] refuses: a draft made against an older base
-    /// than the document's ([`REWRITTEN_SINCE`]), checked first, then what the KDM's rules refuse,
-    /// then a merge that would hold overlay entries of another base than its own
-    /// ([`REWRITE_LOSES_EDITS`]).
+    /// What merging a draft's changes would make of the replicated state, changing nothing: the
+    /// merge with the kit's repair inside it (`Replica::merged_state_repaired`), so it is the state
+    /// [`PdfSession::merge_changes`] gives. Refuses what [`PdfSession::merge_changes`] refuses: a
+    /// draft made against an older base than the document's ([`REWRITTEN_SINCE`]), checked first,
+    /// then what the KDM's rules refuse, then a merge that would hold overlay entries of another
+    /// base than its own ([`REWRITE_LOSES_EDITS`]).
     pub fn merged_state(&self, bytes: &[u8]) -> Result<serde_json::Value> {
+        self.check_draft(bytes)?;
+        self.replica.merged_state_repaired(bytes, repair).map_err(kit_err)
+    }
+
+    /// What merging a draft's changes would change in the replicated state now (a draft's
+    /// comparison, `compareChanges`), changing nothing: the merge with the kit's repair inside it
+    /// (`Replica::compare_changes_repaired`), so it is what accepting the draft gives. Refuses what
+    /// [`PdfSession::merge_changes`] refuses.
+    pub fn compare_changes(&self, bytes: &[u8]) -> Result<kition_kit::kdm::diff::StateDiff> {
+        self.check_draft(bytes)?;
+        self.replica.compare_changes_repaired(bytes, repair).map_err(kit_err)
+    }
+
+    /// Refuses a draft the document could not keep: one made against an older base than the
+    /// document's ([`REWRITTEN_SINCE`]), checked first, then what the KDM's rules refuse, then a
+    /// merge that would hold overlay entries of another base than its own
+    /// ([`REWRITE_LOSES_EDITS`]: the repair would delete them without a word, so the merge is
+    /// read without it).
+    fn check_draft(&self, bytes: &[u8]) -> Result<()> {
         if self.draft_base_epoch(bytes).is_some_and(|then| Some(then) != epoch_of(&self.replica)) {
             return Err(kit_err(REWRITTEN_SINCE));
         }
@@ -348,7 +368,7 @@ impl PdfSession {
         if !stale.is_empty() {
             return Err(kit_err(format!("{REWRITE_LOSES_EDITS} (the overlay entries {})", stale.join(", "))));
         }
-        Ok(merged)
+        Ok(())
     }
 
     /// The base (its epoch) a draft's `changes` were made against: the epoch at the version of

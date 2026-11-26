@@ -1543,9 +1543,8 @@ pub fn region(command: &str, params: &Value, objects: &Projection) -> Option<Val
             _ => vec![json!(["view"])],
         },
         // ---- Writes that change nothing of the document: a view setting (`comment.hide`), a
-        // preference (`fillSign.setDateFormat`, `script.enabled`), another document (`file.new`), a
-        // read (`file.listRevisions`).
-        "comment.hide" | "fillSign.setDateFormat" | "script.enabled" | "file.new" | "file.listRevisions" => Vec::new(),
+        // preference (`fillSign.setDateFormat`, `script.enabled`), another document (`file.new`).
+        "comment.hide" | "fillSign.setDateFormat" | "script.enabled" | "file.new" => Vec::new(),
         // Writes whose objects carry all they rest on.
         "comment.add" | "page.addText" | "measure.setScale" | "fillSign.add" | "link.add" | "link.edit" | "link.delete" | "link.removeAll"
         | "page.rotate" | "page.setBox" | "file.setWatermark" | "file.setBackground" | "page.delete" | "page.duplicate" | "page.move"

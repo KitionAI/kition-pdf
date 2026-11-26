@@ -410,8 +410,6 @@ fn readings(doc: &mut PdfDocument) -> Vec<Row> {
         // object. was: the whole document.
         row("file.setInitialView", json!({ "layout": "single" }), &[], &[], &["view"]),
         row("file.setInitialView", json!({ "page": 2 }), &[("page:2", STAR)], &[("pdf", "pages")], &["view"]),
-        // file.listRevisions: reads the revisions; writes nothing. was: the whole document.
-        row("file.listRevisions", json!({}), &[], &[], &[]),
         // file.new: makes another document; this one does not change. was: the whole document.
         row("file.new", json!({ "from": "blank" }), &[], &[], &[]),
         // OCR: skip textual pages, otherwise consume raster content and geometry.
