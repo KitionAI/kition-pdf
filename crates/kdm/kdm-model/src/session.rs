@@ -258,7 +258,7 @@ impl PdfSession {
         }
         let outcome = if undo { self.replica.undo_in(scope) } else { self.replica.redo_in(scope) }.map_err(kit_err)?;
         let (steps, done) = (outcome.steps(), outcome.is_done());
-        let (damage, moved) = self.settle();
+        let (damage, moved, _) = self.settle(None);
         if steps > 0 {
             self.log_added(moved.added.iter().cloned());
             self.index.stepped(moved, steps, done, undo);
@@ -306,7 +306,7 @@ impl PdfSession {
     /// followed.
     pub fn import_changes(&mut self, bytes: &[u8]) -> Result<Damage> {
         self.replica.import_changes(bytes).map_err(kit_err)?;
-        let (damage, moved) = self.settle();
+        let (damage, moved, _) = self.settle(None);
         self.log_added(moved.added.iter().cloned());
         self.index.imported();
         self.index.collect_garbage(&mut self.blobs);
@@ -317,8 +317,10 @@ impl PdfSession {
     /// (`Replica::merge_changes_repaired`, the kit's repair inside it): one undo step of the
     /// person's unless `origin` is a `system` or `import` one, even for an agent's draft (M12a).
     /// Reloads the view as an import does; add the draft's blobs first
-    /// ([`PdfSession::add_blobs`]). Answers the undo scope the step went to (`None`: no step) and
-    /// the damage. A refused merge changes nothing.
+    /// ([`PdfSession::add_blobs`]). The projection sync the reloaded view needs joins the merge's
+    /// step ([`PdfSession::settle`]), so one undo gives back the exact state before it. Answers
+    /// the undo scope the step went to (`None`: no step, also when the merge with its repair left
+    /// the document as it was) and the damage. A refused merge changes nothing.
     ///
     /// Refused too, before the KDM's rules are asked, is a draft whose edits the document could
     /// not keep ([`PdfSession::merged_state`]): one made against an older base than the
@@ -330,8 +332,7 @@ impl PdfSession {
         self.check_draft(bytes)?;
         let before = self.replica.version();
         let merged = self.replica.merge_changes_repaired(bytes, origin, repair).map_err(kit_err)?;
-        let (steps, damage) = self.took_in(&before, origin)?;
-        Ok((merged.scope.filter(|_| steps > 0), damage))
+        self.took_in(&before, merged.scope)
     }
 
     /// What merging a draft's changes would make of the replicated state, changing nothing: the
@@ -394,8 +395,9 @@ impl PdfSession {
     /// (`kition_kit::session::write_state`), so every object the two share keeps its id: one undo
     /// step of its scope unless `origin` is a `system` or `import` one. Nothing changes when the
     /// states are equal. Refuses another document's snapshot. Add the blobs it references first.
-    /// The kit's repair runs inside the same transaction. Answers the undo scope the step went to
-    /// (`None`: no step) and the damage.
+    /// The kit's repair runs inside the same transaction, and the projection sync joins its step;
+    /// a restore that with its repair leaves the state as it was records nothing. Answers the
+    /// undo scope the step went to (`None`: no step) and the damage.
     pub fn restore_state(&mut self, snapshot: &[u8], origin: &Origin) -> Result<(Option<UndoScope>, Damage)> {
         let schema = PdfModel::schema();
         let loaded = Replica::load(Arc::clone(&schema), snapshot, ActorId::random()).map_err(kit_err)?;
@@ -407,36 +409,39 @@ impl PdfSession {
             return Ok((None, Damage::None));
         }
         let before = self.replica.version();
-        let result = self.replica.transact(origin, |tx| {
+        let result = self.replica.transact_unless_unchanged(origin, |tx| {
             kition_kit::session::write_state(tx, &schema, &now, &then).map_err(crate::kdm_err)?;
             // The repair reads only the root (its epoch and overlay): asked about it, it finds
             // whatever the restore wrote there.
             repair(tx, &BTreeSet::from([crate::root_id()]))
         });
-        if let Err(error) = result {
-            self.replica.take_changed();
-            return Err(kit_err(error));
-        }
-        let (steps, damage) = self.took_in(&before, origin)?;
-        Ok(((steps > 0).then(|| UndoScope::of(origin.kind)).flatten(), damage))
+        let changed = match result {
+            Ok(((), changed)) => changed,
+            Err(error) => {
+                self.replica.take_changed();
+                return Err(kit_err(error));
+            }
+        };
+        self.took_in(&before, changed.then(|| UndoScope::of(origin.kind)).flatten())
     }
 
-    /// After a merge or a restore wrote one transaction of `origin` since `before`: repairs and
-    /// reloads the view as an import does, and counts the transaction as an undo step unless
-    /// `origin` is a `system` or `import` one. A failed repair or view load is the error, as an
-    /// import's is; the transaction stays ([`PdfSession::view_loaded`] tells whether the view
-    /// followed).
-    fn took_in(&mut self, before: &Version, origin: &Origin) -> Result<(u32, Damage)> {
+    /// After a merge or a restore wrote one transaction since `before`, recorded as a step of
+    /// `step` (`None`: no step: it changed nothing, or its origin is a `system` or `import` one):
+    /// repairs and reloads the view as an import does, the repair's and the projection's writes
+    /// joining that step, and counts the step. Answers the scope the step is in (`None` when there
+    /// is none, also when the follow-up writes left it changing nothing and the replica dropped
+    /// it). A failed repair or view load is the error, as an import's is; the transaction stays
+    /// ([`PdfSession::view_loaded`] tells whether the view followed).
+    fn took_in(&mut self, before: &Version, step: Option<UndoScope>) -> Result<(Option<UndoScope>, Damage)> {
         let wrote = self.replica.version() != *before;
-        let (damage, moved) = self.settle();
+        let (damage, moved, step) = self.settle(step.filter(|_| wrote));
         self.log_added(moved.added.iter().cloned());
-        let undoable = wrote && !matches!(origin.kind, OriginKind::System | OriginKind::Import);
-        if undoable {
+        if step.is_some() {
             self.index.push_step(moved);
         }
         self.index.imported();
         self.index.collect_garbage(&mut self.blobs);
-        damage.map(|damage| (u32::from(undoable), damage))
+        damage.map(|damage| (step, damage))
     }
 
     /// Whether the replica as it is now reads as a view (its base present and opening).
@@ -515,17 +520,22 @@ impl PdfSession {
         self.index.protect(blobs.0.keys().cloned());
     }
 
-    /// As `KitSession`'s: repairs what changed in a `system` transaction (not an undo step), then
-    /// reloads the view; the view follows the replica even if the repair fails. Counts the stale
-    /// entries the repair drops, and answers which blobs moved (the index is updated either way).
-    fn settle(&mut self) -> (Result<Damage>, Moved) {
+    /// As `KitSession`'s: repairs what changed in a `system` transaction, then reloads the view;
+    /// the view follows the replica even if the repair fails. Counts the stale entries the repair
+    /// drops, and answers which blobs moved (the index is updated either way). With `step` (a
+    /// merge or a restore just recorded a step of that scope) the repair and the projection sync
+    /// join that step (`Replica::transact_in_step`, data model 6.6 D9), so one undo of it gives
+    /// back the exact state before it; else (an import, an undo, a redo, a change recording no
+    /// step) they are `system` changes of their own, no undo step. Answers the step's scope after
+    /// them too (`None` when there is none or they left it changing nothing).
+    fn settle(&mut self, mut step: Option<UndoScope>) -> (Result<Damage>, Moved, Option<UndoScope>) {
         let mut changed = self.replica.take_changed();
         let repaired = if changed.is_empty() {
             Ok(())
         } else {
             let stale = stale_entries(&self.replica).map(|keys| keys.len()).unwrap_or(0);
             let mut kit_error = None;
-            let result = self.replica.transact(&Origin::system("repair"), |tx: &mut Tx<'_>| {
+            let result = system_write(&mut self.replica, &mut step, |tx: &mut Tx<'_>| {
                 PdfModel::validate(tx, &changed).map(|_| ()).map_err(|error| {
                     let message = error.to_string();
                     kit_error = Some(error);
@@ -549,11 +559,11 @@ impl PdfSession {
         if damage.is_ok() {
             let (doc, ids) = (self.model.doc.clone(), self.model.ids().clone());
             if crate::projection::differs(&self.replica, &doc, &ids) {
-                let _ = self.replica.transact(&Origin::system("repair"), |tx: &mut Tx<'_>| crate::projection::sync(tx, &doc, &ids));
+                let _ = system_write(&mut self.replica, &mut step, |tx: &mut Tx<'_>| crate::projection::sync(tx, &doc, &ids));
                 self.replica.take_changed();
             }
         }
-        (damage, moved)
+        (damage, moved, step)
     }
 
     fn refresh(&mut self, changed: &BTreeSet<ObjectId>) -> Result<Damage> {
@@ -576,6 +586,25 @@ pub const REWRITE_LOSES_EDITS: &str = "the draft rewrites the whole file and the
 /// (data model 6.6, D9): one Undo gives back the exact state before it.
 fn repair(tx: &mut Tx<'_>, changed: &BTreeSet<ObjectId>) -> kition_kit::kdm::Result<()> {
     crate::validate::validate(tx, changed).map(|_| ())
+}
+
+/// One `system` write of the repair after a change: into the undo step of `step` when there is
+/// one (`Replica::transact_in_step`; `step` becomes `None` when the step, with it, now changes
+/// nothing and was dropped), else a change of its own (`Replica::transact`, no undo step).
+fn system_write<R>(
+    replica: &mut Replica,
+    step: &mut Option<UndoScope>,
+    f: impl FnOnce(&mut Tx<'_>) -> kition_kit::kdm::Result<R>,
+) -> kition_kit::kdm::Result<R> {
+    let origin = Origin::system("repair");
+    match *step {
+        Some(scope) => {
+            let (value, kept) = replica.transact_in_step(scope, &origin, f)?;
+            *step = kept;
+            Ok(value)
+        }
+        None => replica.transact(&origin, f),
+    }
 }
 
 /// The epoch (which base the overlay is written against) of the replica's root, if it has one.

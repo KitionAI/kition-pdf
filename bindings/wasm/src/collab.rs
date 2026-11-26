@@ -864,6 +864,82 @@ mod tests {
         assert_eq!(doc.kdm_resets(), 0);
     }
 
+    /// The label of the person's next Undo in the engine's history, and the replica's undo depth
+    /// of the person's history.
+    fn history(doc: &PdfDocument) -> (Option<String>, usize) {
+        use kition_kit::kdm::UndoScope;
+        let label = doc.auto.session().get(doc.id).and_then(|d| d.can_undo().map(str::to_owned));
+        let depth = doc.auto.session().kdm(doc.id).unwrap().replica().undo_depth(UndoScope::Person);
+        (label, depth)
+    }
+
+    /// The replica's change count (its version's sequence number).
+    fn seq(doc: &mut PdfDocument) -> u64 {
+        let version = doc.version().unwrap();
+        u64::from_be_bytes(version[version.len() - 8..].try_into().unwrap())
+    }
+
+    /// A draft whose merge leaves the document as it was records nothing (data model 6.6, the
+    /// SDK's merge changing nothing): an agent's draft deletes a comment that the person deleted
+    /// meanwhile. The merge answers no scope and an empty summary; the state hash, the version, the
+    /// replica's undo depth and the engine's history (the label of the next Undo) are unchanged;
+    /// the person's next Undo takes back their own deletion exactly, and Redo deletes it again.
+    #[test]
+    fn a_draft_whose_merge_changes_nothing_records_nothing() {
+        let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
+        note(&mut doc, 1, "kept");
+        note(&mut doc, 2, "gone");
+        let gone = listed_id(&mut doc, "gone");
+        let (changes, blobs) = draft_with(&mut doc, |draft| {
+            draft.execute("comment.delete", json!({ "id": gone })).unwrap();
+        });
+        let with_comment = view(&mut doc);
+        doc.execute("comment.delete", json!({ "id": gone })).unwrap();
+        assert_eq!(contents(&mut doc), ["kept"]);
+        doc.add_blobs(&blobs).unwrap();
+        let before = (view(&mut doc), doc.version().unwrap(), history(&doc));
+        assert!((before.2).0.is_some(), "the person's deletion is a named step");
+        let state = doc.replicated_state().unwrap();
+        let answer = doc.merge_changes(&changes, &Origin::agent("agent:drafter")).unwrap();
+        assert_eq!(answer["scope"], Value::Null, "no step: {answer}");
+        assert_eq!(answer["summary"], kition_kit::kdm::diff::diff_states(&state, &state).to_json(), "an empty summary: {answer}");
+        assert_eq!((view(&mut doc), doc.version().unwrap(), history(&doc)), before, "the merge recorded nothing");
+        assert!(doc.undo().unwrap().0);
+        assert_eq!(view(&mut doc), with_comment, "the next Undo takes back the person's deletion exactly");
+        assert!(doc.redo().unwrap().0);
+        assert_eq!(view(&mut doc), before.0, "Redo deletes it again");
+        assert_eq!(doc.kdm_resets(), 0, "the engine's and the replica's histories stayed in step");
+    }
+
+    /// The projection sync a merge needs is in the merge's undo step (data model 6.6, D9): an
+    /// agent's draft adds a link on page 1 to page 2, which the person deletes meanwhile, so the
+    /// merged view's link goes nowhere and the kit writes its `Link` object to match after the
+    /// merge. One Undo gives back the exact state before the merge (state hash, comments, fields,
+    /// links, pixels) and Redo the exact merged state, the sync included.
+    #[test]
+    fn a_merges_projection_sync_undoes_and_redoes_with_it() {
+        let mut doc = PdfDocument::open("Report.pdf", &fixture()).unwrap();
+        note(&mut doc, 1, "before");
+        let (changes, blobs) = draft_with(&mut doc, |draft| {
+            draft.execute("link.add", json!({ "page": 1, "rect": [72, 72, 200, 100], "toPage": 2 })).unwrap();
+        });
+        doc.execute("page.delete", json!({ "pages": [2] })).unwrap();
+        doc.add_blobs(&blobs).unwrap();
+        let links = |doc: &mut PdfDocument| doc.execute("link.list", json!({})).unwrap();
+        let before = (view(&mut doc), links(&mut doc));
+        let (at, depth) = (seq(&mut doc), history(&doc).1);
+        let answer = doc.merge_changes(&changes, &Origin::agent("agent:drafter")).unwrap();
+        assert_eq!(answer["scope"], json!("person"), "{answer}");
+        assert_eq!(seq(&mut doc), at + 2, "the merge and the projection sync after it: two changes");
+        assert_eq!(history(&doc).1, depth + 1, "one undo step holds both");
+        let merged = (view(&mut doc), links(&mut doc));
+        assert!(doc.undo().unwrap().0);
+        assert_eq!((view(&mut doc), links(&mut doc)), before, "one Undo gives back the exact state before the merge");
+        assert!(doc.redo().unwrap().0);
+        assert_eq!((view(&mut doc), links(&mut doc)), merged, "Redo gives back the exact merged state");
+        assert_eq!(doc.kdm_resets(), 0);
+    }
+
     /// A draft made before the document was rewritten in full (here its comments removed, which
     /// writes the file anew: a new base, its overlay cleared) is refused, saying so, by the
     /// comparison and by the merge, and changes nothing. The KDM's rules alone would take it in:

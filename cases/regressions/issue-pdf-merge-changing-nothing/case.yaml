@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-pdf-merge-changing-nothing
+feature: pdf.collab.drafts
+intent: >-
+  A draft whose merge leaves the document as it was records nothing: an agent's draft deletes a
+  comment the person deleted meanwhile. The merge answers no scope and an empty summary; the state
+  hash, the version, the replica's undo depth and the engine's history (the next Undo's label) are
+  unchanged, and the person's next Undo takes back their own deletion exactly (before: the SDK
+  recorded a step that changed nothing, which the engine labelled "Merge Draft").
+layer: unit
+source:
+  kind: synthetic
+  from: bindings/wasm/src/collab.rs (the collaboration fixture)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, filter: "collab::tests::a_draft_whose_merge_changes_nothing_records_nothing" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-26"

@@ -195,6 +195,8 @@ features:
     cases:
       - pdf.collab.drafts/merge-and-restore
       - regressions/issue-pdf-agent-draft-undo-scope
+      - regressions/issue-pdf-merge-changing-nothing
+      - regressions/issue-pdf-merge-follow-up-in-step
       - regressions/issue-pdf-draft-before-rewrite
       - regressions/issue-pdf-dropped-edits-shown
       - regressions/issue-pdf-dropped-edits-notice

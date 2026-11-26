@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-pdf-merge-follow-up-in-step
+feature: pdf.collab.drafts
+intent: >-
+  The projection sync a merge needs joins the merge's undo step (data model 6.6, D9) instead of
+  being a system change of its own: an agent's draft links page 1 to page 2, which the person
+  deletes meanwhile, so the kit writes the merged link's Link object after the merge. One Undo
+  gives back the exact state before the merge (state hash, comments, fields, links, pixels) and
+  Redo the exact merged state.
+layer: unit
+source:
+  kind: synthetic
+  from: bindings/wasm/src/collab.rs (the collaboration fixture)
+  license: Apache-2.0
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, filter: "collab::tests::a_merges_projection_sync_undoes_and_redoes_with_it" }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-26"

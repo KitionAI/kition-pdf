@@ -35,7 +35,7 @@
     "test:dash-unit": "node --test tests/dash-support.test.mjs"
   },
   "dependencies": {
-    "@kition/sdk": "npm:@kitionstage/sdk@0.5.2-stage.34",
+    "@kition/sdk": "npm:@kitionstage/sdk@0.5.2-stage.36",
     "@kition/tessera": "npm:@kitionstage/tessera@0.1.1-stage.2",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
