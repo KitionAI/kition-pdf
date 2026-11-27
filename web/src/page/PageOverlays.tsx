@@ -48,7 +48,7 @@ export function CommentTip({ hover, box }: { hover: Hovering; box: DOMRect | nul
 /**
  * The card a comment's text is written in, beside it on the page: a comment's own text (a
  * double-click, Edit text in its menu) or a new sticky note's (Add a sticky note here). Post (or
- * Cmd+Enter) keeps it, Cancel (or Escape) changes nothing.
+ * Cmd+Enter, or a press elsewhere after a change) keeps it, Cancel (or Escape) changes nothing.
  */
 export function NoteCard({ area, rect, view, title, initial, onPost, onCancel }: {
   area: Area | undefined
@@ -67,10 +67,25 @@ export function NoteCard({ area, rect, view, title, initial, onPost, onCancel }:
     const element = field.current
     element?.setSelectionRange(element.value.length, element.value.length)
   }, [])
+  // A press anywhere else closes the card, keeping what was written (as Post does), or, with nothing
+  // changed, as Cancel does.
+  const card = useRef<HTMLDivElement>(null)
+  const latest = useRef({ text, initial, onPost, onCancel })
+  latest.current = { text, initial, onPost, onCancel }
+  useEffect(() => {
+    const press = (event: PointerEvent) => {
+      if (event.target instanceof Node && card.current?.contains(event.target)) return
+      const now = latest.current
+      if (now.text !== now.initial) now.onPost(now.text)
+      else now.onCancel()
+    }
+    document.addEventListener('pointerdown', press, true)
+    return () => document.removeEventListener('pointerdown', press, true)
+  }, [])
   const box = screenBox(area, rect, view)
   if (!box) return null
   return (
-    <div className="pdf-note-card" style={{ left: box.left + box.width + 8, top: box.top }} data-testid="pdf-note-card" role="dialog" aria-label={title}
+    <div ref={card} className="pdf-note-card" style={{ left: box.left + box.width + 8, top: box.top }} data-testid="pdf-note-card" role="dialog" aria-label={title}
       onPointerDown={(event) => event.stopPropagation()}>
       <div className="pdf-note-card-title">{title}</div>
       <textarea

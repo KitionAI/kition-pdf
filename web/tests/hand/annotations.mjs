@@ -240,6 +240,15 @@ try {
     await page.keyboard.press(`${mod}+Enter`)
     await until(async () => (await byId(MARKS.note.id))?.contents === `${MARKS.note.contents} edited`, 60)
     await step('G1 a double-click opens the note\'s text to edit', (await byId(MARKS.note.id))?.contents === `${MARKS.note.contents} edited`, String((await byId(MARKS.note.id))?.contents))
+    // A press elsewhere closes the card and keeps what was written.
+    await page.mouse.dblclick(p.x, p.y)
+    await kit.getByTestId('pdf-note-text').waitFor({ timeout: 3000 })
+    await page.keyboard.type(' again')
+    const away = await at(2, [40, 600])
+    await page.mouse.click(away.x, away.y)
+    await until(async () => (await kit.getByTestId('pdf-note-card').count()) === 0, 30)
+    await until(async () => (await byId(MARKS.note.id))?.contents === `${MARKS.note.contents} edited again`, 60)
+    await step('G1 a press elsewhere closes the note\'s card and keeps its text', (await kit.getByTestId('pdf-note-card').count()) === 0 && (await byId(MARKS.note.id))?.contents === `${MARKS.note.contents} edited again`, String((await byId(MARKS.note.id))?.contents))
     // Add a sticky note here (the page menu).
     const before = (await comments()).length
     const spot = await at(2, [60, 300])
