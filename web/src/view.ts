@@ -45,16 +45,21 @@ export function formatZoom(zoom: number) {
 
 /**
  * The number of notches a wheel event is when it comes from a mouse wheel: whole lines or pages,
- * or a pixel delta that is a whole number of 100 px notches; null for a trackpad's (and a pinch's)
- * small, smooth deltas, which keep the canvas's own zoom.
+ * or a pixel delta that is a whole number of 100 px notches (in CSS pixels, or in device pixels:
+ * at a pixel ratio of 2 a browser may report a notch as 50); null for a trackpad's (and a
+ * pinch's) small, smooth deltas, which keep the canvas's own zoom.
  */
-export function wheelNotches(event: Pick<WheelEvent, 'deltaMode' | 'deltaX' | 'deltaY'>): number | null {
+export function wheelNotches(event: Pick<WheelEvent, 'deltaMode' | 'deltaX' | 'deltaY'>, pixelRatio = 1): number | null {
   if (event.deltaX !== 0 || event.deltaY === 0 || !Number.isFinite(event.deltaY)) return null
   if (event.deltaMode === 1) return Math.sign(event.deltaY) * Math.max(1, Math.round(Math.abs(event.deltaY) / 3))
   if (event.deltaMode === 2) return Math.sign(event.deltaY) * Math.max(1, Math.round(Math.abs(event.deltaY)))
-  const notches = event.deltaY / 100
-  const whole = Math.round(notches)
-  return whole !== 0 && Math.abs(notches - whole) < 0.02 ? whole : null
+  const ratios = Number.isFinite(pixelRatio) && pixelRatio > 1 ? [1, pixelRatio] : [1]
+  for (const ratio of ratios) {
+    const notches = (event.deltaY * ratio) / 100
+    const whole = Math.round(notches)
+    if (whole !== 0 && Math.abs(notches - whole) < 0.02) return whole
+  }
+  return null
 }
 
 /** Zooms the canvas to `zoom` (kept in range) keeping the document point under (`clientX`, `clientY`) there. */

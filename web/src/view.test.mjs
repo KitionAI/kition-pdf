@@ -29,6 +29,9 @@ test('a mouse wheel notch is a whole 100 px or a line; a trackpad delta is none'
   assert.equal(wheelNotches({ deltaMode: 1, deltaX: 0, deltaY: 3 }), 1)
   assert.equal(wheelNotches({ deltaMode: 0, deltaX: 0, deltaY: -10 }), null)
   assert.equal(wheelNotches({ deltaMode: 0, deltaX: 4, deltaY: -100 }), null)
+  assert.equal(wheelNotches({ deltaMode: 0, deltaX: 0, deltaY: -50 }, 2), -1)
+  assert.equal(wheelNotches({ deltaMode: 0, deltaX: 0, deltaY: -50 }), null)
+  assert.equal(wheelNotches({ deltaMode: 0, deltaX: 0, deltaY: -5 }, 2), null)
 })
 
 test('a screen scroll keeps one line; a wheel zoom keeps the point under the pointer', () => {

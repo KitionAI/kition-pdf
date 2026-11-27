@@ -190,7 +190,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     const wheel = (event: WheelEvent) => {
       if (!event.ctrlKey && !event.metaKey) return
       const surface = event.target instanceof Element ? event.target.closest('[data-testid="kit-canvas-surface"]') : null
-      const notches = wheelNotches(event)
+      const notches = wheelNotches(event, window.devicePixelRatio)
       const handle = canvas.current
       const view = handle?.view()
       if (!surface || notches === null || !handle || !view) return
