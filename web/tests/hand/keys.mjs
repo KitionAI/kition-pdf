@@ -100,6 +100,8 @@ try {
     await until(async () => (await comments()) === count + 1, 60)
     await until(async () => (await focused()) === 'pages', 20)
     await step('K2 after a parameters dialog ran, the pages have the keyboard', (await focused()) === 'pages', await focused())
+    // The editor offers Undo once the step is in its history (the Undo button is enabled then).
+    await until(async () => kit.getByTestId('pdf-undo').isEnabled(), 40)
     await page.keyboard.press(`${mod}+z`)
     const undone = await until(async () => (await comments()) === count, 60)
     await step('J2 Cmd+Z after the dialog takes the note back', undone, `${await comments()} comments`)
@@ -128,6 +130,8 @@ try {
     await step('K2 Enter in the fields panel fills the field', filled, String(await value()))
     await until(async () => (await focused()) === 'pages', 20)
     await step('K2 after Enter in the fields panel, the pages have the keyboard', (await focused()) === 'pages', await focused())
+    // The editor offers Undo once the step is in its history (the Undo button is enabled then).
+    await until(async () => kit.getByTestId('pdf-undo').isEnabled(), 40)
     await page.keyboard.press(`${mod}+z`)
     const undone = await until(async () => (await value()) !== 'Ada', 60)
     await step('J2 Cmd+Z after the fields panel takes the value back', undone, String(await value()))

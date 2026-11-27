@@ -263,6 +263,24 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       selection.clear()
       return !!selection.selected
     }
+    // Undo and Redo right after an edit: the list of what can run may not have caught up with the
+    // edit yet (the SDK's shortcut then does nothing), so the engine is asked, as the SDK does for
+    // its keys without Cmd. When the list already allows it, the SDK's own shortcut runs it.
+    if (command && !event.altKey && key === 'z') {
+      const id = event.shiftKey ? 'edit.redo' : 'edit.undo'
+      if (editor.enabled(id) || !editor.enabledByEngine(id) || !doc) return false
+      const open = doc
+      void open.disabledCommands().then((off) => {
+        if (!off.includes(id)) void leased.run(id, {})
+      }).catch(() => undefined)
+      return true
+    }
+    // Copy with the keyboard off the pages (a button, the frame): some engines (WebKit on Linux)
+    // send no copy event there without a page selection, so the editor asks for one itself.
+    if (command && !event.altKey && !event.shiftKey && key === 'c' && selection.selected?.text && !(event.target instanceof Node && region.current?.contains(event.target))) {
+      if (!document.execCommand('copy')) selection.copy()
+      return true
+    }
     if (command && !event.altKey && !event.shiftKey && key === 'a') {
       selection.selectAll(current)
       return true
