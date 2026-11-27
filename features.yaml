@@ -243,7 +243,7 @@ features:
     priority: P0
     status: has
     paths: [web/src/App.tsx, web/src/markup.ts, web/src/SelectionBar.tsx, web/src/SidePanel.tsx, web/src/comments.ts, web/src/ribbon/HomeTab.tsx, web/src/useTextSelection.ts, web/src/strings.ts, web/src/app.css, web/src/params.test.mjs, web/tests/hand/markup.mjs, web/tests/hand/fixture.mjs]
-    gap: "Comments are made and chosen only from text selections, the find bar and the Comments panel: nothing on the page is clicked, moved or resized yet (stage 4 and 5 of the plan). A selection across pages makes one comment per page, each its own undo step (the engine has no batch of edits for the editor). Measured in dev.html only."
+    gap: "Comments are made from text selections, the find bar and the Comments panel (and a note from the page's menu): there are no drawing tools on the page yet (stage 5 of the plan); choosing, moving and resizing on the page is pdf.editor.annotation-select. A selection across pages makes one comment per page, each its own undo step (the engine has no batch of edits for the editor). Measured in dev.html only."
     cases: [regressions/issue-hand-c9-highlight-selection, regressions/issue-hand-g4-delete-comment]
     since: "2026-11-27"
   - id: pdf.editor.params-and-fields
@@ -254,6 +254,24 @@ features:
     paths: [web/src/App.tsx, web/src/ParamsDialog.tsx, web/src/params.ts, web/src/params.test.mjs, web/src/pdf.ts, web/src/SidePanel.tsx, web/src/strings.ts, web/src/app.css, web/tests/hand/fields-panel.mjs, web/tests/hand/fixture.mjs]
     gap: "Points and rectangles are still typed: nothing is picked on the page (stage 10 of the plan). Lists of points of points (ink strokes) and objects (form values) are still JSON. Fields are filled in the panel, not on the page (stage 6). Measured in dev.html only."
     cases: [regressions/issue-hand-e8-pages-input, regressions/issue-hand-h6-field-after-undo, regressions/issue-hand-l3-zh-labels]
+    since: "2026-11-27"
+  - id: pdf.editor.annotation-select
+    title: "Comments on the page: a press goes to the selected comment's handles, a form field, a comment, a link, a highlight, then the text; a click selects a comment (framed, eight handles on a square, oval, text box, stamp or drawing; the Comments panel follows), hovering shows its author and text, a drag moves it and a handle resizes it (Shift keeps the ratio) with one comment.edit at the release (one undo step; Escape during the drag sends nothing), the arrow keys move it a point (Shift or Cmd ten), Delete deletes it, Escape lets go, a double-click opens its text to edit; the cursor says what is under it; right-click menus for a comment, selected text and the page"
+    dimension: [function]
+    priority: P0
+    status: has
+    paths: [web/src/page/geometry.ts, web/src/page/geometry.test.mjs, web/src/page/usePageObjects.ts, web/src/page/usePageTool.ts, web/src/page/PageOverlays.tsx, web/src/page/PageMenu.tsx, web/src/App.tsx, web/src/SidePanel.tsx, web/src/strings.ts, web/src/app.css, web/tests/hand/annotations.mjs, web/tests/hand/fixture.mjs, web/tests/hand/harness.mjs]
+    gap: "One comment at a time, on one page (no Shift-click to add one, no group drag). A drag moves a frame, not the comment's own pixels. Lines, arrows and polygons move but have no point handles (the engine's comment.edit has no vertex edit). The selected comment's colour is changed from its menu; width and opacity only through Properties (the parameters dialog). Form fields are only hit: filling them on the page is stage 6. Measured in dev.html only."
+    cases: [regressions/issue-hand-g1-select-comment, regressions/issue-hand-g2-move-comment, regressions/issue-hand-g3-delete-key, regressions/issue-hand-l1-context-menu]
+    since: "2026-11-27"
+  - id: pdf.editor.links
+    title: "Links on the page: a hand cursor over a link; a click on a link to a page goes to that page and Alt+Left (Cmd+[) comes back, Alt+Right (Cmd+]) forward again; a link to a web address asks first and then has the host open it (host/openUrl), and a host that opens none says so; a drag that starts on a link selects text"
+    dimension: [function]
+    priority: P1
+    status: has
+    paths: [web/src/page/geometry.ts, web/src/page/usePageTool.ts, web/src/page/LinkDialog.tsx, web/src/App.tsx, web/src/strings.ts, web/tests/hand/annotations.mjs, web/tests/hand/fixture.mjs]
+    gap: "A link goes to the top of its page at the current zoom: link.list answers the page only, not the destination's place and zoom. Only links go into the view history (bookmarks, thumbnails, find and the page field do not). Links to other files and scripts only say what they are. Measured in dev.html only (opening web addresses in Kition Desktop is not checked here)."
+    cases: [regressions/issue-hand-f5-link]
     since: "2026-11-27"
   - id: pdf.view
     title: "Render pages and previews; list and move page objects"

@@ -5,7 +5,7 @@
  * mouse is held; Add comment is off for a selection across pages.
  */
 import { useState } from 'react'
-import { Button, IconButton, TesseraIcons, useKitEditor, type KitCanvasView, type RasterView } from '@kition/sdk/editor'
+import { Button, IconButton, TesseraIcons, useKitEditor, type KitCanvasView } from '@kition/sdk/editor'
 import type { PdfInfo } from './pdf'
 import type { SelectionResult } from './textSelection'
 import { selectionEnd, type MarkupType } from './markup'
@@ -89,9 +89,3 @@ export function SelectionBar({ selected, pages, view, onMark, onCopy }: {
   )
 }
 
-/** A thin frame round the comment chosen in the Comments panel, where it is on the page. */
-export function CommentOutline({ page, rect, view }: { page: PdfInfo['pages'][number] | undefined; rect: number[]; view: RasterView | null }) {
-  const box = searchScreenRects(page?.area, [rect], view)[0]
-  if (!box) return null
-  return <div className="pdf-comment-outline" style={{ left: box.left - 3, top: box.top - 3, width: box.width + 6, height: box.height + 6 }} data-testid="pdf-comment-outline" aria-hidden="true" />
-}

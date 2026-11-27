@@ -1,0 +1,27 @@
+format: 1
+id: regressions/issue-hand-g2-move-comment
+feature: pdf.editor.annotation-select
+intent: >-
+  Dragging a sticky note or a square left it where it was (the drag selected text). Now a drag
+  moves the comment as far as the pointer went, on a quarter-turned page too, as one undo step;
+  a corner handle resizes a square (the opposite corner stays); the arrow keys move it one point
+  and Shift ten; Escape during a drag changes nothing and leaves no undo step.
+  web/tests/hand/annotations.mjs reads comment.list back after each.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings G2
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/annotations.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

@@ -1143,7 +1143,7 @@ status = "planned"
 commands = []
 tools = []
 evidence = []
-notes = "⌘[ / ⌘] and View ▸ Page navigation"
+notes = "Editor (web/, web/tests/hand/annotations.mjs): Alt+Left / Alt+Right and Cmd+[ / Cmd+] go back and forward through the views links left; bookmarks, thumbnails, find and the page field do not record yet. ⌘[ / ⌘] and View ▸ Page navigation"
 
 [[feature]]
 id = "view.follow-links"
@@ -1155,7 +1155,7 @@ status = "shipped"
 commands = []
 tools = []
 evidence = ["crates/render/render/src/inspect.rs::bookmarks_and_links_keep_their_destination_view"]
-notes = "GoTo and URI links; other action types (JavaScript, Launch, named actions) arrive with M6. Destinations keep their position and zoom (/XYZ, /Fit, /FitH, /FitV, /FitR, named); the /FitB* content box is read as the whole page"
+notes = "Editor (web/, web/tests/hand/annotations.mjs): a click on a link to a page goes to that page (its top, at the current zoom: link.list answers no destination place or zoom yet); a web address is asked about and opened by the host; a hand cursor over links. GoTo and URI links; other action types (JavaScript, Launch, named actions) arrive with M6. Destinations keep their position and zoom (/XYZ, /Fit, /FitH, /FitV, /FitR, named); the /FitB* content box is read as the whole page"
 
 [[feature]]
 id = "view.annotation-hover"
@@ -1167,7 +1167,7 @@ status = "planned"
 commands = []
 tools = []
 evidence = []
-notes = "a popup with the author and the comment text, as Acrobat shows"
+notes = "Editor (web/, web/tests/hand/annotations.mjs): hovering a comment shows its author and text. a popup with the author and the comment text, as Acrobat shows"
 
 [[feature]]
 id = "view.document-tabs"
@@ -3639,7 +3639,7 @@ status = "shipped"
 commands = ["comment.ink"]
 tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::ink_strokes_are_smooth_curves_through_their_points", "crates/engine/annot/src/tests.rs::drawings_resize_by_scaling_their_strokes"]
-notes = "one ink annotation per stroke; strokes are drawn as smooth curves through their points, as in Acrobat; resize with the 8 handles (the strokes scale into the new box)"
+notes = "Editor (web/, web/tests/hand/annotations.mjs): a drawing is selected, moved and resized with its eight handles on the page. one ink annotation per stroke; strokes are drawn as smooth curves through their points, as in Acrobat; resize with the 8 handles (the strokes scale into the new box)"
 
 [[feature]]
 id = "comment.eraser"
@@ -3687,7 +3687,7 @@ status = "shipped"
 commands = ["comment.square"]
 tools = ["comment.add", "comment.edit"]
 evidence = ["crates/engine/annot/src/tests.rs::restyle_and_resize_redraw_the_appearance", "crates/engine/annot/src/tests.rs::shapes_can_be_filled_and_unfilled"]
-notes = "resize with the 8 handles; fill colour or no fill from the quick bar, Properties and comment_edit `fill`; fill swatches are the comment palette only (no custom colour picker yet)"
+notes = "Editor (web/, web/tests/hand/annotations.mjs): a click selects a rectangle (eight handles); a drag moves it, a handle resizes it (Shift keeps the ratio), one undo step each. resize with the 8 handles; fill colour or no fill from the quick bar, Properties and comment_edit `fill`; fill swatches are the comment palette only (no custom colour picker yet)"
 
 [[feature]]
 id = "comment.oval"
@@ -3819,7 +3819,7 @@ status = "shipped"
 commands = ["comment.note"]
 tools = ["comment.edit"]
 evidence = ["crates/engine/annot/src/tests.rs::restyle_and_resize_redraw_the_appearance"]
-notes = "quick-bar colour swatches, fill colour (rectangle, oval, polygon, cloud), opacity (10–100 %) and line thickness per tool; colour from the context menu"
+notes = "Editor (web/, web/tests/hand/annotations.mjs): no bar yet: a selected comment's colour from its right-click menu, width and opacity through Properties (the parameters dialog). quick-bar colour swatches, fill colour (rectangle, oval, polygon, cloud), opacity (10–100 %) and line thickness per tool; colour from the context menu"
 
 [[feature]]
 id = "comment.lock-comment"
@@ -3903,7 +3903,7 @@ status = "shipped"
 commands = ["comment.list"]
 tools = ["comment.delete"]
 evidence = ["crates/engine/annot/src/tests.rs::delete_takes_popup_and_reply_chain"]
-notes = "Editor (web/, web/tests/hand/markup.mjs): the Comments panel's Delete, the Comments tab's Delete a comment and the Delete key act on the comment chosen in the panel. deletes the pop-up and the reply thread"
+notes = "Editor (web/, web/tests/hand/annotations.mjs): Delete deletes the comment selected on the page; its right-click menu's Delete too. Editor (web/, web/tests/hand/markup.mjs): the Comments panel's Delete, the Comments tab's Delete a comment and the Delete key act on the comment chosen in the panel. deletes the pop-up and the reply thread"
 
 [[feature]]
 id = "comment.edit-comment-text"
@@ -3915,7 +3915,7 @@ status = "shipped"
 commands = ["comment.list"]
 tools = ["comment.edit"]
 evidence = ["crates/engine/annot/src/tests.rs::text_box_text_and_colour_changes_are_drawn", "crates/engine/annot/src/tests.rs::editing_a_text_box_refits_its_rectangle", "crates/engine/automation/tests/automation.rs::comments_through_tools"]
-notes = "Editor (web/, web/tests/hand/markup.mjs): Edit (or a double-click) on a card of the Comments panel edits its text in place; not on the page yet. double-click a comment or card, or Edit in the menus; a text box's rectangle follows the new text (wrap width and top edge stay, the height fits the wrapped lines)"
+notes = "Editor (web/, web/tests/hand/annotations.mjs): a double-click on a comment, or Edit text in its right-click menu, edits its text in a card on the page. Editor (web/, web/tests/hand/markup.mjs): Edit (or a double-click) on a card of the Comments panel edits its text in place; not on the page yet. double-click a comment or card, or Edit in the menus; a text box's rectangle follows the new text (wrap width and top edge stay, the height fits the wrapped lines)"
 
 [[feature]]
 id = "comment.copy-comment-text"
@@ -3927,7 +3927,7 @@ status = "planned"
 commands = []
 tools = []
 evidence = []
-notes = "card and canvas context menus"
+notes = "Editor (web/, web/tests/hand/annotations.mjs): Copy text in a comment's right-click menu. card and canvas context menus"
 
 [[feature]]
 id = "comment.filter-comments"

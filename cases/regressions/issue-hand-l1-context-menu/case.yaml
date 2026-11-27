@@ -1,0 +1,28 @@
+format: 1
+id: regressions/issue-hand-l1-context-menu
+feature: pdf.editor.annotation-select
+intent: >-
+  A right-click on the page, on selected text or on a comment showed no menu at all. Now a
+  comment's right-click selects it and opens its menu (edit text, reply, status, colour, copy
+  text, delete, properties), selected text's opens Copy, Highlight, Underline, Strikethrough and
+  Find, and the page's opens Copy, Add a sticky note here (at the click), Add bookmark, Rotate,
+  Delete page, the fits and Find. web/tests/hand/annotations.mjs deletes a comment, highlights a
+  selected line and places a note through them.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings L1, C12
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/annotations.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

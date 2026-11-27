@@ -1,0 +1,27 @@
+format: 1
+id: regressions/issue-hand-g1-select-comment
+feature: pdf.editor.annotation-select
+intent: >-
+  A comment on the page could not be selected: hovering a sticky note showed the text cursor and
+  nothing else, and a click on it started a text selection. Now a click on a comment selects it
+  (framed where it is, with eight handles on a square, and the Comments panel follows), hovering
+  shows its author and text, the cursor is a move cursor over it, Escape lets go of it and an
+  agent's read keeps it. web/tests/hand/annotations.mjs presses on the hand fixture's marks.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings G1
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/annotations.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

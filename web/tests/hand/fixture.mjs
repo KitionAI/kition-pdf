@@ -4,6 +4,9 @@
 // text field "city", a drop-down "country" whose options have export values, a check box
 // "subscribe" and three radio buttons "size") and a sticky note on page 6 with an author and a date.
 // handPdf() answers the file's bytes; node tests/hand/fixture.mjs out.pdf writes them.
+// handPdf({ marks: true }) adds what the page layer's tests point at (MARKS): on page 1 a link to
+// page 7 over line 3 and a link to a web address over line 30; on page 2 a red square and a second
+// sticky note; page 8 turned a quarter (/Rotate 90) with a square of its own.
 import { writeFileSync } from 'node:fs'
 
 export const PAGES = 8
@@ -15,11 +18,19 @@ export const COUNTRIES = [['NO', 'Norway'], ['IS', 'Iceland'], ['FI', 'Finland']
 export const SIZES = ['S', 'M', 'L']
 /** The sticky note the file starts with. */
 export const NOTE = { page: 6, contents: 'Fixture note', author: 'Fixture author' }
+/** What handPdf({ marks: true }) adds, rectangles in PDF user space ([x0, y0, x1, y1], y up). */
+export const MARKS = {
+  pageLink: { page: 1, rect: [72, 656, 300, 670], to: 7 },
+  urlLink: { page: 1, rect: [72, 251, 300, 265], url: 'https://example.org/aurora' },
+  square: { page: 2, rect: [300, 480, 420, 560], id: 'fixture-square', contents: 'Square comment' },
+  note: { page: 2, rect: [520, 600, 540, 620], id: 'fixture-note-2', contents: 'Second note', author: 'Fixture author' },
+  rotated: { page: 8, rect: [100, 600, 200, 700], id: 'fixture-rotated', rotate: 90 },
+}
 
 const esc = (text) => text.replace(/([\\()])/g, '\\$1')
 const stream = (data) => `<< /Length ${Buffer.byteLength(data, 'latin1')} >>\nstream\n${data}\nendstream`
 
-export function handPdf() {
+export function handPdf({ marks = false } = {}) {
   const objects = []
   const add = (body) => { objects.push(body); return objects.length }
   const reserve = () => add(null)
@@ -61,12 +72,33 @@ export function handPdf() {
       fields.push(city, country, subscribe, size)
       annots = ` /Annots [${[city, country, subscribe, ...kids].map((id) => `${id} 0 R`).join(' ')}]`
     }
+    const square = ({ rect, id, contents }) => {
+      const [x0, y0, x1, y1] = rect
+      const look = add(stream(`1 0 0 RG 2 w ${x0 + 1} ${y0 + 1} ${x1 - x0 - 2} ${y1 - y0 - 2} re S`).replace('<<', `<< /Type /XObject /Subtype /Form /BBox [${rect.join(' ')}]`))
+      return add(`<< /Type /Annot /Subtype /Square /Rect [${rect.join(' ')}] /NM (${id}) /T (${NOTE.author}) /M (D:20261120100000Z)${contents ? ` /Contents (${contents})` : ''} /C [1 0 0] /BS << /W 2 >> /F 4 /AP << /N ${look} 0 R >> >>`)
+    }
+    if (marks && n === MARKS.pageLink.page) {
+      const inside = add(`<< /Type /Annot /Subtype /Link /Rect [${MARKS.pageLink.rect.join(' ')}] /Border [0 0 0] /Dest [${pageIds[MARKS.pageLink.to - 1]} 0 R /XYZ 0 792 null] >>`)
+      const web = add(`<< /Type /Annot /Subtype /Link /Rect [${MARKS.urlLink.rect.join(' ')}] /Border [0 0 0] /A << /S /URI /URI (${MARKS.urlLink.url}) >> >>`)
+      annots = ` /Annots [${inside} 0 R ${web} 0 R]`
+    }
+    if (marks && n === MARKS.square.page) {
+      const box = square(MARKS.square)
+      const { rect, id, contents, author } = MARKS.note
+      const note = add(`<< /Type /Annot /Subtype /Text /Rect [${rect.join(' ')}] /NM (${id}) /T (${author}) /M (D:20261120100000Z) /Contents (${contents}) /C [1 0.8 0] /F 4 >>`)
+      annots = annots.replace(']', ` ${box} 0 R ${note} 0 R]`)
+    }
+    let rotate = ''
+    if (marks && n === MARKS.rotated.page) {
+      annots = ` /Annots [${square(MARKS.rotated)} 0 R]`
+      rotate = ` /Rotate ${MARKS.rotated.rotate}`
+    }
     if (n === NOTE.page) {
       const note = add(`<< /Type /Annot /Subtype /Text /Rect [500 700 520 720] /NM (fixture-note) /T (${NOTE.author}) /M (D:20261120100000Z) /Contents (${NOTE.contents}) /C [1 0.8 0] /F 4 >>`)
       annots = ` /Annots [${note} 0 R]`
     }
     const contents = add(stream(content))
-    set(pageIds[n - 1], `<< /Type /Page /Parent ${pagesRoot} 0 R /MediaBox [0 0 612 792] /Resources ${resources} /Contents ${contents} 0 R${annots} >>`)
+    set(pageIds[n - 1], `<< /Type /Page /Parent ${pagesRoot} 0 R /MediaBox [0 0 612 792] /Resources ${resources} /Contents ${contents} 0 R${annots}${rotate} >>`)
   }
   set(pagesRoot, `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(' ')}] /Count ${PAGES} >>`)
   set(catalog, `<< /Type /Catalog /Pages ${pagesRoot} 0 R /AcroForm << /Fields [${fields.map((id) => `${id} 0 R`).join(' ')}] /NeedAppearances true /DA (/F1 12 Tf 0 g) /DR ${resources} >> >>`)

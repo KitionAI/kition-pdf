@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { TesseraIcons } from '@kition/sdk/editor'
 import { Button, IconButton, useEngineQuery, useKitEditor } from '@kition/sdk/editor'
 import type { PdfInfo } from './pdf'
@@ -32,16 +32,23 @@ type FieldItem = {
 }
 
 /** The panels beside the pages (Kition PDF's right rail): thumbnails, bookmarks, comments, fields. */
-export function SidePanel({ info, current, onPage, chosen, onChoose }: {
+export function SidePanel({ info, current, onPage, chosen, onChoose, reply }: {
   info: PdfInfo
   current: number
   onPage: (index: number) => void
-  /** The comment chosen in the Comments panel, and choosing one (null: none). */
+  /** The comment chosen in the Comments panel or on the page, and choosing one (null: none). */
   chosen: CommentItem | null
   onChoose: (item: CommentItem | null) => void
+  /** Moves each time a comment's menu asks to reply to the chosen one: the Comments panel shows and its reply box takes the keyboard. */
+  reply?: number
 }) {
   const { phrase: p } = useKitEditor()
   const [panel, setPanel] = useState<Panel>('pages')
+  useEffect(() => {
+    if (reply) setPanel('comments')
+  }, [reply])
+  // A reply asked for is taken once, by the Comments panel showing it.
+  const replied = useRef(0)
   const panels: Array<{ id: Panel; icon: typeof Files; label: string }> = [
     { id: 'pages', icon: Files, label: p('Page thumbnails') },
     { id: 'bookmarks', icon: Bookmark, label: p('Bookmarks') },
@@ -59,7 +66,7 @@ export function SidePanel({ info, current, onPage, chosen, onChoose }: {
       <div className={`kui-panel-body${panel === 'pages' ? ' pdf-thumbs-body' : ''}`}>
         {panel === 'pages' ? <Thumbnails info={info} current={current} onPage={onPage} /> : null}
         {panel === 'bookmarks' ? <Bookmarks onPage={onPage} /> : null}
-        {panel === 'comments' ? <Comments chosen={chosen} onChoose={onChoose} /> : null}
+        {panel === 'comments' ? <Comments chosen={chosen} onChoose={onChoose} reply={reply && reply !== replied.current ? reply : 0} onReplying={() => { replied.current = reply ?? 0 }} /> : null}
         {panel === 'fields' ? <Fields onPage={onPage} /> : null}
       </div>
     </aside>
@@ -88,11 +95,27 @@ function Bookmarks({ onPage }: { onPage: (index: number) => void }) {
  * (double-click too), replied to, given a status and deleted (its button, Delete). The Comments
  * tab's commands that act on one comment act on it.
  */
-function Comments({ chosen, onChoose }: { chosen: CommentItem | null; onChoose: (item: CommentItem | null) => void }) {
+function Comments({ chosen, onChoose, reply: replyAsked, onReplying }: { chosen: CommentItem | null; onChoose: (item: CommentItem | null) => void; reply: number; onReplying: () => void }) {
   const { t, phrase: p, run, enabled, host } = useKitEditor()
   const items = useEngineQuery<{ comments: CommentItem[] }>('comment.list')?.comments ?? []
   const [editing, setEditing] = useState<{ item: CommentItem; text: string } | null>(null)
   const [reply, setReply] = useState('')
+  // The chosen comment (on the page too) is scrolled into view; a reply asked for from its menu takes the keyboard.
+  const list = useRef<HTMLDivElement>(null)
+  const chosenKey = chosen ? `${chosen.id ?? ''}:${chosen.page}:${chosen.index}` : ''
+  const shown = items.length > 0
+  useEffect(() => {
+    if (!chosenKey || !shown) return
+    list.current?.querySelector('.pdf-comment-row[data-chosen]')?.scrollIntoView({ block: 'nearest' })
+  }, [chosenKey, shown])
+  const took = useRef(0)
+  useEffect(() => {
+    const field = list.current?.querySelector<HTMLInputElement>('.pdf-comment-row[data-chosen] [data-testid="pdf-comment-reply-text"]')
+    if (!replyAsked || took.current === replyAsked || !field) return
+    took.current = replyAsked
+    onReplying()
+    field.focus()
+  })
   const locale = host.init.locale || 'en-US'
   if (!items.length) return <p className="pdf-empty kui-muted">{t('noComments')}</p>
   const isChosen = (item: CommentItem) => chosen != null && sameComment(chosen, item)
@@ -114,7 +137,7 @@ function Comments({ chosen, onChoose }: { chosen: CommentItem | null; onChoose: 
     await run('comment.delete', commentRef(item))
   }
   return (
-    <div className="pdf-comments" data-testid="pdf-comments">
+    <div className="pdf-comments" ref={list} data-testid="pdf-comments">
       {items.map((item) => {
         const open = isChosen(item)
         const when = shownDate(item.modified, locale)

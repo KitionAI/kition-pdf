@@ -1,0 +1,26 @@
+format: 1
+id: regressions/issue-hand-f5-link
+feature: pdf.editor.links
+intent: >-
+  A link on the page (to another page) showed the text cursor and a click did nothing. Now the
+  cursor is a hand over a link, a click goes to the page it names, Alt+Left comes back, and a link
+  to a web address asks first and then sends the address to the host (host/openUrl).
+  web/tests/hand/annotations.mjs reads the status bar and the dev host's opens.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings F5
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/annotations.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

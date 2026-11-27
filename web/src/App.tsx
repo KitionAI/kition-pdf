@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent as ReactMouseEvent, type RefObject } from 'react'
 import { Scrollbar } from '@kition/tessera/ui'
 import {
   CommandTab,
@@ -29,7 +29,7 @@ import { HomeTab, SelectTool } from './ribbon/HomeTab'
 import { SidePanel } from './SidePanel'
 import { commentRef, sameComment, type CommentItem } from './comments'
 import { ParamsDialog, type Asking } from './ParamsDialog'
-import { CommentOutline, SelectionBar } from './SelectionBar'
+import { SelectionBar } from './SelectionBar'
 import { matchRuns, selectionBounds, selectionRuns, type MarkupType } from './markup'
 import { FindBar, type FindControl, type Match } from './FindBar'
 import { SearchHighlights } from './SearchHighlights'
@@ -43,6 +43,12 @@ import { focusPages, keyboardFallback, keyboardLost, returnKeyboardLater } from 
 import { isTextControl } from './textSelection'
 import { KEY_LINE, WHEEL_NOTCH_ZOOM, clampZoom, ladderStep, screenStep, scrollView, wheelNotches, zoomAround } from './view'
 import { ZoomBar, type Fit } from './ZoomBar'
+import { NUDGE, NUDGE_FAR, asRect, clientToDocument, hitTest, inRect, keptOnPage, movable, pageAt, type PageComment, type PageLink, type Rect } from './page/geometry'
+import { usePageObjects } from './page/usePageObjects'
+import { usePageTool, type Dragging, type Hovering } from './page/usePageTool'
+import { CommentTip, NoteCard, SelectionFrame } from './page/PageOverlays'
+import { PageMenu, type PageMenuActions, type PageMenuTarget } from './page/PageMenu'
+import { LinkDialog } from './page/LinkDialog'
 
 export function App({ host, phrase }: { host: HostConnection; phrase: Phrases }) {
   const t = useMemo(() => createKitStrings(CATALOGS, host.init.locale), [host])
@@ -349,24 +355,203 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   /** Goes `by` pages from the current one, its top at the view's top. */
   const turnPage = (by: number) => goTo(Math.max(0, Math.min(pages.length - 1, current + by)))
 
+  // The page layer (web/src/page, stage 4): what is on the pages, the pointer tool that sends a
+  // press to it, the selected comment's frame, its tip, its menu, the card its text is written in.
+  const { objects, lines } = usePageObjects(doc, session.change.revision)
+  const [drag, setDrag] = useState<Dragging | null>(null)
+  const [hover, setHover] = useState<Hovering | null>(null)
+  const [menu, setMenu] = useState<PageMenuTarget | null>(null)
+  const [card, setCard] = useState<{ kind: 'edit'; comment: PageComment } | { kind: 'new'; page: number; point: [number, number] } | null>(null)
+  const [linkAsk, setLinkAsk] = useState<string | null>(null)
+  const [replyAsk, setReplyAsk] = useState(0)
+  // A drag's frame stays where the release put it until the chosen comment's new place is read back.
+  const chosenPlace = chosen?.rect?.join(',') ?? ''
+  useEffect(() => setDrag(null), [chosenPlace, doc])
+  useEffect(() => {
+    if (!drag) return undefined
+    const late = window.setTimeout(() => setDrag(null), 4000)
+    return () => window.clearTimeout(late)
+  }, [drag])
+  // A new document starts with no menu, card or link question.
+  useEffect(() => {
+    setMenu(null)
+    setCard(null)
+    setLinkAsk(null)
+    setHover(null)
+  }, [doc])
+  /** Chooses a comment on the page: the Comments panel follows, the view stays. */
+  const choosePageComment = useCallback((item: PageComment | null) => {
+    const now = chosenRef.current
+    if (item && now && sameComment(now, item)) return
+    if (!item && !now) return
+    chosenRef.current = item as CommentItem | null
+    setChosen(item as CommentItem | null)
+  }, [])
+  /** One `comment.edit` for a gesture's end (a move or a resize); a refused or failed one puts the frame back. */
+  const editComment = useCallback((item: PageComment, change: Record<string, unknown>) => {
+    void leased.run('comment.edit', { ...commentRef(item), ...change }).then((done) => { if (done == null) setDrag(null) }, () => setDrag(null))
+  }, [leased])
+  const pageTool = usePageTool({
+    pages,
+    objects,
+    lines,
+    zoom: () => canvas.current?.view()?.zoom ?? 1,
+    text: selection.tool,
+    clearText: selection.clear,
+    chosen,
+    choose: choosePageComment,
+    move: (item, dx, dy) => editComment(item, { move: [round2(dx), round2(dy)] }),
+    resize: (item, rect) => editComment(item, { rect: rect.map(round2) }),
+    follow: (link) => followLink(link),
+    open: (item) => {
+      choosePageComment(item)
+      setCard({ kind: 'edit', comment: item })
+    },
+    onDrag: setDrag,
+    onHover: (next) => setHover((now) => (now?.comment === next?.comment ? now : next)),
+  })
+
+  // Views a link left, for Alt+Left (Cmd+[) to go back to and Alt+Right (Cmd+]) forward again.
+  const history = useRef<{ back: Array<{ x: number; y: number }>; forward: Array<{ x: number; y: number }> }>({ back: [], forward: [] })
+  useEffect(() => { history.current = { back: [], forward: [] } }, [doc])
+  const followLink = (link: PageLink) => {
+    if (typeof link.to_page === 'number') {
+      const view = canvas.current?.view()
+      if (view) {
+        history.current.back = [...history.current.back.slice(-199), { x: view.x, y: view.y }]
+        history.current.forward = []
+      }
+      goTo(link.to_page - 1)
+    } else if (link.url) setLinkAsk(link.url)
+    else toast('info', t('linkOther', { kind: link.other ?? '?' }))
+  }
+  const stepHistory = (by: -1 | 1) => {
+    const view = canvas.current?.view()
+    const { back, forward } = history.current
+    const to = by < 0 ? back.at(-1) : forward.at(-1)
+    if (!view || !to) return
+    if (by < 0) history.current = { back: back.slice(0, -1), forward: [...forward, { x: view.x, y: view.y }] }
+    else history.current = { back: [...back, { x: view.x, y: view.y }], forward: forward.slice(0, -1) }
+    canvas.current?.panTo(to.x, to.y)
+  }
+  /** A web address goes to the host (it opens the browser); a host that opens none says so. */
+  const openUrl = (url: string) => {
+    setLinkAsk(null)
+    focusPages()
+    if (!/^(https?:|mailto:)/i.test(url)) {
+      toast('info', t('linkRefused', { url }))
+      return
+    }
+    if (!host.init.capabilities?.includes('open-url')) {
+      toast('info', t('linkNoHost', { url }))
+      return
+    }
+    void host.peer.request('host/openUrl', { url }).catch(() => toast('error', t('linkOpenFailed')))
+  }
+
+  /** The right-click on the pages: a comment's menu (it is chosen), the selection's, or the page's. */
+  const contextMenu = (event: ReactMouseEvent<HTMLDivElement>) => {
+    const target = event.target instanceof Element ? event.target : null
+    // A field's own menu stays the browser's (the note card's text, the selection bar's).
+    if (!target || isTextControl(target) || target.closest('.pdf-selection-bar, .pdf-note-card')) return
+    event.preventDefault()
+    const surface = region.current?.querySelector('[data-testid="kit-canvas-surface"]')
+    const view = canvas.current?.view()
+    if (!surface || !view) return
+    const [x, y] = clientToDocument(event.clientX, event.clientY, surface.getBoundingClientRect(), view)
+    const at = pageAt(pages, x, y)
+    setHover(null)
+    if (!at) {
+      setMenu(null)
+      return
+    }
+    const point = { x: event.clientX, y: event.clientY }
+    const hit = hitTest(objects, chosen, at.page, at.point, view.zoom)
+    if (hit.kind === 'comment' || hit.kind === 'markup' || hit.kind === 'handle') {
+      choosePageComment(hit.comment)
+      setMenu({ kind: 'comment', at: point, comment: hit.comment })
+      return
+    }
+    const onSelection = selection.selected?.pages.some((item) => item.page === at.page && item.rects.some((rect) => {
+      const r = asRect(rect)
+      return !!r && inRect(r, at.point[0], at.point[1], 2)
+    }))
+    setMenu(onSelection ? { kind: 'selection', at: point } : { kind: 'page', at: point, page: at.page, point: at.point })
+  }
+  const menuActions: PageMenuActions = {
+    copy: () => selection.copy(),
+    mark: (type) => void mark(type),
+    findSelection: () => openFind(),
+    editText: (item) => setCard({ kind: 'edit', comment: item }),
+    reply: (item) => {
+      choosePageComment(item)
+      setReplyAsk((n) => n + 1)
+    },
+    setStatus: (item) => {
+      choosePageComment(item)
+      leased.ask('comment.setStatus')
+    },
+    color: (item, color) => void leased.run('comment.edit', { ...commentRef(item), color }),
+    copyText: (item) => {
+      try {
+        void navigator.clipboard.writeText(item.contents ?? '').then(() => toast('success', t('copied')), () => toast('error', t('commandFailed')))
+      } catch { toast('error', t('commandFailed')) }
+    },
+    remove: (item) => {
+      choosePageComment(null)
+      void leased.run('comment.delete', commentRef(item))
+    },
+    properties: (item) => {
+      choosePageComment(item)
+      leased.ask('comment.edit')
+    },
+    addNote: (page, point) => setCard({ kind: 'new', page, point }),
+    addBookmark: (page) => leased.ask('bookmark.add', { page }),
+    rotatePage: (page) => void leased.run('page.rotate', { pages: [page], degrees: 90 }),
+    deletePage: (page) => void leased.run('page.delete', { pages: [page] }),
+    fit: (to) => zoomTo(to),
+    find: () => openFind(),
+  }
+  /** The card's Post: a comment's new text, or a new sticky note where the menu was asked for. */
+  const postCard = (text: string) => {
+    const open = card
+    setCard(null)
+    focusPages()
+    if (!open) return
+    if (open.kind === 'edit') {
+      if (text !== (open.comment.contents ?? '')) void leased.run('comment.edit', { ...commentRef(open.comment), contents: text })
+    } else void leased.run('comment.add', { type: 'note', page: open.page, at: open.point.map(round2), contents: text })
+  }
+  const cardPlace: { page: number; rect: Rect } | null = card
+    ? card.kind === 'edit'
+      ? (() => { const rect = asRect(card.comment.rect); return rect ? { page: card.comment.page, rect } : null })()
+      : { page: card.page, rect: [card.point[0], card.point[1], card.point[0] + 20, card.point[1] + 20] }
+    : null
+  const canvasBox = hover ? region.current?.querySelector('.kui-canvas')?.getBoundingClientRect() ?? null : null
+
+  /** Opens the find bar (Cmd+F, a menu's Find), with the selected text as what it looks for. */
+  const openFind = () => {
+    const picked = (selection.selected?.text ?? '').replace(/\s+/g, ' ').trim()
+    const seed = picked.length > 0 && picked.length <= 200 ? picked : ''
+    selection.clear()
+    if (!finding) {
+      searchOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+      setFindSeed(seed)
+    } else {
+      if (seed) findControl.current?.seed(seed)
+      searchInput.current?.focus({ preventScroll: true })
+      searchInput.current?.select()
+    }
+    setFinding(true)
+  }
+
   const keyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const command = event.metaKey || event.ctrlKey
     const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
     const plain = !command && !event.altKey && !event.shiftKey
     if (command && !event.altKey && key === 'f') {
       // Text selected on the page is what the find bar looks for.
-      const chosen = (selection.selected?.text ?? '').replace(/\s+/g, ' ').trim()
-      const seed = chosen.length > 0 && chosen.length <= 200 ? chosen : ''
-      selection.clear()
-      if (!finding) {
-        searchOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
-        setFindSeed(seed)
-      } else {
-        if (seed) findControl.current?.seed(seed)
-        searchInput.current?.focus({ preventScroll: true })
-        searchInput.current?.select()
-      }
-      setFinding(true)
+      openFind()
       return true
     }
     if (finding && ((command && !event.altKey && key === 'g') || (!command && !event.altKey && key === 'F3'))) {
@@ -379,6 +564,11 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       const focusMode = region.current?.closest('.kui-app')?.getAttribute('data-mode') === 'focus'
       if (finding && !focusMode) {
         closeSearch()
+        return true
+      }
+      // Then the comment selected on the page (or in the panel), then the text selection.
+      if (chosen) {
+        choosePageComment(null)
         return true
       }
       selection.clear()
@@ -407,6 +597,26 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     if (plain && (key === 'Delete' || key === 'Backspace') && chosen && event.target instanceof Element && !isTextControl(event.target) && !event.target.closest('.pdf-thumbs, [role="menu"], [role="listbox"], [role="dialog"]')) {
       void leased.run('comment.delete', commentRef(chosen))
       setChosen(null)
+      return true
+    }
+    // The arrow keys move the selected comment a point (Shift or Cmd: ten) while the pages (or
+    // nothing) hold the keyboard; each press is one undo step.
+    const arrow = key === 'ArrowLeft' ? [-1, 0] : key === 'ArrowRight' ? [1, 0] : key === 'ArrowUp' ? [0, -1] : key === 'ArrowDown' ? [0, 1] : null
+    const onPages = event.target instanceof Element && (event.target === document.body || event.target.classList.contains('kui-app') || !!region.current?.contains(event.target)) && !isTextControl(event.target)
+    if (arrow && chosen && !event.altKey && onPages && movable(chosen)) {
+      const rect = asRect(chosen.rect)
+      const area = pages[chosen.page - 1]?.area
+      if (rect && area && editor.enabled('comment.edit')) {
+        const step = event.shiftKey || command ? NUDGE_FAR : NUDGE
+        const [dx, dy] = keptOnPage(rect, arrow[0] * step, arrow[1] * step, area.x1 - area.x0, area.y1 - area.y0)
+        if (dx || dy) editComment(chosen, { move: [dx, dy] })
+      }
+      return true
+    }
+    // Back and forward through the views links left (Alt+Left / Alt+Right, Cmd+[ / Cmd+]).
+    if ((event.altKey && !command && !event.shiftKey && (key === 'ArrowLeft' || key === 'ArrowRight')) || (command && !event.altKey && !event.shiftKey && (key === '[' || key === ']'))) {
+      if (isTextControl(event.target)) return false
+      stepHistory(key === 'ArrowLeft' || key === '[' ? -1 : 1)
       return true
     }
     if (command && !event.altKey && !event.shiftKey && key === 'a') {
@@ -520,7 +730,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
           ) : null
         }
         statusEnd={canvasView ? <ZoomBar zoom={zoom} onZoom={setZoomLevel} onFit={zoomTo} /> : null}
-        panels={state ? <SidePanel info={state} current={current} onPage={goTo} chosen={chosen} onChoose={chooseComment} /> : null}
+        panels={state ? <SidePanel info={state} current={current} onPage={goTo} chosen={chosen} onChoose={chooseComment} reply={replyAsk} /> : null}
       >
         {finding ? (
           <FrameChrome>
@@ -528,11 +738,24 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
           </FrameChrome>
         ) : null}
         <div className="pdf-workspace">
-          <div ref={region} id={viewportId} className="pdf-pages" tabIndex={-1}>
-            <KitDocumentCanvas canvas={canvas} viewMemory={viewMemory} initialArea={pageWidthArea(pages[0]?.area)} panBounds={panBounds} framed={false} onView={follow} tool={selection.tool}>
+          <div ref={region} id={viewportId} className="pdf-pages" tabIndex={-1} onContextMenu={contextMenu}>
+            <KitDocumentCanvas canvas={canvas} viewMemory={viewMemory} initialArea={pageWidthArea(pages[0]?.area)} panBounds={panBounds} framed={false} onView={follow} tool={pageTool}>
               {selectedMatch ? <SearchHighlights page={pages[selectedMatch.page - 1]?.area} pageNumber={selectedMatch.page} rects={selectedMatch.rects} view={canvasView} /> : null}
               <SelectionHighlights selected={selection.selected} pages={pages} view={canvasView} />
-              {chosen?.rect ? <CommentOutline page={pages[chosen.page - 1]} rect={chosen.rect} view={canvasView} /> : null}
+              {chosen?.rect ? <SelectionFrame comment={chosen} area={pages[chosen.page - 1]?.area} view={canvasView} drag={drag} /> : null}
+              {hover && !drag && !menu && !card ? <CommentTip hover={hover} box={canvasBox} /> : null}
+              {card && cardPlace ? (
+                <NoteCard
+                  key={card.kind === 'edit' ? `edit-${card.comment.id ?? card.comment.index}` : `new-${card.page}-${card.point.join(',')}`}
+                  area={pages[cardPlace.page - 1]?.area}
+                  rect={cardPlace.rect}
+                  view={canvasView}
+                  title={card.kind === 'edit' ? t('editComment') : t('stickyNote')}
+                  initial={card.kind === 'edit' ? card.comment.contents ?? '' : ''}
+                  onPost={postCard}
+                  onCancel={() => { setCard(null); focusPages() }}
+                />
+              ) : null}
               {showBar && selection.selected ? (
                 <SelectionBar
                   key={JSON.stringify(selection.selected.pages.map((item) => item.rects))}
@@ -549,6 +772,8 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
               ) : null}
             </KitDocumentCanvas>
           </div>
+          <PageMenu target={menu} onClose={() => setMenu(null)} actions={menuActions} hasSelection={!!selection.selected?.text} pageCount={pages.length} />
+          {linkAsk ? <LinkDialog url={linkAsk} onOpen={() => openUrl(linkAsk)} onClose={() => { setLinkAsk(null); focusPages() }} /> : null}
           {asking ? <ParamsDialog key={asking.key} asking={asking} onRun={(params) => runDialog(asking.command, params)} onClose={() => setAsking(null)} /> : null}
           {canvasView && panBounds ? <PageScrollbars view={canvasView} bounds={panBounds} controls={viewportId} canvas={canvas} vertical={t('verticalScroll')} horizontal={t('horizontalScroll')} /> : null}
         </div>
@@ -556,6 +781,9 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     </KitEditorProvider>
   )
 }
+
+/** A point value as a command takes it: to 1/100 pt. */
+const round2 = (value: number) => Math.round(value * 100) / 100
 
 /** The Comments tab's commands that act on one comment (`id`, or `page` and `index`). */
 const COMMENT_COMMANDS = new Set(['comment.delete', 'comment.edit', 'comment.reply', 'comment.setStatus', 'comment.mark', 'comment.lock', 'comment.previewImage'])

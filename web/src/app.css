@@ -221,13 +221,86 @@
   gap: 6px;
 }
 
-/* The comment chosen in the Comments panel, framed where it is on the page. */
+/* The selected comment (on the page or in the Comments panel), framed where it is on the page;
+   every press goes to the page's tool beneath, so none of this takes the pointer. */
 .pdf-comment-outline {
   position: absolute;
   box-sizing: border-box;
   border: 2px solid var(--kit-primary);
   border-radius: 3px;
   pointer-events: none;
+}
+
+.pdf-comment-outline[data-dragging] {
+  border-style: dashed;
+  background: var(--kit-primary-soft);
+}
+
+/* Where a dragged comment was. */
+.pdf-comment-ghost {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px dashed var(--kit-text-muted);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.pdf-comment-handle {
+  position: absolute;
+  box-sizing: border-box;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border: 1px solid var(--kit-primary);
+  background: var(--kit-surface);
+  pointer-events: none;
+}
+
+.pdf-comment-tip {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 280px;
+  padding: 6px 8px;
+  border: 1px solid var(--kit-border);
+  border-radius: var(--kit-radius-card);
+  background: var(--kit-surface);
+  box-shadow: var(--kit-shadow-card);
+  color: var(--kit-text);
+  font-size: 12px;
+  white-space: pre-wrap;
+  pointer-events: none;
+}
+
+.pdf-note-card {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 240px;
+  padding: 8px;
+  border: 1px solid var(--kit-border);
+  border-radius: var(--kit-radius-card);
+  background: var(--kit-surface);
+  box-shadow: var(--kit-shadow-card);
+}
+
+.pdf-note-card-title {
+  font-weight: 600;
+}
+
+.pdf-menu-label {
+  padding: 4px 12px 2px;
+  color: var(--kit-text-muted);
+  font-size: 12px;
+}
+
+.pdf-link-url {
+  overflow-wrap: anywhere;
+  color: var(--kit-text-muted);
 }
 
 .pdf-comment-row[data-chosen] {

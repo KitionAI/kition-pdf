@@ -61,10 +61,10 @@ export async function openHand(script, which, { query = 'locale=en-US' } = {}) {
   const mod = (await page.evaluate(() => /Mac|iPhone|iPad/i.test(navigator.platform))) ? 'Meta' : 'Control'
   const status = () => kit.getByTestId('pdf-status').textContent({ timeout: 2000 }).catch(() => '')
 
-  /** Opens the synthetic PDF through the host's file input; nothing in the editor is clicked. */
-  const openFixture = async () => {
+  /** Opens the synthetic PDF (or `buffer`) through the host's file input; nothing in the editor is clicked. */
+  const openFixture = async (buffer = handPdf()) => {
     await page.evaluate(() => { document.getElementById('status').textContent = 'opening…' })
-    await page.setInputFiles('#file', { name: FILE, mimeType: 'application/pdf', buffer: handPdf() })
+    await page.setInputFiles('#file', { name: FILE, mimeType: 'application/pdf', buffer })
     await page.waitForFunction((name) => document.getElementById('status')?.textContent?.includes(`${name} open in`), FILE, { timeout: 90_000 })
     await until(async () => /^Page 1 of \d+$/.test(await status()), 200)
     await until(async () => (await view()) != null, 100)

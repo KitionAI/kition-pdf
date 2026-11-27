@@ -1,0 +1,25 @@
+format: 1
+id: regressions/issue-hand-g3-delete-key
+feature: pdf.editor.annotation-select
+intent: >-
+  A comment clicked on the page and then Delete or Backspace stayed: nothing was selected. Now
+  Delete deletes the comment selected on the page, nothing is selected after it, and Cmd+Z brings
+  it back. web/tests/hand/annotations.mjs reads comment.list back.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings G3
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/annotations.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"
