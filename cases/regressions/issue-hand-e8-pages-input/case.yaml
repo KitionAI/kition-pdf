@@ -1,0 +1,27 @@
+format: 1
+id: regressions/issue-hand-e8-pages-input
+feature: pdf.editor.params-and-fields
+intent: >-
+  Move pages refused pages typed as 3 (pages must be an array of integers) and closed its dialog,
+  dropping what was typed. Now pages are typed as 3, 3, 5 or 2-4 and points as 300, 400; a value
+  that is no list is refused at its field before anything runs, and a command that fails keeps the
+  dialog open with everything typed and the error under the field it names.
+  web/tests/hand/fields-panel.mjs moves pages by typing 3 and 6-8 and reads the page order back.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings E8, L4
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/fields-panel.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

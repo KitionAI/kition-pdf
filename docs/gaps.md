@@ -35,7 +35,9 @@ land work, then this list. The comparison with the target application is in
 ## Differences on features that work
 
 - `pdf.editor.keyboard-and-view` (P0, has): Measured in dev.html only (whether Kition Desktop gives the editor's frame the keyboard on open is not checked here). Select All takes every page up to 64 (the engine's text.select span) and the current page beyond. A mouse wheel's notch is told from a trackpad by its delta (whole 100 px or lines); real wheels and trackpads are not measured. Cmd+1 and Cmd+2 may be taken by a browser's own tab keys outside Kition.
+- `pdf.editor.markup-and-comments` (P0, has): Comments are made and chosen only from text selections, the find bar and the Comments panel: nothing on the page is clicked, moved or resized yet (stage 4 and 5 of the plan). A selection across pages makes one comment per page, each its own undo step (the engine has no batch of edits for the editor). Measured in dev.html only.
+- `pdf.editor.params-and-fields` (P0, has): Points and rectangles are still typed: nothing is picked on the page (stage 10 of the plan). Lists of points of points (ink strokes) and objects (form values) are still JSON. Fields are filled in the panel, not on the page (stage 6). Measured in dev.html only.
 
 ## Catalogue
 
-The catalogue has 40 features: 18 `has`, 22 not yet.
+The catalogue has 42 features: 20 `has`, 22 not yet.

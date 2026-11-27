@@ -3495,7 +3495,7 @@ status = "partial"
 commands = ["comment.list"]
 tools = ["comment.list"]
 evidence = []
-notes = "cards grouped by page with replies, status badges, selection, reply box and an Add a comment box"
+notes = "Editor (web/, web/tests/hand/markup.mjs): the Comments panel lists each comment's type, page, author, time, status, text and replies; a click goes to the comment and frames it on the page; the chosen one is edited in place, replied to, given a status and deleted. cards grouped by page with replies, status badges, selection, reply box and an Add a comment box"
 
 [[feature]]
 id = "comment.appearance-generation"
@@ -3531,7 +3531,7 @@ status = "shipped"
 commands = ["comment.highlight"]
 tools = ["comment.add"]
 evidence = ["crates/engine/engine/src/tests.rs::highlight_multiplies_over_text"]
-notes = "drag over text, or pick the tool with text selected; a new highlight opens its note for typing in the Comments panel; agents can highlight by text search"
+notes = "Editor (web/, web/tests/hand/markup.mjs): with text selected (each page of a selection across pages) or the find bar on a match, Highlight marks it at once; the bar beside a released selection highlights, underlines, strikes out and adds a highlight with a note. No highlighter tool that marks as it drags yet. drag over text, or pick the tool with text selected; a new highlight opens its note for typing in the Comments panel; agents can highlight by text search"
 
 [[feature]]
 id = "comment.underline"
@@ -3543,7 +3543,7 @@ status = "shipped"
 commands = ["comment.underline"]
 tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
-notes = ""
+notes = "Editor (web/, web/tests/hand/markup.mjs): Underline on the Home tab or the selection's bar marks the selected text at once. "
 
 [[feature]]
 id = "comment.strikeout"
@@ -3555,7 +3555,7 @@ status = "shipped"
 commands = ["comment.strikeout"]
 tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
-notes = ""
+notes = "Editor (web/, web/tests/hand/markup.mjs): Strikethrough on the Home tab or the selection's bar marks the selected text at once. "
 
 [[feature]]
 id = "comment.squiggly"
@@ -3867,7 +3867,7 @@ status = "shipped"
 commands = ["comment.list"]
 tools = ["comment.reply"]
 evidence = ["crates/engine/annot/src/tests.rs::replies_and_status_thread_onto_the_parent"]
-notes = ""
+notes = "Editor (web/, web/tests/hand/markup.mjs): the chosen comment's reply box in the Comments panel; replies show under it. "
 
 [[feature]]
 id = "comment.set-status"
@@ -3903,7 +3903,7 @@ status = "shipped"
 commands = ["comment.list"]
 tools = ["comment.delete"]
 evidence = ["crates/engine/annot/src/tests.rs::delete_takes_popup_and_reply_chain"]
-notes = "deletes the pop-up and the reply thread"
+notes = "Editor (web/, web/tests/hand/markup.mjs): the Comments panel's Delete, the Comments tab's Delete a comment and the Delete key act on the comment chosen in the panel. deletes the pop-up and the reply thread"
 
 [[feature]]
 id = "comment.edit-comment-text"
@@ -3915,7 +3915,7 @@ status = "shipped"
 commands = ["comment.list"]
 tools = ["comment.edit"]
 evidence = ["crates/engine/annot/src/tests.rs::text_box_text_and_colour_changes_are_drawn", "crates/engine/annot/src/tests.rs::editing_a_text_box_refits_its_rectangle", "crates/engine/automation/tests/automation.rs::comments_through_tools"]
-notes = "double-click a comment or card, or Edit in the menus; a text box's rectangle follows the new text (wrap width and top edge stay, the height fits the wrapped lines)"
+notes = "Editor (web/, web/tests/hand/markup.mjs): Edit (or a double-click) on a card of the Comments panel edits its text in place; not on the page yet. double-click a comment or card, or Edit in the menus; a text box's rectangle follows the new text (wrap width and top edge stay, the height fits the wrapped lines)"
 
 [[feature]]
 id = "comment.copy-comment-text"
@@ -4363,7 +4363,7 @@ status = "shipped"
 commands = ["form.fields"]
 tools = ["form.fill", "form.listFields"]
 evidence = ["crates/engine/forms/src/tests.rs::text_fields_get_new_appearances", "crates/engine/engine/src/tests.rs::filling_a_form_shows_saves_and_undoes", "crates/engine/automation/tests/automation.rs::orphan_form_fields_through_tools"]
-notes = "in-place editor; Enter or clicking away commits, Escape cancels; no format/keystroke JavaScript yet (M6.4)"
+notes = "Editor (web/, web/tests/hand/fields-panel.mjs): in the form fields panel only (not on the page yet); its box shows the value an undo brings back. in-place editor; Enter or clicking away commits, Escape cancels; no format/keystroke JavaScript yet (M6.4)"
 
 [[feature]]
 id = "form.fill-checkbox-radio"
@@ -4375,7 +4375,7 @@ status = "shipped"
 commands = ["form.fields"]
 tools = ["form.fill"]
 evidence = ["crates/engine/forms/src/tests.rs::check_boxes_and_radios_switch_states"]
-notes = "NoToggleToOff honoured; widgets without appearances get our own"
+notes = "Editor (web/, web/tests/hand/fields-panel.mjs): the form fields panel draws a check box and a group of radio buttons. NoToggleToOff honoured; widgets without appearances get our own"
 
 [[feature]]
 id = "form.fill-choice"
@@ -4387,7 +4387,7 @@ status = "shipped"
 commands = ["form.fields"]
 tools = ["form.fill"]
 evidence = ["crates/engine/forms/src/tests.rs::choices_accept_exports_or_display_text"]
-notes = "combo and list boxes, multi-select lists; editable combo boxes accept free text"
+notes = "Editor (web/, web/tests/hand/fields-panel.mjs): the form fields panel draws a drop-down's options by name (free text for an editable one) and a list. combo and list boxes, multi-select lists; editable combo boxes accept free text"
 
 [[feature]]
 id = "form.push-buttons"

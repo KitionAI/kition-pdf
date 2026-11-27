@@ -15,6 +15,7 @@ import {
   type FrameTab,
   type HostConnection,
   type KitCanvasHandle,
+  type KitCommand,
   type KitCanvasView,
   type Phrases,
   type RasterRect,
@@ -23,9 +24,13 @@ import {
 import { engineManifest } from './engine'
 import { useEngineBackdrop } from './backdrop'
 import { CATALOGS } from './strings'
-import { TABS, commandDefaults, describe, pageWidthArea, pagesPanBounds, wholePageArea } from './pdf'
+import { TABS, commandDefaults, describe, pageWidthArea, pagesPanBounds, wholePageArea, type Where } from './pdf'
 import { HomeTab, SelectTool } from './ribbon/HomeTab'
 import { SidePanel } from './SidePanel'
+import { commentRef, sameComment, type CommentItem } from './comments'
+import { ParamsDialog, type Asking } from './ParamsDialog'
+import { CommentOutline, SelectionBar } from './SelectionBar'
+import { matchRuns, selectionBounds, selectionRuns, type MarkupType } from './markup'
 import { FindBar, type FindControl, type Match } from './FindBar'
 import { SearchHighlights } from './SearchHighlights'
 import { searchPanTarget } from './searchGeometry'
@@ -49,32 +54,95 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     agentLeaseScope: (command, _params, engine) => engine.invoke<string>('leaseScope', command),
   })
   const [current, setCurrent] = useState(0)
-  const defaults = useMemo(() => commandDefaults(current), [current])
+  const defaults = useMemo(() => commandDefaults({ current, click: null, selection: null }), [current])
   const editor = useKitEditorState(session, host, t, 'pdf', phrase, defaults)
   const { state } = session
   const { doc } = session
   // A command that rewrites the whole file takes the whole document's lease while it runs, and no
   // edit runs while someone else holds it (`rewriteLease.ts`).
   const leases = useMemo(() => kitLeases(host), [host])
+  // The comment chosen in the Comments panel: the Comments tab's commands that name one act on it.
+  const [chosen, setChosen] = useState<CommentItem | null>(null)
+  const chosenRef = useRef(chosen)
+  chosenRef.current = chosen
+  // What a parameters dialog starts from: the current page, the last press on a page, the selection.
+  const where = useRef<Where>({ current: 0, click: null, selection: null })
+  // The editor's own parameters dialog (`ParamsDialog.tsx`), in place of the SDK's.
+  const [asking, setAsking] = useState<(Asking & { key: number }) | null>(null)
+  const askCount = useRef(0)
+  const openDialog = useCallback((command: KitCommand, values: Record<string, unknown> = {}, fixed?: Record<string, unknown>) => {
+    askCount.current += 1
+    const start = commandDefaults(where.current)(command)
+    if (fixed) for (const key of Object.keys(fixed)) delete start[key]
+    setAsking({ command, values: { ...start, ...values }, fixed, key: askCount.current })
+  }, [])
+  /** Runs an edit under the whole-document lease it needs; a refusal toasts and answers null. */
+  const runLeased = useCallback(async (id: string, edit: () => Promise<string | null>, onRefuse?: (holder: string) => void) => {
+    const command = editor.byId.get(id)
+    const scope = doc ? await doc.invoke<string>('leaseScope', id).catch(() => '') : ''
+    const refuse = onRefuse ?? ((holder: string) => toast('info', t('rewriting', { name: holder || t('someone') })))
+    return withRewriteLease(leases, scope, command?.mutates ?? true, edit, refuse)
+  }, [doc, editor.byId, leases, t])
   const leased = useMemo(
-    () => ({
-      ...editor,
-      run: async (id: string, params?: Record<string, unknown>) => {
+    () => {
+      /** The chosen comment for a command that names one and was given none (`id`, or `page` and `index`). */
+      const target = (id: string, params?: Record<string, unknown>) => {
+        const item = chosenRef.current
+        return COMMENT_COMMANDS.has(id) && item && !(params && ('id' in params || 'index' in params)) ? commentRef(item) : null
+      }
+      const ask = (id: string, values?: Record<string, unknown>) => {
         const command = editor.byId.get(id)
-        // A command that opens its dialog first is leased when the dialog runs it.
-        if (!params && command && needsParams(command)) return editor.run(id, params)
-        const scope = doc ? await doc.invoke<string>('leaseScope', id).catch(() => '') : ''
-        const refuse = (holder: string) => toast('info', t('rewriting', { name: holder || t('someone') }))
-        try {
-          return await withRewriteLease(leases, scope, command?.mutates ?? true, () => editor.run(id, params), refuse)
-        } finally {
-          // A parameters dialog that ran (or failed) leaves the keyboard on the body: the pages take it.
-          returnKeyboardLater()
+        if (!command) return
+        // A command the host or a read-only session refuses gets no dialog: running it says why.
+        if (!editor.enabledByEngine(id)) {
+          void editor.run(id, values ?? {})
+          return
         }
-      },
-    }),
-    [doc, editor, leases, t],
+        const fixed = target(id, values) ?? undefined
+        openDialog(command, id === 'comment.edit' && fixed && !values ? { contents: chosenRef.current?.contents ?? '' } : values, fixed)
+      }
+      return {
+        ...editor,
+        dialog: null,
+        setDialog: (command: KitCommand | null, values?: Record<string, unknown>) => (command ? openDialog(command, values) : setAsking(null)),
+        ask,
+        // Commands that act on a comment wait for one to be chosen in the Comments panel.
+        enabled: (id: string) => editor.enabled(id) && (!COMMENT_COMMANDS.has(id) || chosenRef.current != null),
+        run: async (id: string, params?: Record<string, unknown>) => {
+          const command = editor.byId.get(id)
+          const fixed = target(id, params)
+          // Editing the chosen comment asks what to change, starting from its text.
+          if (fixed && id === 'comment.edit' && !params) {
+            ask(id)
+            return null
+          }
+          const given = fixed ? { ...fixed, ...params } : params
+          // A command that needs values a person gives opens its dialog first.
+          if (command && needsParams(command) && (!given || (fixed && !hasRequired(command, given)))) {
+            if (editor.enabledByEngine(id)) {
+              openDialog(command, params ?? {}, fixed ?? undefined)
+              return null
+            }
+          }
+          try {
+            return await runLeased(id, () => editor.run(id, given ?? {}))
+          } finally {
+            // A parameters dialog that ran (or failed) leaves the keyboard on the body: the pages take it.
+            returnKeyboardLater()
+          }
+        },
+      }
+    },
+    // `chosen`: the commands that act on a comment turn on and off with it.
+    [editor, openDialog, runLeased, chosen],
   )
+  /** The dialog's Run: the command runs under its lease; a failure stays in the dialog (it throws). */
+  const runDialog = useCallback(async (command: KitCommand, params: Record<string, unknown>) => {
+    let refused: string | null = null
+    await runLeased(command.id, () => editor.session.run(command.id, params), (holder) => { refused = t('rewriting', { name: holder || t('someone') }) })
+    if (refused) throw new Error(refused)
+    setAsking(null)
+  }, [editor.session, runLeased, t])
   // Edits an undo or redo of a whole-file rewrite dropped (`droppedEdits.ts`): the person is told.
   const dropped = useRef<{ doc: unknown; count: number }>({ doc: null, count: 0 })
   useEffect(() => {
@@ -111,8 +179,61 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const panBounds = useMemo(() => pagesPanBounds((state?.pages ?? []).map((page) => page.area)), [state?.pages])
   const selectText = useCallback(async (request: SelectionRequest) => doc ? JSON.parse(await doc.execute('text.select', request)) as SelectionResult : null, [doc])
   const selection = useTextSelection({ document: doc, revision: session.change.revision, pages, execute: selectText, t,
-    onStart: () => { setFinding(false); setSearchMatch(null); searchOpener.current = null },
+    onStart: (at) => {
+      setFinding(false)
+      setSearchMatch(null)
+      searchOpener.current = null
+      setChosen(null)
+      where.current.click = at
+    },
   })
+  // A parameters dialog starts from what is in front of the person (`commandDefaults`).
+  const bounds = selectionBounds(selection.selected)
+  where.current.current = current
+  where.current.selection = bounds && selection.selected ? { ...bounds, text: selection.selected.text } : null
+  // A new document starts with no comment chosen and no press remembered.
+  useEffect(() => {
+    setChosen(null)
+    where.current.click = null
+  }, [doc])
+  // The chosen comment follows the document's changes (its text, its place); gone, nothing is chosen.
+  useEffect(() => {
+    const item = chosenRef.current
+    if (!doc || !item) return undefined
+    let live = true
+    doc.execute('comment.list', {}).then((text) => {
+      if (!live) return
+      const found = ((JSON.parse(text) as { comments?: CommentItem[] }).comments ?? []).find((other) => sameComment(other, item))
+      if (!found) setChosen(null)
+      else if (JSON.stringify(found) !== JSON.stringify(item)) setChosen(found)
+    }).catch(() => undefined)
+    return () => { live = false }
+  }, [doc, session.change.revision])
+
+  /**
+   * Marks the selection (each page of it), else the find bar's current match, as a highlight,
+   * underline or strikethrough at once; answers whether there was anything to mark.
+   */
+  const mark = (type: MarkupType, contents?: string) => {
+    const runs = selection.selected?.text ? selectionRuns(selection.selected) : matchRuns(selectedMatch)
+    if (!runs.length) return false
+    selection.clear()
+    void (async () => {
+      for (const run of runs) {
+        const done = await leased.run('comment.add', { type, page: run.page, quads: run.quads, ...(contents ? { contents } : {}) })
+        if (done == null) break
+      }
+    })()
+    return true
+  }
+  /** Chooses a comment in the Comments panel and shows where it is on its page. */
+  const chooseComment = (item: CommentItem | null) => {
+    setChosen(item)
+    if (item) goTo(item.page - 1, item.rect ?? null)
+  }
+  // The selection's bar shows once the drag is let go, until Copy puts it away.
+  const [barHidden, setBarHidden] = useState<unknown>(null)
+  const showBar = !!selection.selected?.text && !selection.dragging && barHidden !== selection.selected
 
   // The current page: the one in the middle of the view.
   const follow = useCallback(
@@ -175,7 +296,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     return () => document.removeEventListener('keydown', keyboardFallback, true)
   }, [])
   // A parameters dialog closed with Escape or Cancel gives the keyboard back too.
-  const dialogOpen = !!editor.dialog
+  const dialogOpen = !!asking
   const wasDialogOpen = useRef(false)
   useEffect(() => {
     if (wasDialogOpen.current && !dialogOpen) returnKeyboardLater()
@@ -281,6 +402,13 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       if (!document.execCommand('copy')) selection.copy()
       return true
     }
+    // Delete takes the comment chosen in the Comments panel away, wherever the keyboard is but in
+    // a field, a list or a menu of its own (the thumbnails).
+    if (plain && (key === 'Delete' || key === 'Backspace') && chosen && event.target instanceof Element && !isTextControl(event.target) && !event.target.closest('.pdf-thumbs, [role="menu"], [role="listbox"], [role="dialog"]')) {
+      void leased.run('comment.delete', commentRef(chosen))
+      setChosen(null)
+      return true
+    }
     if (command && !event.altKey && !event.shiftKey && key === 'a') {
       selection.selectAll(current)
       return true
@@ -363,7 +491,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     view: item.id === 'home' || item.id === 'comment',
     ribbon:
       item.id === 'home' ? (
-        state ? <HomeTab info={state} current={current} onPage={goTo} onZoom={zoomTo} selectionAvailable={!!selection.selected?.text} onCopySelection={selection.copy} /> : null
+        state ? <HomeTab info={state} current={current} onPage={goTo} onZoom={zoomTo} selectionAvailable={!!selection.selected?.text} onCopySelection={selection.copy} onMark={mark} /> : null
       ) : (
         <>
           {item.menus.map((menu) => (
@@ -392,7 +520,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
           ) : null
         }
         statusEnd={canvasView ? <ZoomBar zoom={zoom} onZoom={setZoomLevel} onFit={zoomTo} /> : null}
-        panels={state ? <SidePanel info={state} current={current} onPage={goTo} /> : null}
+        panels={state ? <SidePanel info={state} current={current} onPage={goTo} chosen={chosen} onChoose={chooseComment} /> : null}
       >
         {finding ? (
           <FrameChrome>
@@ -404,13 +532,37 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
             <KitDocumentCanvas canvas={canvas} viewMemory={viewMemory} initialArea={pageWidthArea(pages[0]?.area)} panBounds={panBounds} framed={false} onView={follow} tool={selection.tool}>
               {selectedMatch ? <SearchHighlights page={pages[selectedMatch.page - 1]?.area} pageNumber={selectedMatch.page} rects={selectedMatch.rects} view={canvasView} /> : null}
               <SelectionHighlights selected={selection.selected} pages={pages} view={canvasView} />
+              {chosen?.rect ? <CommentOutline page={pages[chosen.page - 1]} rect={chosen.rect} view={canvasView} /> : null}
+              {showBar && selection.selected ? (
+                <SelectionBar
+                  key={JSON.stringify(selection.selected.pages.map((item) => item.rects))}
+                  selected={selection.selected}
+                  pages={pages}
+                  view={canvasView}
+                  onMark={(type, contents) => void mark(type, contents)}
+                  onCopy={() => {
+                    selection.copy()
+                    setBarHidden(selection.selected)
+                    focusPages()
+                  }}
+                />
+              ) : null}
             </KitDocumentCanvas>
           </div>
+          {asking ? <ParamsDialog key={asking.key} asking={asking} onRun={(params) => runDialog(asking.command, params)} onClose={() => setAsking(null)} /> : null}
           {canvasView && panBounds ? <PageScrollbars view={canvasView} bounds={panBounds} controls={viewportId} canvas={canvas} vertical={t('verticalScroll')} horizontal={t('horizontalScroll')} /> : null}
         </div>
       </EditorFrame>
     </KitEditorProvider>
   )
+}
+
+/** The Comments tab's commands that act on one comment (`id`, or `page` and `index`). */
+const COMMENT_COMMANDS = new Set(['comment.delete', 'comment.edit', 'comment.reply', 'comment.setStatus', 'comment.mark', 'comment.lock', 'comment.previewImage'])
+
+/** Whether `params` gives every value `command` requires. */
+function hasRequired(command: KitCommand, params: Record<string, unknown>) {
+  return Object.entries((command.schema ?? {}) as Record<string, { required?: boolean }>).every(([key, node]) => !node.required || params[key] !== undefined)
 }
 
 /** Scrollbars over the pages' bounds: the vertical one always (where the pages are in a long document), the horizontal one when the pages are wider than the view. */

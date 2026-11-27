@@ -49,18 +49,36 @@ export function wholePageArea(page: RasterRect | undefined): RasterRect | null {
   return page ? { x0: page.x0 - 16, y0: page.y0 - 16, x1: page.x1 + 16, y1: page.y1 + 16 } : null
 }
 
+/** What the person has in front of them as a dialog opens (`commandDefaults`). */
+export type Where = {
+  /** The current page, 0-based. */
+  current: number
+  /** The last press on a page: its page (1-based) and the page-local point. */
+  click: { page: number; point: [number, number] } | null
+  /** A text selection on one page: its page, the rectangle round it and its text. */
+  selection: { page: number; rect: number[]; text: string } | null
+}
+
+const round = (value: number) => Math.round(value)
+
 /**
- * Where the person is, as a command's dialog starts: the current page (1-based) for `page`,
- * `pages`, and a blank page's `at`; a point near the page's top-left for a comment or text.
+ * Where the person is, as a command's dialog starts: the selection's page, else the current page
+ * (1-based), for `page` and `pages`; the last press on that page for a point (`at`), else a point
+ * near the page's top-left; the selection's rectangle for `rect` and its text for `find`; a blank
+ * page goes after the current one.
  */
-export function commandDefaults(current: number) {
+export function commandDefaults({ current, click, selection }: Where) {
   return (command: KitCommand): Record<string, unknown> => {
     const schema = command.schema ?? {}
     const values: Record<string, unknown> = {}
-    if ('page' in schema) values.page = current + 1
-    if ('pages' in schema) values.pages = [current + 1]
+    const page = selection?.page ?? current + 1
+    if ('page' in schema) values.page = page
+    if ('pages' in schema) values.pages = [page]
     if ('from' in schema && command.id === 'page.number') values.from = 1
-    if ('at' in schema) values.at = command.id === 'page.insertBlank' ? current + 2 : [72, 72]
+    if ('at' in schema) values.at = command.id === 'page.insertBlank' ? current + 2 : click && click.page === page ? click.point.map(round) : [72, 72]
+    if ('rect' in schema && selection) values.rect = selection.rect.map(round)
+    const text = selection?.text.replace(/\s+/g, ' ').trim() ?? ''
+    if ('find' in schema && text && text.length <= 200) values.find = text
     if (command.id === 'comment.add') Object.assign(values, { type: 'note', contents: '' })
     return values
   }

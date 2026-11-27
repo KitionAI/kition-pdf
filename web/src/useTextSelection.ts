@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { toast, type KitTool } from '@kition/sdk/editor'
 import type { PdfInfo } from './pdf'
-import { isTextControl, selectionPoint, SelectionSession, type SelectionRequest, type SelectionResult } from './textSelection'
+import { isTextControl, selectionPoint, SelectionSession, type SelectionPoint, type SelectionRequest, type SelectionResult } from './textSelection'
 
 type Options = {
   document: object | null
   revision: number
   pages: PdfInfo['pages']
   execute: (request: SelectionRequest) => Promise<SelectionResult | null>
-  onStart: () => void
+  /** A press on the pages: where (a page and a page-local point), or null off every page. */
+  onStart: (at: SelectionPoint | null) => void
   t: (key: string) => string
 }
 
@@ -19,6 +20,8 @@ export function useTextSelection({ document: doc, revision, pages, execute, onSt
   callbacks.current = { onStart, t }
   const [stored, setStored] = useState<{ doc: typeof doc; revision: number; result: SelectionResult } | null>(null)
   const selected = stored?.doc === doc && stored.revision === revision ? stored.result : null
+  // While the mouse is held over the pages (the selection's action bar waits for the release).
+  const [dragging, setDragging] = useState(false)
 
   useLayoutEffect(() => {
     const current = new SelectionSession(
@@ -28,6 +31,7 @@ export function useTextSelection({ document: doc, revision, pages, execute, onSt
     )
     session.current = current
     setStored(null)
+    setDragging(false)
     return () => { current.dispose(); session.current = null }
   }, [doc, revision, execute])
 
@@ -39,9 +43,10 @@ export function useTextSelection({ document: doc, revision, pages, execute, onSt
       const current = session.current
       const epoch = ++gestureEpoch.current
       current?.clear()
-      callbacks.current.onStart()
       const anchor = selectionPoint(pages, start.x, start.y)
+      callbacks.current.onStart(anchor)
       if (!doc || !anchor || !current) return
+      setDragging(true)
       const mode = start.alt ? 'column' : 'range'
       let last = ''
       const update = (pointer: typeof start) => {
@@ -57,7 +62,11 @@ export function useTextSelection({ document: doc, revision, pages, execute, onSt
         last = key
         current.request(request)
       }
-      return { move: update, end: update, cancel: () => { if (session.current === current && gestureEpoch.current === epoch) { gestureEpoch.current++; current.clear() } } }
+      return {
+        move: update,
+        end: (pointer) => { setDragging(false); update(pointer) },
+        cancel: () => { setDragging(false); if (session.current === current && gestureEpoch.current === epoch) { gestureEpoch.current++; current.clear() } },
+      }
     },
   }), [doc, pages])
 
@@ -104,5 +113,5 @@ export function useTextSelection({ document: doc, revision, pages, execute, onSt
       )
     } catch { toast('error', t('commandFailed')) }
   }
-  return { tool, selected, clear, selectAll, copy }
+  return { tool, selected, dragging, clear, selectAll, copy }
 }

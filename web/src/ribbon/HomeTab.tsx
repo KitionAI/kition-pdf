@@ -1,6 +1,7 @@
 import { TesseraIcons } from '@kition/sdk/editor'
 import { RibbonButton, RibbonGroup, RibbonItem, RibbonRow, RibbonStack, toast, useKitEditor } from '@kition/sdk/editor'
 import { pageFromField, type PdfInfo } from '../pdf'
+import type { MarkupType } from '../markup'
 import { focusPages, selectOnFocus } from '../focus'
 
 
@@ -20,17 +21,33 @@ const ScanSearch = TesseraIcons.ScanSearchIcon
 const StretchHorizontal = TesseraIcons.StretchHorizontalIcon
 const Trash2 = TesseraIcons.TrashIcon
 const Type = TesseraIcons.TypeIcon
+const Underline = TesseraIcons.UnderlineIcon
+const Strikethrough = TesseraIcons.StrikethroughIcon
 const BookOpen = TesseraIcons.BookOpenIcon
 /** The text selection tool's icon, here and in the Focus bar. */
 export const SelectTool = TesseraIcons.TextCursorIcon
 const FileIcon = TesseraIcons.FileIcon
 
-export function HomeTab({ info, current, onPage, onZoom, selectionAvailable, onCopySelection }: { info: PdfInfo; current: number; onPage: (index: number) => void; onZoom: (to: 'width' | 'page' | 'actual') => void; selectionAvailable: boolean; onCopySelection: () => void }) {
+export function HomeTab({ info, current, onPage, onZoom, selectionAvailable, onCopySelection, onMark }: {
+  info: PdfInfo
+  current: number
+  onPage: (index: number) => void
+  onZoom: (to: 'width' | 'page' | 'actual') => void
+  selectionAvailable: boolean
+  onCopySelection: () => void
+  /** Marks the selected text (or the find bar's match) at once; false when there is none. */
+  onMark: (type: MarkupType) => boolean
+}) {
   const { run, ask, enabled, phrase: p, t } = useKitEditor()
   const count = info.pages.length
   const page = [current + 1]
   const editable = info.editable
   const label = info.pages[current]?.label ?? String(current + 1)
+
+  // With text selected (or a match found) the markup buttons mark it; else they ask what to mark.
+  const markup = (type: MarkupType) => {
+    if (!onMark(type)) ask('comment.add', { type, find: '' })
+  }
 
   const copyText = async () => {
     const answer = await run('text.extract', { pages: page })
@@ -115,9 +132,13 @@ export function HomeTab({ info, current, onPage, onZoom, selectionAvailable, onC
       <RibbonGroup label={p('Comment')} icon={MessageSquarePlus}>
         <RibbonButton icon={MessageSquarePlus} size="large" label={t('stickyNote')} disabled={!editable || !enabled('comment.add')} onClick={() => ask('comment.add')} data-testid="pdf-sticky-note" primary />
         <RibbonStack>
-          <RibbonButton icon={Highlighter} label={t('highlightText')} disabled={!editable || !enabled('comment.add')} onClick={() => ask('comment.add', { type: 'highlight', find: '' })} data-testid="pdf-highlight" primary />
+          <RibbonButton icon={Highlighter} label={t('highlightText')} disabled={!editable || !enabled('comment.add')} onClick={() => markup('highlight')} data-testid="pdf-highlight" primary />
           <RibbonButton icon={Type} label={t('addText')} disabled={!editable || !enabled('page.addText')} onClick={() => ask('page.addText')} data-testid="pdf-add-text" primary />
           <RibbonButton icon={Copy} label={t('copyText')} disabled={!enabled('text.extract')} onClick={() => void copyText()} data-testid="pdf-copy-text" />
+        </RibbonStack>
+        <RibbonStack>
+          <RibbonButton icon={Underline} label={t('underline')} disabled={!editable || !enabled('comment.add')} onClick={() => markup('underline')} data-testid="pdf-underline" />
+          <RibbonButton icon={Strikethrough} label={t('strikethrough')} disabled={!editable || !enabled('comment.add')} onClick={() => markup('strikeout')} data-testid="pdf-strikeout" />
         </RibbonStack>
       </RibbonGroup>
       <RibbonGroup label={p('Select text')} icon={SelectTool}>

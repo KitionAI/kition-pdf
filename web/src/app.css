@@ -190,3 +190,116 @@
   padding: 8px 12px;
   font-size: 12px;
 }
+
+/* The bar beside a text selection (SelectionBar.tsx): its right edge on the selection's end. */
+.pdf-selection-bar {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  transform: translateX(-100%);
+  border: 1px solid var(--kit-border);
+  border-radius: var(--kit-radius-card);
+  background: var(--kit-surface);
+  box-shadow: var(--kit-shadow-card);
+}
+
+.pdf-selection-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 240px;
+  padding: 4px;
+}
+
+.pdf-selection-compose-actions,
+.pdf-comment-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+
+/* The comment chosen in the Comments panel, framed where it is on the page. */
+.pdf-comment-outline {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid var(--kit-primary);
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.pdf-comment-row[data-chosen] {
+  background: var(--kit-primary-soft);
+}
+
+.pdf-comment-by,
+.pdf-comment-status {
+  font-size: 11px;
+}
+
+.pdf-comment-status {
+  color: var(--kit-primary);
+}
+
+.pdf-comment-replies {
+  margin: 0 12px 6px 24px;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+
+.pdf-comment-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 12px 8px 24px;
+}
+
+.pdf-comment-status-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.pdf-field-label {
+  color: var(--kit-text);
+}
+
+.pdf-field-kind {
+  font-size: 11px;
+}
+
+.pdf-field-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.pdf-field-choice {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* The parameters dialog (ParamsDialog.tsx): what to type under each field, or what was wrong. */
+.pdf-param {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pdf-param-hint,
+.pdf-param-error {
+  font-size: 11px;
+}
+
+.pdf-param-error {
+  color: var(--kit-danger);
+}
+
+.pdf-param-failure {
+  margin: 0 0 10px;
+  font-size: 12px;
+}

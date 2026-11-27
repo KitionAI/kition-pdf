@@ -1,0 +1,26 @@
+format: 1
+id: regressions/issue-hand-h6-field-after-undo
+feature: pdf.editor.params-and-fields
+intent: >-
+  After an undo took a form field's value back, the form fields panel still showed the old text
+  (the box was made once per field name). Now a box is made again when its value changes, and the
+  panel draws a drop-down's options, a group of radio buttons, the field's label, type and whether
+  it is required. web/tests/hand/fields-panel.mjs fills a field, presses Cmd+Z and reads the box.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings H6, H4
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/fields-panel.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

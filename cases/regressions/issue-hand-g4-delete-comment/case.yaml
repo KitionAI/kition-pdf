@@ -1,0 +1,27 @@
+format: 1
+id: regressions/issue-hand-g4-delete-comment
+feature: pdf.editor.markup-and-comments
+intent: >-
+  The Comments tab's Delete a comment ran with nothing and failed (pass the comment's id), and no
+  comment's id was shown anywhere, so a comment could be neither deleted nor edited. Now the
+  Comments panel chooses a comment (the view goes to it and it is framed), edits its text, replies,
+  sets its status and deletes it; the tab's Delete and Edit act on the chosen one and are off with
+  none, and Delete deletes it. web/tests/hand/markup.mjs reads comment.list back after each.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings G4, G8
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/markup.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

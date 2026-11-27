@@ -1,0 +1,26 @@
+format: 1
+id: regressions/issue-hand-l3-zh-labels
+feature: pdf.editor.params-and-fields
+intent: >-
+  In Chinese, the parameters dialog named its fields by their parameters (at, contents, page, type)
+  and seven of the Comments tab's commands were English. Now the dialog's fields have people's names
+  in the editor's language and the Comments tab's commands are translated.
+  web/tests/hand/fields-panel.mjs opens the file with locale zh-CN and reads the labels.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings L3
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/fields-panel.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

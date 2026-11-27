@@ -1,0 +1,28 @@
+format: 1
+id: regressions/issue-hand-c9-highlight-selection
+feature: pdf.editor.markup-and-comments
+intent: >-
+  Highlight with a line of text selected dropped the selection and opened an empty parameters
+  dialog asking for text to find; with the find bar on a match it did the same. Now the selection
+  (each page of it) or the current match is marked at once, no dialog, and a bar beside a released
+  selection underlines, strikes out, adds a highlight with a note and copies.
+  web/tests/hand/markup.mjs drags over lines and reads comment.list back: one highlight per page on
+  the dragged line, on the found word.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings C9, G6
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/markup.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

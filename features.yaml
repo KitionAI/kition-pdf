@@ -237,6 +237,24 @@ features:
     gap: "Measured in dev.html only (whether Kition Desktop gives the editor's frame the keyboard on open is not checked here). Select All takes every page up to 64 (the engine's text.select span) and the current page beyond. A mouse wheel's notch is told from a trackpad by its delta (whole 100 px or lines); real wheels and trackpads are not measured. Cmd+1 and Cmd+2 may be taken by a browser's own tab keys outside Kition."
     cases: [regressions/issue-hand-k1-first-key, regressions/issue-hand-k2-focus-after-dialog, regressions/issue-hand-b7-page-down, regressions/issue-hand-a3-wheel-zoom-step, regressions/issue-hand-a10-fit-page, regressions/issue-hand-d4-find-jump]
     since: "2026-11-27"
+  - id: pdf.editor.markup-and-comments
+    title: "Marking text and working with comments without a dialog: with text selected (each page of a selection across pages) or the find bar on a match, Highlight, Underline and Strikethrough mark it at once; a bar beside a released selection highlights, underlines, strikes out, adds a highlight with a note and copies; the Comments panel shows each comment's author, time, status and replies, goes to a comment and frames it, edits its text, replies, sets its status and deletes it; the Comments tab's commands that act on a comment act on the chosen one and are off with none, as the Delete key does"
+    dimension: [function]
+    priority: P0
+    status: has
+    paths: [web/src/App.tsx, web/src/markup.ts, web/src/SelectionBar.tsx, web/src/SidePanel.tsx, web/src/comments.ts, web/src/ribbon/HomeTab.tsx, web/src/useTextSelection.ts, web/src/strings.ts, web/src/app.css, web/src/params.test.mjs, web/tests/hand/markup.mjs, web/tests/hand/fixture.mjs]
+    gap: "Comments are made and chosen only from text selections, the find bar and the Comments panel: nothing on the page is clicked, moved or resized yet (stage 4 and 5 of the plan). A selection across pages makes one comment per page, each its own undo step (the engine has no batch of edits for the editor). Measured in dev.html only."
+    cases: [regressions/issue-hand-c9-highlight-selection, regressions/issue-hand-g4-delete-comment]
+    since: "2026-11-27"
+  - id: pdf.editor.params-and-fields
+    title: "Editing without JSON: the parameters dialog names its fields as people do (in the editor's language), takes pages as 3, 3, 5 or 2-4 and points and rectangles as numbers with commas, starts on the selection's or the current page, the last press on it and the selected text, refuses a value it cannot use at its field and keeps the dialog and everything typed when the command fails, the error under the field it names; the form fields panel draws each field for its type (drop-down options by name, radio groups, check boxes), with its label, type and whether it is required, and shows the value an undo brings back"
+    dimension: [function]
+    priority: P0
+    status: has
+    paths: [web/src/App.tsx, web/src/ParamsDialog.tsx, web/src/params.ts, web/src/params.test.mjs, web/src/pdf.ts, web/src/SidePanel.tsx, web/src/strings.ts, web/src/app.css, web/tests/hand/fields-panel.mjs, web/tests/hand/fixture.mjs]
+    gap: "Points and rectangles are still typed: nothing is picked on the page (stage 10 of the plan). Lists of points of points (ink strokes) and objects (form values) are still JSON. Fields are filled in the panel, not on the page (stage 6). Measured in dev.html only."
+    cases: [regressions/issue-hand-e8-pages-input, regressions/issue-hand-h6-field-after-undo, regressions/issue-hand-l3-zh-labels]
+    since: "2026-11-27"
   - id: pdf.view
     title: "Render pages and previews; list and move page objects"
     dimension: [function, fidelity]
