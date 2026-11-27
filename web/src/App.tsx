@@ -313,7 +313,15 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const zoomTo = (to: Fit) => {
     const page = pages[current]?.area
     if (to === 'actual') canvas.current?.zoomTo(1)
-    else if (page) canvas.current?.show((to === 'width' ? pageWidthArea(page) : wholePageArea(page))!)
+    else if (page && to === 'width') {
+      // The page's width and a 24 pt margin each side fill the view's width, whatever its height;
+      // the page's top (and its margin) at the view's top.
+      const handle = canvas.current
+      const view = handle?.view()
+      if (!handle || !view || !(view.width > 0)) return
+      handle.zoomTo(clampZoom(view.width / (page.x1 - page.x0 + 48)))
+      handle.panTo(page.x0 - 24, page.y0 - 24)
+    } else if (page) canvas.current?.show(wholePageArea(page)!)
   }
   const setZoomLevel = (value: number) => canvas.current?.zoomTo(clampZoom(value))
 
