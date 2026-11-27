@@ -1,6 +1,6 @@
 # Gaps
 
-> **Last updated:** 2026-11-17 · **Source:** `features.yaml` (updated 2026-11-17) and the engine's command list
+> **Last updated:** 2026-11-27 · **Source:** `features.yaml` (updated 2026-11-27) and the engine's command list
 
 Every known shortfall of Kition PDF, from the feature catalogue: features that are not yet `has`,
 then the differences recorded on features that work. Update the feature in `features.yaml` when you
@@ -12,6 +12,7 @@ land work, then this list. The comparison with the target application is in
 - `pdf.agent.premises` (P0, partial): An agent's write lands only on what it observed: what each write rests on is held against other writers. Six named-field reason cells wait for the pinned SDK's observed-name targeting; required deleted/relocated currently report changed. Both matrices have zero wrong writes and false refusals under the same-field rule; 48 default OCR executions remain blocked by missing models.
 - `pdf.accessibility` (P1, partial): Accessibility: check, fix, figures and alternative text. The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen.
 - `pdf.bookmarks` (P1, partial): Bookmarks: list, add, build from the structure. The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen.
+- `pdf.collab.drafts` (P1, partial): Drafts merge in and earlier versions restore as one undo step. The editor has no draft bar and no control to save a labelled version: the host compares, merges and records them; drafts that rewrite one object, or one that predates a full rewrite, are refused, not merged.
 - `pdf.compare` (P1, partial): Compare two documents and mark the differences. The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen.
 - `pdf.content` (P1, partial): Page content: add text, list, update and delete content. The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen.
 - `pdf.document` (P1, partial): Document properties, initial view, revisions, hidden information, flattening and actions. The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen.
@@ -31,6 +32,10 @@ land work, then this list. The comparison with the target application is in
 - `pdf.view` (P1, partial): Render pages and previews; list and move page objects. The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen.
 - `pdf.javascript` (P2, partial): Document JavaScript: run, list, set, enable. The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen.
 
+## Differences on features that work
+
+- `pdf.editor.keyboard-and-view` (P0, has): Measured in dev.html only (whether Kition Desktop gives the editor's frame the keyboard on open is not checked here). Select All takes every page up to 64 (the engine's text.select span) and the current page beyond. A mouse wheel's notch is told from a trackpad by its delta (whole 100 px or lines); real wheels and trackpads are not measured. Cmd+1 and Cmd+2 may be taken by a browser's own tab keys outside Kition.
+
 ## Catalogue
 
-The catalogue has 35 features: 14 `has`, 21 not yet.
+The catalogue has 40 features: 18 `has`, 22 not yet.

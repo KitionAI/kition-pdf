@@ -1,0 +1,26 @@
+format: 1
+id: regressions/issue-hand-b7-page-down
+feature: pdf.editor.keyboard-and-view
+intent: >-
+  PageDown and PageUp scroll a screen less one line (40 px), as Space and Shift+Space do; before, PageDown
+  jumped to the next page's top and at fit width skipped the lower half of every page (B7), and the
+  arrows, Space, Home, End and Cmd+Up/Down did not scroll at all (B6). web/tests/hand/keys.mjs presses
+  each and measures how far the view moved.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings B7, B6
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/keys.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

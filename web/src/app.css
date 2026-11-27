@@ -17,17 +17,23 @@
 }
 
 .pdf-workspace {
+  position: relative;
   display: grid;
   flex: 1;
   min-width: 0;
   min-height: 0;
   grid-template-columns: minmax(0, 1fr) 14px;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr);
 }
 
+/* Over the pages' bottom edge, so the pages' view keeps its size when the pages get wider than it
+   (a zoom in): a view that shrank would move what is under the pointer. */
 .pdf-workspace > .kui-scrollbar[aria-orientation='horizontal'] {
-  grid-column: 1;
-  grid-row: 2;
+  position: absolute;
+  left: 0;
+  right: 14px;
+  bottom: 0;
+  z-index: 1;
 }
 
 .pdf-pages {

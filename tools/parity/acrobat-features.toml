@@ -911,11 +911,11 @@ title = "Zoom in and out around the cursor (keys, wheel, pinch)"
 area = "B"
 tier = "P0"
 milestone = "M3"
-status = "planned"
+status = "partial"
 commands = []
 tools = []
 evidence = []
-notes = ""
+notes = "Editor (web/, web/tests/hand/zoom.mjs): Cmd+= and Cmd+- and the status bar's buttons step the ladder 10, 25, 33, 50, 66, 75, 100, 125, 150, 200, 300, 400, 600, 800, 1200, 1600, 3200 % about the view's centre; a mouse wheel's notch with Cmd zooms 1.2 times about the pointer; a trackpad's pinch zooms smoothly about the pointer."
 
 [[feature]]
 id = "view.zoom-to-percent"
@@ -923,11 +923,11 @@ title = "Zoom to a chosen percentage"
 area = "B"
 tier = "P0"
 milestone = "M3"
-status = "planned"
+status = "partial"
 commands = []
 tools = []
 evidence = []
-notes = "Kition PDF draws a percentage on its fixed 96-dpi basis: 96/72 logical pixels per PDF point at 100%. Acrobat draws it at its Page Display resolution, with logical pixels per PDF point = ppi / 72 × zoom (checked black-box with Custom resolutions of 96, 110 and 120 ppi on one display), so the same percentage can differ in size. Acrobat's Use System Setting resolution is not reproduced. Tracked with misc.prefs-page-display"
+notes = "Editor (web/, web/tests/hand/zoom.mjs): the status bar's percentage takes a typed value (150, 150%, 62.5 %), kept to 10-3200 %, and its list offers the ladder's steps; the editor's 100 % is one PDF point per CSS pixel (72 dpi), not the 96-dpi basis below. Kition PDF draws a percentage on its fixed 96-dpi basis: 96/72 logical pixels per PDF point at 100%. Acrobat draws it at its Page Display resolution, with logical pixels per PDF point = ppi / 72 × zoom (checked black-box with Custom resolutions of 96, 110 and 120 ppi on one display), so the same percentage can differ in size. Acrobat's Use System Setting resolution is not reproduced. Tracked with misc.prefs-page-display"
 
 [[feature]]
 id = "view.zoom-actual-size"
@@ -935,11 +935,11 @@ title = "Actual size"
 area = "B"
 tier = "P0"
 milestone = "M3"
-status = "planned"
+status = "partial"
 commands = []
 tools = []
 evidence = []
-notes = "Actual size is 100% on Kition PDF's fixed 96-dpi basis: 96/72 logical pixels per PDF point. Acrobat's Actual Size uses its Page Display resolution (ppi / 72 logical pixels per PDF point at 100%), which Kition PDF does not offer yet, so the two can draw a page at different sizes. Tracked with misc.prefs-page-display"
+notes = "Editor (web/, web/tests/hand/zoom.mjs): Cmd+1, the Home tab's Actual Size and the status bar's list set 100 % (one PDF point per CSS pixel). Actual size is 100% on Kition PDF's fixed 96-dpi basis: 96/72 logical pixels per PDF point. Acrobat's Actual Size uses its Page Display resolution (ppi / 72 logical pixels per PDF point at 100%), which Kition PDF does not offer yet, so the two can draw a page at different sizes. Tracked with misc.prefs-page-display"
 
 [[feature]]
 id = "view.zoom-fit-page"
@@ -951,7 +951,7 @@ status = "partial"
 commands = ["view.fit_one_page"]
 tools = []
 evidence = []
-notes = "View ▸ Zoom to page level (⌘0) and the rail's Page display menu, which also offers Fit one full page (single-page view at Fit page). Scrolling views fit their largest page so mixed sizes never jump the zoom; single-page view fits the shown page"
+notes = "Editor (web/, web/tests/hand/zoom.mjs): Cmd+0, the status bar's Fit and the Home tab's Fit Page fit the current page. View ▸ Zoom to page level (⌘0) and the rail's Page display menu, which also offers Fit one full page (single-page view at Fit page). Scrolling views fit their largest page so mixed sizes never jump the zoom; single-page view fits the shown page"
 
 [[feature]]
 id = "view.zoom-fit-width"
@@ -963,7 +963,7 @@ status = "partial"
 commands = ["view.fit_width_scrolling"]
 tools = []
 evidence = []
-notes = "View ▸ Fit to width (⌘2) and the rail's Page display menu's Fit to width scrolling (continuous scrolling at Fit width)"
+notes = "Editor (web/, web/tests/hand/zoom.mjs): Cmd+2 and the Home tab's Fit Width fit the current page's width. View ▸ Fit to width (⌘2) and the rail's Page display menu's Fit to width scrolling (continuous scrolling at Fit width)"
 
 [[feature]]
 id = "view.zoom-fit-height"
@@ -1115,11 +1115,11 @@ title = "Page navigation (next, previous, first, last, go to page)"
 area = "B"
 tier = "P0"
 milestone = "M3"
-status = "planned"
+status = "partial"
 commands = []
 tools = []
 evidence = []
-notes = "in two-page view, next and previous page move a whole spread (with or without a cover page); → / ← turn pages in every layout, ↓ / ↑ scroll a line and Page Down / Page Up a screen (the page in single-page view), as in Acrobat; in single-page view ↓ / ↑ turn the page once there is nothing left to scroll that way, like the wheel"
+notes = "Editor (web/, web/tests/hand/keys.mjs): the Home tab's first, previous, next and last buttons and page field (a label or a number; text that names no page shows the current one again), ↓ / ↑ scroll 40 px, Space, Shift+Space, Page Down and Page Up a screen less a line, Home / End and Cmd+↑ / Cmd+↓ the first page's top and the last page's bottom, → / ← scroll sideways while the page is wider than the view and turn the page otherwise, Cmd+→ / Cmd+← and Cmd+Page Down / Up turn it. Continuous single-page layout only. in two-page view, next and previous page move a whole spread (with or without a cover page); → / ← turn pages in every layout, ↓ / ↑ scroll a line and Page Down / Page Up a screen (the page in single-page view), as in Acrobat; in single-page view ↓ / ↑ turn the page once there is nothing left to scroll that way, like the wheel"
 
 [[feature]]
 id = "view.goto-page-label"

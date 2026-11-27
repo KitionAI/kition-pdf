@@ -1,0 +1,26 @@
+format: 1
+id: regressions/issue-hand-a3-wheel-zoom-step
+feature: pdf.editor.keyboard-and-view
+intent: >-
+  One notch of a mouse wheel with Cmd (Ctrl) zooms 1.2 times around the pointer; it zoomed e (2.72) times
+  a notch, three notches from 197 % to 3959 %. A trackpad's small steps keep the canvas's own smooth zoom.
+  web/tests/hand/zoom.mjs turns the wheel one notch each way and a trackpad step, and reads the zoom and
+  the document point under the pointer back.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings A3
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/zoom.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

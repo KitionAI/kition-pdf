@@ -1,0 +1,28 @@
+format: 1
+id: regressions/issue-hand-k2-focus-after-dialog
+feature: pdf.editor.keyboard-and-view
+intent: >-
+  The keyboard stays the editor's after a parameters dialog ran or closed, after Enter in the form
+  fields panel and after Enter in the page field: each left the focus on the page's body, so Cmd+Z,
+  PageDown, Escape and Cmd+F did nothing until the pages were clicked (J2: two Cmd+Z after adding a
+  comment left 6 comments). A key that still finds the body holding the keyboard goes to the pages.
+  web/tests/hand/keys.mjs presses Cmd+Z and PageDown after each and reads the comments, the field and
+  the view back.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings K2, J2
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/keys.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

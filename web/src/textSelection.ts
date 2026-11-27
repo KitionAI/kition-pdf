@@ -47,6 +47,32 @@ export class SelectionSession {
     void this.drain()
   }
 
+  /**
+   * Selects with the first of `requests` the engine answers (Select All: the whole document, then
+   * the current page when the engine refuses a span that long); fails only when none answers.
+   */
+  choose(requests: readonly SelectionRequest[]) {
+    if (this.disposed) return
+    const generation = ++this.generation
+    this.pending = null
+    this.notify(null)
+    const live = () => !this.disposed && generation === this.generation
+    void (async () => {
+      let failure: unknown
+      for (const request of requests) {
+        try {
+          const result = await this.execute(request)
+          if (!live()) return
+          if (result) { this.notify(result); return }
+        } catch (error) {
+          if (!live()) return
+          failure = error
+        }
+      }
+      if (live()) this.failed(failure)
+    })()
+  }
+
   clear() {
     this.generation++
     this.pending = null

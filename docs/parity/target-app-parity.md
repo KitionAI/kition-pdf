@@ -1,6 +1,6 @@
 # Target-app parity
 
-> **Last updated:** 2026-11-17 · **Source:** `features.yaml` (updated 2026-11-17) and the engine's command list
+> **Last updated:** 2026-11-27 · **Source:** `features.yaml` (updated 2026-11-27) and the engine's command list
 
 Each feature in `features.yaml` records its status against what the feature promises and, where it
 has one, the target application it is compared with (Adobe Acrobat Pro 26.002.21931).
@@ -28,6 +28,7 @@ The difference column is the feature's recorded gap.
 | `pdf.document-text` Hosts read a PDF's words page by page through document.text, for search | P1 | has | — | — |
 | `pdf.editor.display-modes` The editor in Menus, Single line, Classic and Focus; Focus names the tool, hides the find bar, and Escape clears a selection first | P1 | has | — | — |
 | `pdf.editor.page-scroll` Page scrollbars show where the view is and drag through the pages; scrolling stops at the first and last page | P1 | has | — | — |
+| `pdf.editor.keyboard-and-view` The editor's keyboard and view: the keys work as soon as a PDF opens and after a dialog or a field; reader's scroll keys; Cmd+0/1/2 fit page, 100 %, fit width; a zoom ladder, a typed percentage and a 1.2-times wheel notch; Select All and Copy from anywhere; find keeps its match through an edit | P0 | has | — | Measured in dev.html only. Select All takes every page up to 64, the current page beyond. Real wheels and trackpads are not measured. |
 | `pdf.fill-sign` Fill and sign: add text and dates | P1 | partial | Adobe Acrobat Pro 26.002.21931 | The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen. |
 | `pdf.forms` Forms: fields, fill, reset, add, properties, tab order, detection, actions and scripts | P1 | partial | Adobe Acrobat Pro 26.002.21931 | The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen. |
 | `pdf.history` Undo and redo | P1 | partial | Adobe Acrobat Pro 26.002.21931 | The engine has these commands; no case yet shows the area working end to end in the editor and surviving save and reopen. |

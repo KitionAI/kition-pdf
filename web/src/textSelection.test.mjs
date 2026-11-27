@@ -70,3 +70,23 @@ test('current failures are reported without trapping future requests or retainin
   session.request(request(3)); await flush()
   assert.equal(updates.at(-1).text, 'recovered')
 })
+
+test('Select All takes the first request the engine answers and fails only when none does', async () => {
+  const calls = [], updates = [], failures = []
+  const session = new SelectionSession(r => { calls.push(r.endPage); return r.endPage > 1 ? Promise.reject(new Error('span over 64 pages')) : Promise.resolve(result('page')) }, r => updates.push(r), e => failures.push(e))
+  session.choose([{ ...request(9), endPage: 70 }, request(1)])
+  for (let i = 0; i < 4; i++) await flush()
+  assert.deepEqual(calls, [70, 1])
+  assert.equal(updates.at(-1).text, 'page')
+  assert.equal(failures.length, 0)
+  const none = new SelectionSession(() => Promise.resolve(null), () => undefined, e => failures.push(e ?? 'none'))
+  none.choose([request(1), request(2)])
+  for (let i = 0; i < 4; i++) await flush()
+  assert.equal(failures.length, 1)
+  const cleared = []
+  const late = new SelectionSession(() => Promise.resolve(result('late')), r => cleared.push(r), () => assert.fail('unexpected failure'))
+  late.choose([request(1)]); late.clear()
+  for (let i = 0; i < 4; i++) await flush()
+  assert.equal(cleared.at(-1), null)
+  session.dispose(); none.dispose(); late.dispose()
+})

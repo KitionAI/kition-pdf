@@ -26,7 +26,7 @@ import { CATALOGS } from './strings'
 import { TABS, commandDefaults, describe, pageWidthArea, pagesPanBounds, wholePageArea } from './pdf'
 import { HomeTab, SelectTool } from './ribbon/HomeTab'
 import { SidePanel } from './SidePanel'
-import { FindBar, type Match } from './FindBar'
+import { FindBar, type FindControl, type Match } from './FindBar'
 import { SearchHighlights } from './SearchHighlights'
 import { searchPanTarget } from './searchGeometry'
 import { SelectionHighlights } from './SelectionHighlights'
@@ -34,6 +34,10 @@ import { useTextSelection } from './useTextSelection'
 import type { SelectionRequest, SelectionResult } from './textSelection'
 import { withRewriteLease } from './rewriteLease'
 import { newlyDropped } from './droppedEdits'
+import { focusPages, keyboardFallback, keyboardLost, returnKeyboardLater } from './focus'
+import { isTextControl } from './textSelection'
+import { KEY_LINE, WHEEL_NOTCH_ZOOM, clampZoom, ladderStep, screenStep, scrollView, wheelNotches, zoomAround } from './view'
+import { ZoomBar, type Fit } from './ZoomBar'
 
 export function App({ host, phrase }: { host: HostConnection; phrase: Phrases }) {
   const t = useMemo(() => createKitStrings(CATALOGS, host.init.locale), [host])
@@ -61,7 +65,12 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
         if (!params && command && needsParams(command)) return editor.run(id, params)
         const scope = doc ? await doc.invoke<string>('leaseScope', id).catch(() => '') : ''
         const refuse = (holder: string) => toast('info', t('rewriting', { name: holder || t('someone') }))
-        return withRewriteLease(leases, scope, command?.mutates ?? true, () => editor.run(id, params), refuse)
+        try {
+          return await withRewriteLease(leases, scope, command?.mutates ?? true, () => editor.run(id, params), refuse)
+        } finally {
+          // A parameters dialog that ran (or failed) leaves the keyboard on the body: the pages take it.
+          returnKeyboardLater()
+        }
       },
     }),
     [doc, editor, leases, t],
@@ -88,6 +97,8 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const region = useRef<HTMLDivElement>(null)
   const searchOpener = useRef<HTMLElement | null>(null)
   const searchInput = useRef<HTMLInputElement>(null)
+  const findControl = useRef<FindControl>(null)
+  const [findSeed, setFindSeed] = useState('')
   const [zoom, setZoom] = useState(1)
   const [tab, setTab] = useState('home')
   const [finding, setFinding] = useState(false)
@@ -136,40 +147,193 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     [pages],
   )
 
-  const showMatch = useCallback((match: Match | null) => {
-    if (match) selection.clear()
+  // A match the person asked for (a new query, Next, Previous) is brought into view; one a
+  // document change only refreshed (an edit while the find bar is open) leaves the view alone.
+  const showMatch = useCallback((match: Match | null, jump: boolean) => {
+    if (match && jump) selection.clear()
     setSearchMatch(match ? { doc, revision: session.change.revision, match } : null)
-    if (match) goTo(match.page - 1, match.rects[0] ?? null)
+    if (match && jump) goTo(match.page - 1, match.rects[0] ?? null)
   }, [doc, session.change.revision, goTo, selection.clear])
 
-  const zoomTo = (to: 'width' | 'page' | 'actual') => {
+  const zoomTo = (to: Fit) => {
     const page = pages[current]?.area
     if (to === 'actual') canvas.current?.zoomTo(1)
     else if (page) canvas.current?.show((to === 'width' ? pageWidthArea(page) : wholePageArea(page))!)
   }
+  const setZoomLevel = (value: number) => canvas.current?.zoomTo(clampZoom(value))
+
+  // The keyboard is the pages' as soon as a document opens, before anything is clicked (K1).
+  const focusedDoc = useRef<unknown>(null)
+  const ready = !!state
+  useEffect(() => {
+    if (!doc || !ready || focusedDoc.current === doc) return
+    if (keyboardLost() && focusPages()) focusedDoc.current = doc
+  }, [doc, ready])
+  // A key that still finds the body holding the keyboard goes to the pages (K2's safety net).
+  useEffect(() => {
+    document.addEventListener('keydown', keyboardFallback, true)
+    return () => document.removeEventListener('keydown', keyboardFallback, true)
+  }, [])
+  // A parameters dialog closed with Escape or Cancel gives the keyboard back too.
+  const dialogOpen = !!editor.dialog
+  const wasDialogOpen = useRef(false)
+  useEffect(() => {
+    if (wasDialogOpen.current && !dialogOpen) returnKeyboardLater()
+    wasDialogOpen.current = dialogOpen
+  }, [dialogOpen])
+
+  // A mouse wheel's notch with Cmd (Ctrl) zooms one step around the pointer; a trackpad's small
+  // steps and a pinch keep the canvas's own zoom. Heard before the canvas, in the capture phase.
+  useEffect(() => {
+    const element = region.current
+    if (!element) return undefined
+    const wheel = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return
+      const surface = event.target instanceof Element ? event.target.closest('[data-testid="kit-canvas-surface"]') : null
+      const notches = wheelNotches(event)
+      const handle = canvas.current
+      const view = handle?.view()
+      if (!surface || notches === null || !handle || !view) return
+      event.preventDefault()
+      event.stopPropagation()
+      zoomAround(handle, surface, view.zoom * WHEEL_NOTCH_ZOOM ** -notches, event.clientX, event.clientY)
+    }
+    element.addEventListener('wheel', wheel, { capture: true, passive: false })
+    return () => element.removeEventListener('wheel', wheel, { capture: true })
+  }, [doc])
+
+  // Space scrolls a screen when it is tapped; held while dragging, it pans (the canvas's hand).
+  const spaceTap = useRef<{ up: boolean; dragged: boolean } | null>(null)
+  const scrollScreen = useCallback((direction: 1 | -1) => {
+    const view = canvas.current?.view()
+    if (view) scrollView(canvas.current!, 0, direction * screenStep(view.height))
+  }, [])
+  useEffect(() => {
+    const element = region.current
+    const up = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== ' ') return
+      const tap = spaceTap.current
+      spaceTap.current = null
+      if (tap && !tap.dragged && !isTextControl(event.target)) scrollScreen(tap.up ? -1 : 1)
+    }
+    const press = () => { if (spaceTap.current) spaceTap.current.dragged = true }
+    document.addEventListener('keyup', up)
+    element?.addEventListener('pointerdown', press, true)
+    return () => {
+      document.removeEventListener('keyup', up)
+      element?.removeEventListener('pointerdown', press, true)
+    }
+  }, [doc, scrollScreen])
+
+  /** Goes `by` pages from the current one, its top at the view's top. */
+  const turnPage = (by: number) => goTo(Math.max(0, Math.min(pages.length - 1, current + by)))
 
   const keyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const command = event.metaKey || event.ctrlKey
-    if (command && event.key.toLowerCase() === 'f') {
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key
+    const plain = !command && !event.altKey && !event.shiftKey
+    if (command && !event.altKey && key === 'f') {
+      // Text selected on the page is what the find bar looks for.
+      const chosen = (selection.selected?.text ?? '').replace(/\s+/g, ' ').trim()
+      const seed = chosen.length > 0 && chosen.length <= 200 ? chosen : ''
       selection.clear()
-      if (!finding) searchOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
-      else searchInput.current?.focus({ preventScroll: true })
+      if (!finding) {
+        searchOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+        setFindSeed(seed)
+      } else {
+        if (seed) findControl.current?.seed(seed)
+        searchInput.current?.focus({ preventScroll: true })
+        searchInput.current?.select()
+      }
       setFinding(true)
       return true
     }
-    if (event.key === 'Escape') { selection.clear(); return !!selection.selected }
-    if (!command && (event.key === 'PageDown' || event.key === 'PageUp')) {
-      goTo(current + (event.key === 'PageDown' ? 1 : -1))
+    if (finding && ((command && !event.altKey && key === 'g') || (!command && !event.altKey && key === 'F3'))) {
+      findControl.current?.step(event.shiftKey ? -1 : 1)
       return true
     }
-    return false
+    // Escape goes back one layer at a time: the find bar, then the selection (dialogs and menus
+    // take theirs first); with nothing to cancel it is the frame's (leaving Focus).
+    if (plain && key === 'Escape') {
+      const focusMode = region.current?.closest('.kui-app')?.getAttribute('data-mode') === 'focus'
+      if (finding && !focusMode) {
+        closeSearch()
+        return true
+      }
+      selection.clear()
+      return !!selection.selected
+    }
+    if (command && !event.altKey && !event.shiftKey && key === 'a') {
+      selection.selectAll(current)
+      return true
+    }
+    // Zoom: Cmd+0 fits the current page, Cmd+1 is 100 %, Cmd+2 fits its width; Cmd+= and Cmd+- step the ladder.
+    if (command && !event.altKey && (key === '0' || key === '1' || key === '2')) {
+      zoomTo(key === '0' ? 'page' : key === '1' ? 'actual' : 'width')
+      return true
+    }
+    if (command && !event.altKey && (key === '=' || key === '+' || key === '-')) {
+      const view = canvas.current?.view()
+      if (view) setZoomLevel(ladderStep(view.zoom, key === '-' ? -1 : 1))
+      return true
+    }
+    return scrollKey(event, command)
+  }
+
+  /** The keys that scroll and turn pages; not while a menu, list box or slider has the keyboard (they move in it), nor for a key a control took (a thumbnail's arrows). */
+  const scrollKey = (event: KeyboardEvent<HTMLDivElement>, command: boolean) => {
+    if (event.isDefaultPrevented() || event.nativeEvent.defaultPrevented || event.altKey) return false
+    const target = event.target instanceof Element ? event.target : null
+    if (target?.closest('[role="menu"], [role="listbox"], [role="slider"], [role="scrollbar"], .kui-scrollbar, input, select, textarea')) return false
+    const handle = canvas.current
+    const view = handle?.view()
+    if (!handle || !view || !panBounds) return false
+    switch (event.key) {
+      case ' ':
+        if (command) return false
+        // Scrolls when the key comes up (a tap); a drag while it is held pans instead.
+        if (!event.repeat) spaceTap.current = { up: event.shiftKey, dragged: false }
+        return true
+      case 'ArrowDown':
+      case 'ArrowUp': {
+        const down = event.key === 'ArrowDown'
+        if (command) handle.panTo(view.x, down ? panBounds.y1 : panBounds.y0)
+        else if (!event.shiftKey) scrollView(handle, 0, down ? KEY_LINE : -KEY_LINE)
+        else return false
+        return true
+      }
+      case 'PageDown':
+      case 'PageUp': {
+        const down = event.key === 'PageDown'
+        if (command) turnPage(down ? 1 : -1)
+        else scrollView(handle, 0, (down ? 1 : -1) * screenStep(view.height))
+        return true
+      }
+      case 'Home':
+      case 'End':
+        handle.panTo(view.x, event.key === 'End' ? panBounds.y1 : panBounds.y0)
+        return true
+      case 'ArrowRight':
+      case 'ArrowLeft': {
+        if (event.shiftKey) return false
+        const right = event.key === 'ArrowRight'
+        // Sideways while the pages are wider than the view and there is more on that side; else the next page.
+        const width = view.width / view.zoom
+        const more = right ? view.x + width < panBounds.x1 - 0.5 : view.x > panBounds.x0 + 0.5
+        if (!command && panBounds.x1 - panBounds.x0 > width + 0.5 && more) scrollView(handle, right ? KEY_LINE : -KEY_LINE, 0)
+        else turnPage(right ? 1 : -1)
+        return true
+      }
+      default:
+        return false
+    }
   }
 
   const closeSearch = () => {
     setSearchMatch(null)
     setFinding(false)
     const opener = searchOpener.current
-    const target = opener?.isConnected ? opener : region.current
+    const target = opener?.isConnected && opener !== document.body ? opener : region.current
     target?.focus({ preventScroll: true })
     if (document.activeElement !== target) region.current?.focus({ preventScroll: true })
     searchOpener.current = null
@@ -199,7 +363,6 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
         tab={active.id}
         onTab={setTab}
         canvas={canvas}
-        zoom={zoom}
         onKeyDown={keyDown}
         focusTool={selectTool}
         status={
@@ -210,15 +373,16 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
             </>
           ) : null
         }
+        statusEnd={canvasView ? <ZoomBar zoom={zoom} onZoom={setZoomLevel} onFit={zoomTo} /> : null}
         panels={state ? <SidePanel info={state} current={current} onPage={goTo} /> : null}
       >
         {finding ? (
           <FrameChrome>
-            <FindBar document={doc} revision={session.change.revision} inputRef={searchInput} onMatch={showMatch} onClose={closeSearch} />
+            <FindBar document={doc} revision={session.change.revision} inputRef={searchInput} initial={findSeed} control={findControl} onMatch={showMatch} onClose={closeSearch} />
           </FrameChrome>
         ) : null}
         <div className="pdf-workspace">
-          <div ref={region} id={viewportId} className="pdf-pages" tabIndex={-1} onCopy={selection.onCopy}>
+          <div ref={region} id={viewportId} className="pdf-pages" tabIndex={-1}>
             <KitDocumentCanvas canvas={canvas} viewMemory={viewMemory} initialArea={pageWidthArea(pages[0]?.area)} panBounds={panBounds} framed={false} onView={follow} tool={selection.tool}>
               {selectedMatch ? <SearchHighlights page={pages[selectedMatch.page - 1]?.area} pageNumber={selectedMatch.page} rects={selectedMatch.rects} view={canvasView} /> : null}
               <SelectionHighlights selected={selection.selected} pages={pages} view={canvasView} />

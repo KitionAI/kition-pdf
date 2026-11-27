@@ -1,0 +1,27 @@
+format: 1
+id: regressions/issue-hand-d4-find-jump
+feature: pdf.editor.keyboard-and-view
+intent: >-
+  With the find bar open, an edit (a comment added through its dialog) leaves the current match and the
+  view where they were: every edit used to search again and jump back to the first match (9/33 on page 3
+  became 1/33 on page 1). Cmd+G and Shift+Cmd+G step through the matches, Escape closes the bar with the
+  pages holding the keyboard (D6), and Cmd+F looks for the selected text (D8). web/tests/hand/keys.mjs
+  reads the count and the view back.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings D4, D6, D8
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/keys.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

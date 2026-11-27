@@ -80,3 +80,16 @@ export const TABS: Array<{ id: string; label: string; menus: string[]; primary: 
   { id: 'protect', label: 'Protect', menus: ['Protect', 'Redact'], primary: ['signature.list', 'redaction.mark', 'redaction.apply', 'redaction.clear'] },
   { id: 'document', label: 'Document', menus: ['Document', 'Measure', 'Accessibility', 'Tools'], primary: ['file.getInfo', 'doc_set_info', 'file.setWatermark', 'file.setHeaderFooter', 'file.protect', 'doc_optimize', 'measure.distance', 'measure.area', 'accessibility.check', 'ocr.recognize'] },
 ]
+
+/**
+ * The page a page field's text names (0-based): a page label (`iv`), or a number kept to the
+ * document (`99` is the last page, `0` the first); null for text that names no page.
+ */
+export function pageFromField(text: string, pages: readonly { label: string }[], count: number): number | null {
+  const wanted = text.trim()
+  if (!wanted || count < 1) return null
+  const index = pages.findIndex((item) => item.label === wanted)
+  if (index >= 0) return index
+  if (!/^\d+$/.test(wanted)) return null
+  return Math.max(0, Math.min(count - 1, Number(wanted) - 1))
+}

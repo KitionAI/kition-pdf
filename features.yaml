@@ -1,6 +1,6 @@
 format: 1
 kit: pdf
-updated: "2026-11-20"
+updated: "2026-11-27"
 gate_budget_s: 600
 protected: []
 features:
@@ -228,6 +228,15 @@ features:
     paths: [web/src/App.tsx, web/src/pdf.ts, web/src/pdf.test.mjs, web/src/app.css, web/tests/flow.mjs]
     cases: [pdf.editor.page-scroll/scrollbars-and-bounds]
     since: "2026-11-17"
+  - id: pdf.editor.keyboard-and-view
+    title: "The editor's keyboard and view: the keys work as soon as a PDF opens and after a dialog, a field's Enter or the page field; the arrows, Space, PageDown, Home, End and Cmd+arrows scroll as a reader's do; Cmd+0 and the status bar's Fit fit the current page, Cmd+1 is 100 %, Cmd+2 fits the width, Cmd+= and Cmd+- step a 10-3200 % ladder; a mouse wheel's notch with Cmd zooms 1.2 times; the status bar's zoom takes a typed percentage and lists its steps; Cmd+A selects all text and Cmd+C copies it from anywhere in the editor; with the find bar open an edit keeps the current match and the view, Cmd+G steps, Escape closes it and Cmd+F looks for the selected text"
+    dimension: [function]
+    priority: P0
+    status: has
+    paths: [web/src/App.tsx, web/src/focus.ts, web/src/view.ts, web/src/view.test.mjs, web/src/ZoomBar.tsx, web/src/FindBar.tsx, web/src/ribbon/HomeTab.tsx, web/src/SidePanel.tsx, web/src/useTextSelection.ts, web/src/textSelection.ts, web/src/devHost.ts, web/src/app.css, web/tests/hand/harness.mjs, web/tests/hand/fixture.mjs, web/tests/hand/keys.mjs, web/tests/hand/zoom.mjs]
+    gap: "Measured in dev.html only (whether Kition Desktop gives the editor's frame the keyboard on open is not checked here). Select All takes every page up to 64 (the engine's text.select span) and the current page beyond. A mouse wheel's notch is told from a trackpad by its delta (whole 100 px or lines); real wheels and trackpads are not measured. Cmd+1 and Cmd+2 may be taken by a browser's own tab keys outside Kition."
+    cases: [regressions/issue-hand-k1-first-key, regressions/issue-hand-k2-focus-after-dialog, regressions/issue-hand-b7-page-down, regressions/issue-hand-a3-wheel-zoom-step, regressions/issue-hand-a10-fit-page, regressions/issue-hand-d4-find-jump]
+    since: "2026-11-27"
   - id: pdf.view
     title: "Render pages and previews; list and move page objects"
     dimension: [function, fidelity]

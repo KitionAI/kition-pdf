@@ -3,6 +3,7 @@ import { TesseraIcons } from '@kition/sdk/editor'
 import { IconButton, useEngineQuery, useKitEditor } from '@kition/sdk/editor'
 import type { PdfInfo } from './pdf'
 import { Thumbnails } from './Thumbnails'
+import { focusPages } from './focus'
 
 
 const Bookmark = TesseraIcons.BookmarkIcon
@@ -99,7 +100,8 @@ function Fields({ onPage }: { onPage: (index: number) => void }) {
               defaultValue={field.value == null ? '' : String(field.value)}
               disabled={field.read_only || !canFill}
               onKeyDown={(event) => {
-                if (event.key === 'Enter') event.currentTarget.blur()
+                // The value is filled as the field lets go, and the keyboard goes back to the pages.
+                if (event.key === 'Enter' && !focusPages()) event.currentTarget.blur()
               }}
               onBlur={(event) => {
                 const value = event.currentTarget.value

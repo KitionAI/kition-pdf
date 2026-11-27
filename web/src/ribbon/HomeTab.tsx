@@ -1,6 +1,7 @@
 import { TesseraIcons } from '@kition/sdk/editor'
 import { RibbonButton, RibbonGroup, RibbonItem, RibbonRow, RibbonStack, toast, useKitEditor } from '@kition/sdk/editor'
-import type { PdfInfo } from '../pdf'
+import { pageFromField, type PdfInfo } from '../pdf'
+import { focusPages, selectOnFocus } from '../focus'
 
 
 const ChevronFirst = TesseraIcons.ChevronFirstIcon
@@ -29,6 +30,7 @@ export function HomeTab({ info, current, onPage, onZoom, selectionAvailable, onC
   const count = info.pages.length
   const page = [current + 1]
   const editable = info.editable
+  const label = info.pages[current]?.label ?? String(current + 1)
 
   const copyText = async () => {
     const answer = await run('text.extract', { pages: page })
@@ -52,14 +54,33 @@ export function HomeTab({ info, current, onPage, onZoom, selectionAvailable, onC
               <input
                 className="kui-ribbon-field pdf-page-field"
                 key={current}
-                defaultValue={info.pages[current]?.label ?? current + 1}
+                defaultValue={label}
                 aria-label={t('page')}
+                {...selectOnFocus}
                 onKeyDown={(event) => {
+                  const field = event.currentTarget
+                  if (event.key === 'Escape') {
+                    event.preventDefault()
+                    field.value = label
+                    focusPages()
+                    return
+                  }
                   if (event.key !== 'Enter') return
-                  const wanted = event.currentTarget.value.trim()
-                  const index = info.pages.findIndex((item) => item.label === wanted)
-                  const number = Number(wanted)
-                  onPage(index >= 0 ? index : Number.isFinite(number) ? Math.max(0, Math.min(count - 1, number - 1)) : current)
+                  event.preventDefault()
+                  const index = pageFromField(field.value, info.pages, count)
+                  // Something that names no page: the field shows the current page again.
+                  if (index === null) {
+                    field.value = label
+                    field.select()
+                    return
+                  }
+                  // The keyboard goes back to the pages before the field is made again for the new page.
+                  focusPages()
+                  onPage(index)
+                }}
+                onBlur={(event) => {
+                  event.currentTarget.value = label
+                  delete event.currentTarget.dataset.selecting
                 }}
                 data-testid="pdf-page-field"
               />
@@ -75,7 +96,7 @@ export function HomeTab({ info, current, onPage, onZoom, selectionAvailable, onC
         <RibbonButton icon={StretchHorizontal} size="large" label={t('fitWidth')} onClick={() => onZoom('width')} data-testid="pdf-fit-width" primary />
         <RibbonStack>
           <RibbonButton icon={Scan} label={t('fitPage')} onClick={() => onZoom('page')} data-testid="pdf-fit-page" primary />
-          <RibbonButton icon={ScanSearch} label={t('actualSize')} onClick={() => onZoom('actual')} data-testid="pdf-actual-size" />
+          <RibbonButton icon={ScanSearch} label={t('actualSize')} onClick={() => onZoom('actual')} data-testid="pdf-actual-size" primary />
         </RibbonStack>
       </RibbonGroup>
 

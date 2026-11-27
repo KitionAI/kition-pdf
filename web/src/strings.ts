@@ -33,6 +33,12 @@ const enUS: Catalog = {
   droppedEdits: 'Undoing or redoing a rewrite of the whole file lost {count} later edits: they were made on the other version of the file.',
   verticalScroll: 'Vertical page scroll',
   horizontalScroll: 'Horizontal page scroll',
+  zoom: 'Zoom',
+  zoomIn: 'Zoom In',
+  zoomOut: 'Zoom Out',
+  zoomPercent: 'Zoom percentage: type one and press Enter',
+  zoomLevels: 'Zoom levels',
+  fit: 'Fit',
 }
 
 const zhCN: Catalog = {
@@ -67,6 +73,12 @@ const zhCN: Catalog = {
   droppedEdits: '撤销或重做整个文件的重写时丢失了 {count} 处后来的编辑：它们是在另一版本的文件上所做的。',
   verticalScroll: '页面纵向滚动',
   horizontalScroll: '页面横向滚动',
+  zoom: '缩放',
+  zoomIn: '放大',
+  zoomOut: '缩小',
+  zoomPercent: '缩放比例：输入后按回车',
+  zoomLevels: '缩放级别',
+  fit: '适合页面',
 }
 
 export const CATALOGS: Record<string, Catalog> = { 'en-US': enUS, 'zh-CN': zhCN }

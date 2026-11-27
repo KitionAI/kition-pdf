@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { toast, type KitTool } from '@kition/sdk/editor'
 import type { PdfInfo } from './pdf'
 import { isTextControl, selectionPoint, SelectionSession, type SelectionRequest, type SelectionResult } from './textSelection'
@@ -61,11 +61,39 @@ export function useTextSelection({ document: doc, revision, pages, execute, onSt
     },
   }), [doc, pages])
 
-  const onCopy = (event: ClipboardEvent) => {
-    if (!selected?.text || isTextControl(event.target)) return
-    event.clipboardData.setData('text/plain', selected.text)
-    event.preventDefault()
-  }
+  /**
+   * Select All (Cmd+A): every page's text when the engine takes a span that long (it refuses more
+   * than 64 pages, or too much text), else the current page's (`current`, 0-based).
+   */
+  const selectAll = useCallback((current: number) => {
+    const live = session.current
+    const last = pages.length
+    const page = pages[Math.max(0, Math.min(last - 1, current))]
+    if (!doc || !live || !page) return
+    gestureEpoch.current++
+    const end = pages[last - 1].area
+    const whole: SelectionRequest = { page: 1, anchor: [0, 0], focus: [end.x1 - end.x0, end.y1 - end.y0], endPage: last, mode: 'range' }
+    const index = Math.max(0, Math.min(last - 1, current)) + 1
+    const one: SelectionRequest = { page: index, anchor: [0, 0], focus: [page.area.x1 - page.area.x0, page.area.y1 - page.area.y0], endPage: index, mode: 'range' }
+    live.choose(last > 1 ? [whole, one] : [one])
+  }, [doc, pages])
+
+  // Copy takes the selection wherever the keyboard is in the editor (a ribbon button, a thumbnail),
+  // but never from a field, or over text selected in the page's own controls (a panel's list).
+  const copied = useRef(selected)
+  copied.current = selected
+  useEffect(() => {
+    const copy = (event: ClipboardEvent) => {
+      const text = copied.current?.text
+      if (!text || !event.clipboardData || isTextControl(event.target)) return
+      const own = window.getSelection()
+      if (own && !own.isCollapsed && own.toString()) return
+      event.clipboardData.setData('text/plain', text)
+      event.preventDefault()
+    }
+    document.addEventListener('copy', copy)
+    return () => document.removeEventListener('copy', copy)
+  }, [])
   const copy = () => {
     if (!selected?.text) return
     // Invoke the clipboard API in the click's activation, without an intervening engine await.
@@ -76,5 +104,5 @@ export function useTextSelection({ document: doc, revision, pages, execute, onSt
       )
     } catch { toast('error', t('commandFailed')) }
   }
-  return { tool, selected, clear, onCopy, copy }
+  return { tool, selected, clear, selectAll, copy }
 }
