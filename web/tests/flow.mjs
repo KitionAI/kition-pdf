@@ -104,7 +104,9 @@ try {
   // The rotation is the person's step: undo it in the person's history (an agent's undo takes back only its own steps, KitModel M12a).
   await page.evaluate(() => window.devHost.connection().ai.run([{ command: 'edit.undo', params: { scope: 'person' } }], false))
 
-  await kit.getByTestId('pdf-sticky-note').click()
+  // The parameters dialog of a sticky note is under the Comment group's More (Sticky Note is the note tool).
+  await kit.getByTestId('pdf-comment-more').click()
+  await kit.getByTestId('pdf-note-dialog').click()
   step('the comment dialog starts on the current page', (await kit.locator('#param-page').inputValue()) === '1')
   await kit.locator('#param-contents').fill('Looks good')
   await kit.getByTestId('command-dialog-run').click()

@@ -48,7 +48,7 @@ still apply to the engine.
   in KHP ([`kitharness/kitharness`](https://github.com/kitharness/kitharness));
   change them there, never here. `kition-pdf-kit` must keep passing `kition_kit::testing::check_contract`,
   and `kit.json` must pass kition-sdk's `tools/check-manifest.mjs`.
-- The editor has one pointer tool, the page layer (`web/src/page/`): a press goes to the selected comment's handles, a form field, a comment, a link, then text selection; the engine has no tools of its own, and every edit is one of Kition PDF's automation tools. Never draw editor chrome into the rendered pixels: frames, handles, menus and cards are HTML over the canvas.
+- The editor's pointer tools live in `web/src/page/`: Select, the page layer (a press goes to the selected comment's handles, a form field, a comment, a link, then text selection), the hand, and the comment tools on the tool rail (`useDrawTool.ts`, `tools.ts`), which make each comment with one `comment.add`; the engine has no tools of its own, and every edit is one of Kition PDF's automation tools. Never draw editor chrome into the rendered pixels: frames, handles, menus and cards are HTML over the canvas.
 - The whole repository is Apache-2.0 ([LICENSE](LICENSE)); third-party notices are listed in `NOTICE`.
   Upstream is credited only in `NOTICE`; never write upstream names anywhere else.
 

@@ -42,11 +42,13 @@ const showsText = async (text) => (await shown()).some((item) => item.endsWith(t
 const contents = async (draft = false) => ((await run('comment.list', {}, draft ? { draft: true } : {})).comments ?? []).map((item) => item.contents ?? '').sort()
 const version = () => page.evaluate(() => window.devHost.connection().ai.version())
 const fileVersion = () => page.evaluate((path) => window.devHost.files.get(path)?.version ?? 0, path)
-/** The person adds a sticky note on `at` page with the Home tab's Sticky note button and its dialog. */
+/** The person adds a sticky note on `at` page with the parameters dialog under the Home tab's More. */
 const noteByHand = async (pageNumber, text) => {
   const before = (await shown()).length
   await kit.getByTestId('ribbon-tab-home').click()
-  await kit.getByTestId('pdf-sticky-note').click()
+  // The parameters dialog of a sticky note is under the Comment group's More (Sticky Note is the note tool).
+  await kit.getByTestId('pdf-comment-more').click()
+  await kit.getByTestId('pdf-note-dialog').click()
   await kit.locator('#param-page').fill(String(pageNumber))
   await kit.locator('#param-contents').fill(text)
   await kit.getByTestId('command-dialog-run').click()

@@ -47,7 +47,8 @@ export function CommentTip({ hover, box }: { hover: Hovering; box: DOMRect | nul
 
 /**
  * The card a comment's text is written in, beside it on the page: a comment's own text (a
- * double-click, Edit text in its menu) or a new sticky note's (Add a sticky note here). Post (or
+ * double-click, Edit text in its menu), a new sticky note's (the sticky note tool, Add a sticky
+ * note here), a new text box's or new page text's (their tools). Post (or
  * Cmd+Enter, or a press elsewhere after a change) keeps it, Cancel (or Escape) changes nothing.
  */
 export function NoteCard({ area, rect, view, title, initial, onPost, onCancel }: {
@@ -98,6 +99,8 @@ export function NoteCard({ area, rect, view, title, initial, onPost, onCancel }:
         aria-label={title}
         onChange={(event) => setText(event.target.value)}
         onKeyDown={(event) => {
+          // A key an input method takes while composing (Chinese, Japanese) is the input method's.
+          if (event.nativeEvent.isComposing || event.keyCode === 229) return
           if (event.key === 'Escape') {
             event.preventDefault()
             event.stopPropagation()

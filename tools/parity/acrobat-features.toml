@@ -1047,7 +1047,7 @@ status = "planned"
 commands = []
 tools = []
 evidence = []
-notes = "drag to pan; Grab/Grabbing cursors; H picks it, V goes back to Select, Space held pans temporarily"
+notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the hand on the tool rail, H turns it on and V back to Select; a drag pans. drag to pan; Grab/Grabbing cursors; H picks it, V goes back to Select, Space held pans temporarily"
 
 [[feature]]
 id = "view.rotate-view"
@@ -1963,7 +1963,7 @@ status = "shipped"
 commands = ["edit.text"]
 tools = ["page.addText", "content.set"]
 evidence = ["crates/engine/automation/tests/automation.rs::adding_content_through_tools", "crates/engine/edit/src/tests.rs::added_text_and_images_are_page_content_that_stays_editable", "crates/engine/engine/src/tests.rs::added_text_and_images_render_and_stay_editable", "crates/engine/edit/src/tests.rs::added_arabic_text_is_shaped_in_display_order_and_stays_searchable", "bindings/wasm/tests/document_fonts.rs::added_text_uses_the_hosts_fonts"]
-notes = "page content, editable later (retype, move, restyle); standard fonts, Windows-1252 text, or a document font (kition-fonts, or one the host added) by family; characters the standard fonts lack (Chinese, Japanese) come from a document font that has them, and the standard families from Arimo, Tinos and Cousine when present, all as Type 3 outlines with ToUnicode, so the page embeds what it shows. Arabic text is shaped with the kition-fonts Arab face (Type 3 outlines with ToUnicode) and laid out in bidirectional display order; it is drawn regular whatever the bold/italic setting, Hebrew and other right-to-left scripts are not covered, and typing in the box is still left to right (misc.rtl-ui). Each click on the page keeps the box being typed and starts a new one; Done and Discard beside the box"
+notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): Add Text on the Home tab (or the rail) is a tool: a click opens a card there and its text goes on the page with page.addText, then Select is back. page content, editable later (retype, move, restyle); standard fonts, Windows-1252 text, or a document font (kition-fonts, or one the host added) by family; characters the standard fonts lack (Chinese, Japanese) come from a document font that has them, and the standard families from Arimo, Tinos and Cousine when present, all as Type 3 outlines with ToUnicode, so the page embeds what it shows. Arabic text is shaped with the kition-fonts Arab face (Type 3 outlines with ToUnicode) and laid out in bidirectional display order; it is drawn regular whatever the bold/italic setting, Hebrew and other right-to-left scripts are not covered, and typing in the box is still left to right (misc.rtl-ui). Each click on the page keeps the box being typed and starts a new one; Done and Discard beside the box"
 
 [[feature]]
 id = "edit.find-replace"
@@ -3519,7 +3519,7 @@ status = "shipped"
 commands = ["comment.note"]
 tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
-notes = "our own Comment/Note icon drawings, with a pop-up"
+notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the sticky note tool (Sticky Note on the Home tab, or the rail): a click opens a card where the pointer is, written at once (Chinese too); Post makes the note there and selects it, Escape makes nothing; then Select is back unless the tool is kept. our own Comment/Note icon drawings, with a pop-up"
 
 [[feature]]
 id = "comment.highlight"
@@ -3531,7 +3531,7 @@ status = "shipped"
 commands = ["comment.highlight"]
 tools = ["comment.add"]
 evidence = ["crates/engine/engine/src/tests.rs::highlight_multiplies_over_text"]
-notes = "Editor (web/, web/tests/hand/markup.mjs): with text selected (each page of a selection across pages) or the find bar on a match, Highlight marks it at once; the bar beside a released selection highlights, underlines, strikes out and adds a highlight with a note. No highlighter tool that marks as it drags yet. drag over text, or pick the tool with text selected; a new highlight opens its note for typing in the Comments panel; agents can highlight by text search"
+notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the highlighter marks the text it is dragged over at the release, line by line, one undo step, and stays on to mark the next; chosen with text selected it marks that at once. Editor (web/, web/tests/hand/markup.mjs): with text selected (each page of a selection across pages) or the find bar on a match, Highlight marks it at once; the bar beside a released selection highlights, underlines, strikes out and adds a highlight with a note. drag over text, or pick the tool with text selected; a new highlight opens its note for typing in the Comments panel; agents can highlight by text search"
 
 [[feature]]
 id = "comment.underline"
@@ -3543,7 +3543,7 @@ status = "shipped"
 commands = ["comment.underline"]
 tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
-notes = "Editor (web/, web/tests/hand/markup.mjs): Underline on the Home tab or the selection's bar marks the selected text at once. "
+notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the underline tool marks the text dragged over, and stays on. Editor (web/, web/tests/hand/markup.mjs): Underline on the Home tab or the selection's bar marks the selected text at once. "
 
 [[feature]]
 id = "comment.strikeout"
@@ -3555,7 +3555,7 @@ status = "shipped"
 commands = ["comment.strikeout"]
 tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
-notes = "Editor (web/, web/tests/hand/markup.mjs): Strikethrough on the Home tab or the selection's bar marks the selected text at once. "
+notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the strikethrough tool marks the text dragged over, and stays on. Editor (web/, web/tests/hand/markup.mjs): Strikethrough on the Home tab or the selection's bar marks the selected text at once. "
 
 [[feature]]
 id = "comment.squiggly"
@@ -3615,7 +3615,7 @@ status = "partial"
 commands = ["comment.freetext"]
 tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::text_box_text_and_colour_changes_are_drawn"]
-notes = "Helvetica text with colour, size and alignment; /RC (XHTML) and /DS are written and kept in step with edits; per-run formatting (bold/italic spans) is not yet"
+notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the text box tool: a drag sets the box, a click fits it to the text (40 to 300 points wide); a card takes the text at once; Post makes it and selects it. Helvetica text with colour, size and alignment; /RC (XHTML) and /DS are written and kept in step with edits; per-run formatting (bold/italic spans) is not yet"
 
 [[feature]]
 id = "comment.callout"
@@ -3639,7 +3639,7 @@ status = "shipped"
 commands = ["comment.ink"]
 tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::ink_strokes_are_smooth_curves_through_their_points", "crates/engine/annot/src/tests.rs::drawings_resize_by_scaling_their_strokes"]
-notes = "Editor (web/, web/tests/hand/annotations.mjs): a drawing is selected, moved and resized with its eight handles on the page. one ink annotation per stroke; strokes are drawn as smooth curves through their points, as in Acrobat; resize with the 8 handles (the strokes scale into the new box)"
+notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the drawing tool: one stroke per drag, previewed as it is drawn, not selected after (the tool stays on). Editor (web/, web/tests/hand/annotations.mjs): a drawing is selected, moved and resized with its eight handles on the page. one ink annotation per stroke; strokes are drawn as smooth curves through their points, as in Acrobat; resize with the 8 handles (the strokes scale into the new box)"
 
 [[feature]]
 id = "comment.eraser"
@@ -3663,7 +3663,7 @@ status = "shipped"
 commands = ["comment.line"]
 tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
-notes = ""
+notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the line tool: a drag from the press to the release, Shift level or plumb; selected after, the tool stays on. "
 
 [[feature]]
 id = "comment.arrow"
@@ -3675,7 +3675,7 @@ status = "partial"
 commands = ["comment.arrow"]
 tools = ["comment.add"]
 evidence = []
-notes = ""
+notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the arrow tool: as the line, with an open arrowhead at the release. "
 
 [[feature]]
 id = "comment.rectangle"
@@ -3687,7 +3687,7 @@ status = "shipped"
 commands = ["comment.square"]
 tools = ["comment.add", "comment.edit"]
 evidence = ["crates/engine/annot/src/tests.rs::restyle_and_resize_redraw_the_appearance", "crates/engine/annot/src/tests.rs::shapes_can_be_filled_and_unfilled"]
-notes = "Editor (web/, web/tests/hand/annotations.mjs): a click selects a rectangle (eight handles); a drag moves it, a handle resizes it (Shift keeps the ratio), one undo step each. resize with the 8 handles; fill colour or no fill from the quick bar, Properties and comment_edit `fill`; fill swatches are the comment palette only (no custom colour picker yet)"
+notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the rectangle tool: a drag, previewed, Shift a square; selected with its handles after (a press on a handle resizes it while the tool is on). Editor (web/, web/tests/hand/annotations.mjs): a click selects a rectangle (eight handles); a drag moves it, a handle resizes it (Shift keeps the ratio), one undo step each. resize with the 8 handles; fill colour or no fill from the quick bar, Properties and comment_edit `fill`; fill swatches are the comment palette only (no custom colour picker yet)"
 
 [[feature]]
 id = "comment.oval"
@@ -3699,7 +3699,7 @@ status = "shipped"
 commands = ["comment.circle"]
 tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
-notes = ""
+notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the oval tool: a drag, Shift a circle; selected after. "
 
 [[feature]]
 id = "comment.polygon"
@@ -3747,7 +3747,7 @@ status = "partial"
 commands = ["comment.highlight"]
 tools = ["comment.add"]
 evidence = []
-notes = "drag the highlighter off text to highlight a box"
+notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the highlighter dragged on the blank page highlights the dragged box. drag the highlighter off text to highlight a box"
 
 [[feature]]
 id = "comment.attach-file-comment"
@@ -3819,7 +3819,7 @@ status = "shipped"
 commands = ["comment.note"]
 tools = ["comment.edit"]
 evidence = ["crates/engine/annot/src/tests.rs::restyle_and_resize_redraw_the_appearance"]
-notes = "Editor (web/, web/tests/hand/annotations.mjs): no bar yet: a selected comment's colour from its right-click menu, width and opacity through Properties (the parameters dialog). quick-bar colour swatches, fill colour (rectangle, oval, polygon, cloud), opacity (10–100 %) and line thickness per tool; colour from the context menu"
+notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the options bar under the ribbon: colour swatches, opacity and line width for what the tool on makes next (a colour also goes to the selected comment of that tool's kind); with Select on, they change the selected comment (one undo step each). No fill colour or font size yet; a comment's own opacity and width show only once the editor set them (comment.list does not answer them). Editor (web/, web/tests/hand/annotations.mjs): a selected comment's colour from its right-click menu too. quick-bar colour swatches, fill colour (rectangle, oval, polygon, cloud), opacity (10–100 %) and line thickness per tool; colour from the context menu"
 
 [[feature]]
 id = "comment.lock-comment"
@@ -3843,7 +3843,7 @@ status = "partial"
 commands = ["comment.list"]
 tools = []
 evidence = []
-notes = "colour, opacity and line width become the tool's defaults (canvas and Comments panel menus) and survive a restart: the per-tool styles are persisted with the settings and restored through their clamping setters"
+notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the bar's values are the tool's defaults for the session (not kept across a restart yet). colour, opacity and line width become the tool's defaults (canvas and Comments panel menus) and survive a restart: the per-tool styles are persisted with the settings and restored through their clamping setters"
 
 [[feature]]
 id = "comment.author-identity"

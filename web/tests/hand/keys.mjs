@@ -91,7 +91,9 @@ try {
   })
 
   await part('K2 dialog', async () => {
-    await kit.getByTestId('pdf-sticky-note').click()
+    // The parameters dialog of a sticky note is under the Comment group's More (Sticky Note is the note tool).
+    await kit.getByTestId('pdf-comment-more').click()
+    await kit.getByTestId('pdf-note-dialog').click()
     await kit.locator('#param-contents').waitFor({ timeout: 10_000 })
     await kit.locator('#param-contents').click()
     await page.keyboard.type('Hand note')
@@ -109,7 +111,9 @@ try {
     await press('PageDown')
     await step('K2 PageDown after the dialog scrolls', moved(before, await view()) > 100)
     // Escape closes a dialog; the keyboard is the editor's after it.
-    await kit.getByTestId('pdf-sticky-note').click()
+    // The parameters dialog of a sticky note is under the Comment group's More (Sticky Note is the note tool).
+    await kit.getByTestId('pdf-comment-more').click()
+    await kit.getByTestId('pdf-note-dialog').click()
     await kit.locator('#param-contents').waitFor({ timeout: 10_000 })
     await page.keyboard.press('Escape')
     await until(async () => (await kit.locator('#param-contents').count()) === 0, 30)
@@ -209,7 +213,9 @@ try {
     const before = await view()
     const at = await status()
     const notes = await comments()
-    await kit.getByTestId('pdf-sticky-note').click()
+    // The parameters dialog of a sticky note is under the Comment group's More (Sticky Note is the note tool).
+    await kit.getByTestId('pdf-comment-more').click()
+    await kit.getByTestId('pdf-note-dialog').click()
     await kit.locator('#param-contents').waitFor({ timeout: 10_000 })
     await kit.locator('#param-contents').click()
     await page.keyboard.type('While finding')

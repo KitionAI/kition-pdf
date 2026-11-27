@@ -243,7 +243,7 @@ features:
     priority: P0
     status: has
     paths: [web/src/App.tsx, web/src/markup.ts, web/src/SelectionBar.tsx, web/src/SidePanel.tsx, web/src/comments.ts, web/src/ribbon/HomeTab.tsx, web/src/useTextSelection.ts, web/src/strings.ts, web/src/app.css, web/src/params.test.mjs, web/tests/hand/markup.mjs, web/tests/hand/fixture.mjs]
-    gap: "Comments are made from text selections, the find bar and the Comments panel (and a note from the page's menu): there are no drawing tools on the page yet (stage 5 of the plan); choosing, moving and resizing on the page is pdf.editor.annotation-select. A selection across pages makes one comment per page, each its own undo step (the engine has no batch of edits for the editor). Measured in dev.html only."
+    gap: "Comments are made from text selections, the find bar and the Comments panel (and a note from the page's menu): the tools that draw on the page are pdf.editor.annotation-tools; choosing, moving and resizing on the page is pdf.editor.annotation-select. A selection across pages makes one comment per page, each its own undo step (the engine has no batch of edits for the editor). Measured in dev.html only."
     cases: [regressions/issue-hand-c9-highlight-selection, regressions/issue-hand-g4-delete-comment]
     since: "2026-11-27"
   - id: pdf.editor.params-and-fields
@@ -261,8 +261,17 @@ features:
     priority: P0
     status: has
     paths: [web/src/page/geometry.ts, web/src/page/geometry.test.mjs, web/src/page/usePageObjects.ts, web/src/page/usePageTool.ts, web/src/page/PageOverlays.tsx, web/src/page/PageMenu.tsx, web/src/App.tsx, web/src/SidePanel.tsx, web/src/strings.ts, web/src/app.css, web/tests/hand/annotations.mjs, web/tests/hand/fixture.mjs, web/tests/hand/harness.mjs]
-    gap: "One comment at a time, on one page (no Shift-click to add one, no group drag). A drag moves a frame, not the comment's own pixels. Lines, arrows and polygons move but have no point handles (the engine's comment.edit has no vertex edit). The selected comment's colour is changed from its menu; width and opacity only through Properties (the parameters dialog). Form fields are only hit: filling them on the page is stage 6. Measured in dev.html only."
+    gap: "One comment at a time, on one page (no Shift-click to add one, no group drag). A drag moves a frame, not the comment's own pixels. Lines, arrows and polygons move but have no point handles (the engine's comment.edit has no vertex edit). The selected comment's colour, width and opacity are changed in the options bar (pdf.editor.annotation-tools) or its menu (colour). Form fields are only hit: filling them on the page is stage 6. Measured in dev.html only."
     cases: [regressions/issue-hand-g1-select-comment, regressions/issue-hand-g2-move-comment, regressions/issue-hand-g3-delete-key, regressions/issue-hand-l1-context-menu]
+    since: "2026-11-27"
+  - id: pdf.editor.annotation-tools
+    title: "Comment tools on the page: a tool rail (Select V, the hand H, sticky note, text box, page text, highlight, underline, strikethrough, drawing, rectangle, oval, line, arrow); a sticky note is placed with a click and written at once in a card on the page (Escape makes nothing, no undo step); a text box is dragged or clicked (fitted to its text); a highlight, underline or strikethrough marks the text dragged over and stays on for the next (the highlighter on the blank page marks the dragged box); a rectangle or oval is dragged (Shift: square, circle), a line or arrow drawn (Shift: level or plumb), a drawing is one stroke per drag, each previewed and made with one comment.add (one undo step); what is made is selected (a drawing is not); a sticky note, text box or page text goes back to Select unless kept; the Home tab's Sticky Note, Highlight Text and Add Text turn the tools on (the parameters dialog is under More); an options bar sets the next comment's colour, opacity and line width, and with Select changes the selected comment's"
+    dimension: [function]
+    priority: P0
+    status: has
+    paths: [web/src/page/tools.ts, web/src/page/tools.test.mjs, web/src/page/useDrawTool.ts, web/src/page/ToolOptions.tsx, web/src/page/PageOverlays.tsx, web/src/App.tsx, web/src/ribbon/HomeTab.tsx, web/src/strings.ts, web/src/app.css, web/tests/hand/annotation-tools.mjs, web/tests/hand/fixture.mjs, web/tests/hand/harness.mjs]
+    gap: "No callout, squiggly, insert or replace text, polygon, cloud, eraser, freehand highlight or stamp tool yet (comment.add has these types). The rail has no groups: every tool is its own button. The options bar has no fill colour or font size; a comment's own opacity and width show only once the editor set them this session (comment.list answers neither), and the tools' looks last for the session only. A new highlight does not open its note for typing. Measured in dev.html only; the tests insert Chinese text rather than going through a real input method."
+    cases: [regressions/issue-hand-g5-note-placement, regressions/issue-hand-g7-shape-tools]
     since: "2026-11-27"
   - id: pdf.editor.links
     title: "Links on the page: a hand cursor over a link; a click on a link to a page goes to that page and Alt+Left (Cmd+[) comes back, Alt+Right (Cmd+]) forward again; a link to a web address asks first and then has the host open it (host/openUrl), and a host that opens none says so; a drag that starts on a link selects text"

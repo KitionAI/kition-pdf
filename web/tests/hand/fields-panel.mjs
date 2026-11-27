@@ -128,7 +128,9 @@ try {
     const shown = await zh.frames().find((frame) => frame !== zh.mainFrame()).evaluate(() => [...document.querySelectorAll('[data-testid^="pdf-cmd-comment"]')].map((button) => `${button.getAttribute('aria-label') ?? ''} ${button.getAttribute('title') ?? ''} ${button.textContent ?? ''}`))
     await step('L3 the Comments tab\'s commands are Chinese', shown.length > 0 && !shown.some((text) => english.some((title) => text.includes(title))), JSON.stringify(shown.slice(0, 12)))
     await kitZh.getByTestId('ribbon-tab-home').click()
-    await kitZh.getByTestId('pdf-sticky-note').click()
+    // The parameters dialog of a sticky note is under the Comment group's More (Sticky Note is the note tool).
+    await kitZh.getByTestId('pdf-comment-more').click()
+    await kitZh.getByTestId('pdf-note-dialog').click()
     await kitZh.getByTestId('pdf-params-dialog').waitFor({ timeout: 10_000 })
     const labels = (await kitZh.getByTestId('pdf-params-dialog').locator('label').allTextContents()).map((text) => text.replace(/\s*\*$/, '').trim())
     await step('L3 the dialog\'s fields are named in Chinese, not by their parameters', labels.includes('位置') && labels.includes('内容') && labels.includes('页面') && !labels.some((text) => /^(at|contents|page|type)$/.test(text)), JSON.stringify(labels))

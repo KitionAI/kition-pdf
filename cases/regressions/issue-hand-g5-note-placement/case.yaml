@@ -1,0 +1,30 @@
+format: 1
+id: regressions/issue-hand-g5-note-placement
+feature: pdf.editor.annotation-tools
+intent: >-
+  A sticky note could only be made with a parameters dialog, at a typed point (72, 72 by default,
+  on top of the chapter heading), and a highlight only by typing the word to find. Now the note
+  tool places a note with a click where the pointer is and opens a card on the page that has the
+  keyboard at once (Chinese text is kept), Post makes it there and selects it and Select is back,
+  Escape in the card makes nothing and leaves no undo step; the highlighter marks three lines
+  dragged over one after another and stays on, one Cmd+Z taking one back; Sticky Note, Highlight
+  Text and Add Text on the Home tab turn the tools on and the dialog is under More.
+  web/tests/hand/annotation-tools.mjs works the hand fixture with the pointer and keys.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings G5, G6, I3
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/annotation-tools.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

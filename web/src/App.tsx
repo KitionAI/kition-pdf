@@ -2,7 +2,9 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState, type Keyboard
 import { Scrollbar } from '@kition/tessera/ui'
 import {
   CommandTab,
+  HAND_TOOL,
   KitDocumentCanvas,
+  ToolRail,
   KitEditorProvider,
   EditorFrame,
   FrameChrome,
@@ -17,6 +19,8 @@ import {
   type KitCanvasHandle,
   type KitCommand,
   type KitCanvasView,
+  type KitPointer,
+  type KitTool,
   type Phrases,
   type RasterRect,
   type RasterView,
@@ -30,13 +34,13 @@ import { SidePanel } from './SidePanel'
 import { commentRef, sameComment, type CommentItem } from './comments'
 import { ParamsDialog, type Asking } from './ParamsDialog'
 import { SelectionBar } from './SelectionBar'
-import { matchRuns, selectionBounds, selectionRuns, type MarkupType } from './markup'
+import { matchRuns, selectionBounds, selectionRuns, type MarkupRun, type MarkupType } from './markup'
 import { FindBar, type FindControl, type Match } from './FindBar'
 import { SearchHighlights } from './SearchHighlights'
 import { searchPanTarget } from './searchGeometry'
 import { SelectionHighlights } from './SelectionHighlights'
 import { useTextSelection } from './useTextSelection'
-import type { SelectionRequest, SelectionResult } from './textSelection'
+import { selectionPoint, type SelectionRequest, type SelectionResult } from './textSelection'
 import { withRewriteLease } from './rewriteLease'
 import { newlyDropped } from './droppedEdits'
 import { focusPages, keyboardFallback, keyboardLost, returnKeyboardLater } from './focus'
@@ -49,6 +53,9 @@ import { usePageTool, type Dragging, type Hovering } from './page/usePageTool'
 import { CommentTip, NoteCard, SelectionFrame } from './page/PageOverlays'
 import { PageMenu, type PageMenuActions, type PageMenuTarget } from './page/PageMenu'
 import { LinkDialog } from './page/LinkDialog'
+import { useDrawTool } from './page/useDrawTool'
+import { TOOL_LABELS, ToolOptions, railTools, toolIcon } from './page/ToolOptions'
+import { DEFAULT_STYLES, fitTextBox, isToolId, styleParams, toolDef, type ToolId, type ToolStyle } from './page/tools'
 
 export function App({ host, phrase }: { host: HostConnection; phrase: Phrases }) {
   const t = useMemo(() => createKitStrings(CATALOGS, host.init.locale), [host])
@@ -175,6 +182,19 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const [findSeed, setFindSeed] = useState('')
   const [zoom, setZoom] = useState(1)
   const [tab, setTab] = useState('home')
+  // The tool on the pages (stage 5), session state like the view: the page layer (Select), the
+  // hand, or a comment tool; each comment tool's look; whether a one-shot tool stays on.
+  const [toolId, setToolId] = useState<ToolId>('select')
+  const toolRef = useRef(toolId)
+  toolRef.current = toolId
+  const [styles, setStyles] = useState<Record<ToolId, ToolStyle>>(DEFAULT_STYLES)
+  const stylesRef = useRef(styles)
+  stylesRef.current = styles
+  const [keepTool, setKeepTool] = useState(false)
+  const keepRef = useRef(keepTool)
+  keepRef.current = keepTool
+  // The opacity and width of comments this session made or changed (comment.list answers neither).
+  const knownStyles = useRef(new Map<string, { opacity?: number; width?: number }>())
   const [finding, setFinding] = useState(false)
   // The canvas's view and size: the search and selection highlights and the scrollbars follow it.
   const [canvasView, setCanvasView] = useState<KitCanvasView | null>(null)
@@ -186,9 +206,12 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const selectText = useCallback(async (request: SelectionRequest) => doc ? JSON.parse(await doc.execute('text.select', request)) as SelectionResult : null, [doc])
   const selection = useTextSelection({ document: doc, revision: session.change.revision, pages, execute: selectText, t,
     onStart: (at) => {
-      setFinding(false)
-      setSearchMatch(null)
-      searchOpener.current = null
+      // A press with the highlighter (or underline, strikethrough) keeps the find bar: the next match is a Cmd+G away.
+      if (toolDef(toolRef.current).kind !== 'markup') {
+        setFinding(false)
+        setSearchMatch(null)
+        searchOpener.current = null
+      }
       setChosen(null)
       where.current.click = at
     },
@@ -224,13 +247,18 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     const runs = selection.selected?.text ? selectionRuns(selection.selected) : matchRuns(selectedMatch)
     if (!runs.length) return false
     selection.clear()
-    void (async () => {
-      for (const run of runs) {
-        const done = await leased.run('comment.add', { type, page: run.page, quads: run.quads, ...(contents ? { contents } : {}) })
-        if (done == null) break
-      }
-    })()
+    void markRuns(type, runs, contents)
     return true
+  }
+  /** One markup comment per run (a page each), in its tool's look; answers the last one's result. */
+  const markRuns = async (type: MarkupType, runs: readonly MarkupRun[], contents?: string) => {
+    let last: string | null = null
+    for (const run of runs) {
+      const done = await leased.run('comment.add', { type, page: run.page, quads: run.quads, ...(contents ? { contents } : {}), ...styleParams(type, stylesRef.current[type]) })
+      if (done == null) break
+      last = done
+    }
+    return last
   }
   /** Chooses a comment in the Comments panel and shows where it is on its page. */
   const chooseComment = (item: CommentItem | null) => {
@@ -239,7 +267,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   }
   // The selection's bar shows once the drag is let go, until Copy puts it away.
   const [barHidden, setBarHidden] = useState<unknown>(null)
-  const showBar = !!selection.selected?.text && !selection.dragging && barHidden !== selection.selected
+  const showBar = !!selection.selected?.text && !selection.dragging && barHidden !== selection.selected && toolId === 'select'
 
   // The current page: the one in the middle of the view.
   const follow = useCallback(
@@ -361,7 +389,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const [drag, setDrag] = useState<Dragging | null>(null)
   const [hover, setHover] = useState<Hovering | null>(null)
   const [menu, setMenu] = useState<PageMenuTarget | null>(null)
-  const [card, setCard] = useState<{ kind: 'edit'; comment: PageComment } | { kind: 'new'; page: number; point: [number, number] } | null>(null)
+  const [card, setCard] = useState<{ kind: 'edit'; comment: PageComment } | { kind: 'new'; tool: PlaceTool; page: number; point: [number, number]; rect: Rect | null } | null>(null)
   const [linkAsk, setLinkAsk] = useState<string | null>(null)
   const [replyAsk, setReplyAsk] = useState(0)
   // A drag's frame stays where the release put it until the chosen comment's new place is read back.
@@ -378,6 +406,8 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     setCard(null)
     setLinkAsk(null)
     setHover(null)
+    setToolId('select')
+    knownStyles.current = new Map()
   }, [doc])
   /** Chooses a comment on the page: the Comments panel follows, the view stays. */
   const choosePageComment = useCallback((item: PageComment | null) => {
@@ -410,6 +440,102 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     onDrag: setDrag,
     onHover: (next) => setHover((now) => (now?.comment === next?.comment ? now : next)),
   })
+
+  /** Selects the comment `comment.add` answered (its page and place), remembering the look it was made with. */
+  const chooseMade = async (answer: string | null, tool: ToolId) => {
+    let made: { page?: number; index?: number } | null = null
+    try { made = (JSON.parse(answer ?? '') as { comment?: { page?: number; index?: number } }).comment ?? null } catch { made = null }
+    if (!doc || !made?.page || !made.index) return
+    const list = await doc.execute('comment.list', { page: made.page }).then((text) => JSON.parse(text) as { comments?: PageComment[] }).catch(() => null)
+    const found = (list?.comments ?? []).find((item) => item.index === made.index)
+    if (!found) return
+    const style = stylesRef.current[tool]
+    knownStyles.current.set(styleKey(found), { opacity: style.opacity, width: style.width })
+    choosePageComment(found)
+  }
+  /** A one-shot tool that has made its comment goes back to Select, unless it is kept. */
+  const finishedWith = (tool: ToolId) => {
+    if (toolRef.current === tool && toolDef(tool).oneShot && !keepRef.current) setToolId('select')
+  }
+  /** Turns a tool on; a markup tool chosen with text selected marks it at once (the tool stays on). */
+  const chooseTool = (id: ToolId) => {
+    setHover(null)
+    setMenu(null)
+    if (toolDef(id).kind === 'markup' && selection.selected?.text) mark(id as MarkupType)
+    setToolId(id)
+    focusPages()
+  }
+  /** A markup tool's drag over text: what it went over is marked (each page), and the last one selected. */
+  const markDrag = (tool: ToolId, start: KitPointer, end: KitPointer) => {
+    if (Math.hypot(end.clientX - start.clientX, end.clientY - start.clientY) < 3) return
+    const anchor = selectionPoint(pages, start.x, start.y)
+    if (!anchor) return
+    const column = start.alt
+    const focus = column ? selectionPoint([pages[anchor.page - 1]], end.x, end.y, true) : selectionPoint(pages, end.x, end.y, true)
+    if (!focus) return
+    const request: SelectionRequest = { page: anchor.page, anchor: anchor.point, focus: focus.point, endPage: column ? anchor.page : focus.page, mode: column ? 'column' : 'range' }
+    void (async () => {
+      const result = await selectText(request).catch(() => null)
+      selection.clear()
+      const runs = selectionRuns(result)
+      if (!runs.length) return
+      const last = await markRuns(tool as MarkupType, runs)
+      if (last) await chooseMade(last, tool)
+    })()
+  }
+  /** A shape, a drawing or an area highlight: one `comment.add`, in the tool's look; a shape is selected once made. */
+  const addDrawn = (tool: ToolId, page: number, geometry: Record<string, unknown>) => {
+    const def = toolDef(tool)
+    if (!def.type) return
+    if (!def.selects) choosePageComment(null)
+    void leased.run('comment.add', { type: def.type, page, ...geometry, ...styleParams(tool, stylesRef.current[tool]) }).then((answer) => {
+      if (answer != null && def.selects) void chooseMade(answer, tool)
+    })
+  }
+  const drawTool = useDrawTool({
+    tool: toolId,
+    pages,
+    objects,
+    lines,
+    chosen,
+    zoom: () => canvas.current?.view()?.zoom ?? 1,
+    style: () => stylesRef.current[toolRef.current],
+    pageTool,
+    text: selection.tool,
+    place: (tool, page, point, rect) => {
+      if (tool === 'note' || tool === 'textbox' || tool === 'addText') setCard({ kind: 'new', tool, page, point, rect })
+    },
+    mark: markDrag,
+    add: addDrawn,
+  })
+  const canvasTool: KitTool = toolId === 'select' ? pageTool : toolId === 'hand' ? HAND_TOOL : drawTool
+  /** A text box's width for its text: Helvetica at its size, as the engine sets it. */
+  const measureContext = useRef<CanvasRenderingContext2D | null>(null)
+  const measureLine = (line: string) => {
+    measureContext.current ??= document.createElement('canvas').getContext('2d')
+    const context = measureContext.current
+    if (!context) return line.length * 6
+    context.font = '12px Helvetica, Arial, sans-serif'
+    return context.measureText(line).width
+  }
+  // The options bar: a comment tool's look for what it makes next; with Select, the selected comment's.
+  const barComment = toolId === 'select' ? chosen : null
+  const restyle = (change: Partial<ToolStyle>) => {
+    const def = toolDef(toolId)
+    const item = chosen
+    if (def.kind !== 'view') {
+      setStyles((now) => ({ ...now, [toolId]: { ...now[toolId], ...change } }))
+      // A colour also goes to the selected comment of the kind this tool makes.
+      if (change.color && item && !item.locked && item.type === def.subtype && editor.enabled('comment.edit')) void leased.run('comment.edit', { ...commentRef(item), color: change.color })
+    } else if (item && !item.locked) {
+      const key = styleKey(item)
+      void leased.run('comment.edit', { ...commentRef(item), ...change }).then((done) => {
+        if (done != null && (change.opacity != null || change.width != null)) knownStyles.current.set(key, { ...knownStyles.current.get(key), ...(change.opacity != null ? { opacity: change.opacity } : {}), ...(change.width != null ? { width: change.width } : {}) })
+      })
+    }
+    focusPages()
+  }
+  const rail = useMemo(() => railTools(t), [t])
 
   // Views a link left, for Alt+Left (Cmd+[) to go back to and Alt+Right (Cmd+]) forward again.
   const history = useRef<{ back: Array<{ x: number; y: number }>; forward: Array<{ x: number; y: number }> }>({ back: [], forward: [] })
@@ -505,7 +631,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       choosePageComment(item)
       leased.ask('comment.edit')
     },
-    addNote: (page, point) => setCard({ kind: 'new', page, point }),
+    addNote: (page, point) => setCard({ kind: 'new', tool: 'note', page, point, rect: null }),
     addBookmark: (page) => leased.ask('bookmark.add', { page }),
     rotatePage: (page) => void leased.run('page.rotate', { pages: [page], degrees: 90 }),
     deletePage: (page) => void leased.run('page.delete', { pages: [page] }),
@@ -520,13 +646,30 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     if (!open) return
     if (open.kind === 'edit') {
       if (text !== (open.comment.contents ?? '')) void leased.run('comment.edit', { ...commentRef(open.comment), contents: text })
-    } else void leased.run('comment.add', { type: 'note', page: open.page, at: open.point.map(round2), contents: text })
+      return
+    }
+    const { tool, page, point } = open
+    const style = styleParams(tool, stylesRef.current[tool])
+    if (tool === 'note') {
+      void leased.run('comment.add', { type: 'note', page, at: point.map(round2), contents: text, ...style }).then((answer) => { if (answer != null) void chooseMade(answer, tool) })
+    } else if (tool === 'textbox') {
+      // A text box without text is nothing.
+      if (!text.trim()) return
+      const area = pages[page - 1]?.area
+      const rect = open.rect ?? fitTextBox(text, point, measureLine, area ? area.x1 - area.x0 : Infinity, area ? area.y1 - area.y0 : Infinity)
+      void leased.run('comment.add', { type: 'textbox', page, rect, contents: text, ...style }).then((answer) => { if (answer != null) void chooseMade(answer, tool) })
+    } else {
+      if (!text.trim()) return
+      void leased.run('page.addText', { page, at: point.map(round2), text, ...(style.color ? { color: style.color } : {}) })
+    }
+    finishedWith(tool)
   }
   const cardPlace: { page: number; rect: Rect } | null = card
     ? card.kind === 'edit'
       ? (() => { const rect = asRect(card.comment.rect); return rect ? { page: card.comment.page, rect } : null })()
-      : { page: card.page, rect: [card.point[0], card.point[1], card.point[0] + 20, card.point[1] + 20] }
+      : { page: card.page, rect: card.rect ?? [card.point[0], card.point[1], card.point[0] + 20, card.point[1] + 20] }
     : null
+  const cardTitle = !card ? '' : card.kind === 'edit' ? t('editComment') : card.tool === 'textbox' ? t('textBox') : card.tool === 'addText' ? t('pageText') : t('stickyNote')
   const canvasBox = hover ? region.current?.querySelector('.kui-canvas')?.getBoundingClientRect() ?? null : null
 
   /** Opens the find bar (Cmd+F, a menu's Find), with the selected text as what it looks for. */
@@ -566,13 +709,23 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
         closeSearch()
         return true
       }
-      // Then the comment selected on the page (or in the panel), then the text selection.
+      // Then the comment selected on the page (or in the panel), then a comment tool (back to
+      // Select), then the text selection.
       if (chosen) {
         choosePageComment(null)
         return true
       }
+      if (toolId !== 'select' && toolId !== 'hand') {
+        chooseTool('select')
+        return true
+      }
       selection.clear()
       return !!selection.selected
+    }
+    // V and H: Select and the hand (the only tools with a key of their own).
+    if (plain && (key === 'v' || key === 'h') && !isTextControl(event.target) && !(event.target instanceof Element && event.target.closest('[role="menu"], [role="listbox"], [role="dialog"]'))) {
+      chooseTool(key === 'v' ? 'select' : 'hand')
+      return true
     }
     // Undo and Redo right after an edit: the list of what can run may not have caught up with the
     // edit yet (the SDK's shortcut then does nothing), so the engine is asked, as the SDK does for
@@ -593,8 +746,9 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       return true
     }
     // Delete takes the comment chosen in the Comments panel away, wherever the keyboard is but in
-    // a field, a list or a menu of its own (the thumbnails).
-    if (plain && (key === 'Delete' || key === 'Backspace') && chosen && event.target instanceof Element && !isTextControl(event.target) && !event.target.closest('.pdf-thumbs, [role="menu"], [role="listbox"], [role="dialog"]')) {
+    // a field, a list or a menu of its own (the thumbnails); not while a comment tool is on.
+    const viewing = toolDef(toolId).kind === 'view'
+    if (plain && viewing && (key === 'Delete' || key === 'Backspace') && chosen && event.target instanceof Element && !isTextControl(event.target) && !event.target.closest('.pdf-thumbs, [role="menu"], [role="listbox"], [role="dialog"]')) {
       void leased.run('comment.delete', commentRef(chosen))
       setChosen(null)
       return true
@@ -603,7 +757,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     // nothing) hold the keyboard; each press is one undo step.
     const arrow = key === 'ArrowLeft' ? [-1, 0] : key === 'ArrowRight' ? [1, 0] : key === 'ArrowUp' ? [0, -1] : key === 'ArrowDown' ? [0, 1] : null
     const onPages = event.target instanceof Element && (event.target === document.body || event.target.classList.contains('kui-app') || !!region.current?.contains(event.target)) && !isTextControl(event.target)
-    if (arrow && chosen && !event.altKey && onPages && movable(chosen)) {
+    if (arrow && chosen && viewing && !event.altKey && onPages && movable(chosen)) {
       const rect = asRect(chosen.rect)
       const area = pages[chosen.page - 1]?.area
       if (rect && area && editor.enabled('comment.edit')) {
@@ -701,7 +855,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     view: item.id === 'home' || item.id === 'comment',
     ribbon:
       item.id === 'home' ? (
-        state ? <HomeTab info={state} current={current} onPage={goTo} onZoom={zoomTo} selectionAvailable={!!selection.selected?.text} onCopySelection={selection.copy} onMark={mark} /> : null
+        state ? <HomeTab info={state} current={current} onPage={goTo} onZoom={zoomTo} selectionAvailable={!!selection.selected?.text} onCopySelection={selection.copy} onMark={mark} tool={toolId} onTool={chooseTool} /> : null
       ) : (
         <>
           {item.menus.map((menu) => (
@@ -720,7 +874,21 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
         onTab={setTab}
         canvas={canvas}
         onKeyDown={keyDown}
-        focusTool={selectTool}
+        focusTool={toolId === 'select' ? selectTool : { label: t(TOOL_LABELS[toolId]), icon: toolIcon(toolId) }}
+        rail={state ? <ToolRail tools={rail} active={toolId} onSelect={(id) => { if (isToolId(id)) chooseTool(id) }} /> : null}
+        options={state ? (
+          <ToolOptions
+            tool={toolId}
+            style={styles[toolId]}
+            comment={barComment}
+            known={barComment ? knownStyles.current.get(styleKey(barComment)) ?? null : null}
+            keep={keepTool}
+            onColor={(color) => restyle({ color })}
+            onOpacity={(opacity) => restyle({ opacity })}
+            onWidth={(width) => restyle({ width })}
+            onKeep={setKeepTool}
+          />
+        ) : null}
         status={
           state ? (
             <>
@@ -739,18 +907,18 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
         ) : null}
         <div className="pdf-workspace">
           <div ref={region} id={viewportId} className="pdf-pages" tabIndex={-1} onContextMenu={contextMenu}>
-            <KitDocumentCanvas canvas={canvas} viewMemory={viewMemory} initialArea={pageWidthArea(pages[0]?.area)} panBounds={panBounds} framed={false} onView={follow} tool={pageTool}>
+            <KitDocumentCanvas canvas={canvas} viewMemory={viewMemory} initialArea={pageWidthArea(pages[0]?.area)} panBounds={panBounds} framed={false} onView={follow} tool={canvasTool}>
               {selectedMatch ? <SearchHighlights page={pages[selectedMatch.page - 1]?.area} pageNumber={selectedMatch.page} rects={selectedMatch.rects} view={canvasView} /> : null}
               <SelectionHighlights selected={selection.selected} pages={pages} view={canvasView} />
               {chosen?.rect ? <SelectionFrame comment={chosen} area={pages[chosen.page - 1]?.area} view={canvasView} drag={drag} /> : null}
               {hover && !drag && !menu && !card ? <CommentTip hover={hover} box={canvasBox} /> : null}
               {card && cardPlace ? (
                 <NoteCard
-                  key={card.kind === 'edit' ? `edit-${card.comment.id ?? card.comment.index}` : `new-${card.page}-${card.point.join(',')}`}
+                  key={card.kind === 'edit' ? `edit-${card.comment.id ?? card.comment.index}` : `new-${card.tool}-${card.page}-${card.point.join(',')}`}
                   area={pages[cardPlace.page - 1]?.area}
                   rect={cardPlace.rect}
                   view={canvasView}
-                  title={card.kind === 'edit' ? t('editComment') : t('stickyNote')}
+                  title={cardTitle}
                   initial={card.kind === 'edit' ? card.comment.contents ?? '' : ''}
                   onPost={postCard}
                   onCancel={() => { setCard(null); focusPages() }}
@@ -784,6 +952,12 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
 
 /** A point value as a command takes it: to 1/100 pt. */
 const round2 = (value: number) => Math.round(value * 100) / 100
+
+/** The tools that open a card where they are clicked. */
+type PlaceTool = 'note' | 'textbox' | 'addText'
+
+/** What the editor remembers a comment's look under: its id, else its page and place. */
+const styleKey = (item: Pick<PageComment, 'id' | 'page' | 'index'>) => item.id ?? `${item.page}/${item.index}`
 
 /** The Comments tab's commands that act on one comment (`id`, or `page` and `index`). */
 const COMMENT_COMMANDS = new Set(['comment.delete', 'comment.edit', 'comment.reply', 'comment.setStatus', 'comment.mark', 'comment.lock', 'comment.previewImage'])

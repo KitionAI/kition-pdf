@@ -1,0 +1,30 @@
+format: 1
+id: regressions/issue-hand-g7-shape-tools
+feature: pdf.editor.annotation-tools
+intent: >-
+  Underline, strikethrough, drawing, rectangle, oval, line, arrow and text box were not tools on
+  the page, only values of a dialog's type with the geometry typed in, there were no single-key
+  tools, and no bar for a comment's colour, width and opacity. Now the tool rail holds them, H and
+  V turn the hand and Select on, a drag makes a rectangle or oval (Shift: a circle), a line (Shift:
+  level), an arrow, a stroke (not selected after) and a text box (a click fits it to its text),
+  each with one comment.add, and the options bar sets the next comment's colour and changes the
+  selected comment's colour, line width and opacity, one undo step each.
+  web/tests/hand/annotation-tools.mjs works the hand fixture with the pointer and keys.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings G7, K5, L5
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/annotation-tools.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

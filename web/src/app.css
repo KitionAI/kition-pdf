@@ -376,3 +376,34 @@
   margin: 0 0 10px;
   font-size: 12px;
 }
+
+/* The options bar under the ribbon (stage 5): a tool's look, or the selected comment's. Always
+   drawn at one height, so choosing a comment never moves the pages. */
+.pdf-tool-options {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  white-space: nowrap;
+}
+
+.pdf-tool-options .kui-color-grid {
+  padding: 0;
+}
+
+/* The colour now: a swatch before the ones to choose from. */
+.pdf-tool-color {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  box-sizing: border-box;
+  border: 1px solid var(--kit-border);
+  border-radius: 4px;
+}
+
+/* Where the swatches go while there is nothing to colour: the bar keeps its width. */
+.pdf-tool-colors-off {
+  display: inline-block;
+  width: 207px;
+  height: 18px;
+}

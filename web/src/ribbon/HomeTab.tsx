@@ -1,7 +1,8 @@
 import { TesseraIcons } from '@kition/sdk/editor'
-import { RibbonButton, RibbonGroup, RibbonItem, RibbonRow, RibbonStack, toast, useKitEditor } from '@kition/sdk/editor'
+import { MenuItem, RibbonButton, RibbonGroup, RibbonItem, RibbonMenu, RibbonRow, RibbonStack, toast, useKitEditor } from '@kition/sdk/editor'
 import { pageFromField, type PdfInfo } from '../pdf'
 import type { MarkupType } from '../markup'
+import type { ToolId } from '../page/tools'
 import { focusPages, selectOnFocus } from '../focus'
 
 
@@ -27,8 +28,9 @@ const BookOpen = TesseraIcons.BookOpenIcon
 /** The text selection tool's icon, here and in the Focus bar. */
 export const SelectTool = TesseraIcons.TextCursorIcon
 const FileIcon = TesseraIcons.FileIcon
+const More = TesseraIcons.EllipsisIcon
 
-export function HomeTab({ info, current, onPage, onZoom, selectionAvailable, onCopySelection, onMark }: {
+export function HomeTab({ info, current, onPage, onZoom, selectionAvailable, onCopySelection, onMark, tool, onTool }: {
   info: PdfInfo
   current: number
   onPage: (index: number) => void
@@ -37,6 +39,9 @@ export function HomeTab({ info, current, onPage, onZoom, selectionAvailable, onC
   onCopySelection: () => void
   /** Marks the selected text (or the find bar's match) at once; false when there is none. */
   onMark: (type: MarkupType) => boolean
+  /** The tool on the pages, and choosing one (the Comment group's buttons are tools). */
+  tool: ToolId
+  onTool: (id: ToolId) => void
 }) {
   const { run, ask, enabled, phrase: p, t } = useKitEditor()
   const count = info.pages.length
@@ -44,9 +49,10 @@ export function HomeTab({ info, current, onPage, onZoom, selectionAvailable, onC
   const editable = info.editable
   const label = info.pages[current]?.label ?? String(current + 1)
 
-  // With text selected (or a match found) the markup buttons mark it; else they ask what to mark.
+  // With text selected (or a match found) the markup buttons mark it; else they turn the tool on,
+  // to mark text by dragging over it (the parameters dialog is under More).
   const markup = (type: MarkupType) => {
-    if (!onMark(type)) ask('comment.add', { type, find: '' })
+    if (!onMark(type)) onTool(type)
   }
 
   const copyText = async () => {
@@ -130,15 +136,23 @@ export function HomeTab({ info, current, onPage, onZoom, selectionAvailable, onC
       </RibbonGroup>
 
       <RibbonGroup label={p('Comment')} icon={MessageSquarePlus}>
-        <RibbonButton icon={MessageSquarePlus} size="large" label={t('stickyNote')} disabled={!editable || !enabled('comment.add')} onClick={() => ask('comment.add')} data-testid="pdf-sticky-note" primary />
+        <RibbonButton icon={MessageSquarePlus} size="large" label={t('stickyNote')} pressed={tool === 'note'} disabled={!editable || !enabled('comment.add')} onClick={() => onTool(tool === 'note' ? 'select' : 'note')} data-testid="pdf-sticky-note" primary />
         <RibbonStack>
-          <RibbonButton icon={Highlighter} label={t('highlightText')} disabled={!editable || !enabled('comment.add')} onClick={() => markup('highlight')} data-testid="pdf-highlight" primary />
-          <RibbonButton icon={Type} label={t('addText')} disabled={!editable || !enabled('page.addText')} onClick={() => ask('page.addText')} data-testid="pdf-add-text" primary />
+          <RibbonButton icon={Highlighter} label={t('highlightText')} pressed={tool === 'highlight'} disabled={!editable || !enabled('comment.add')} onClick={() => (tool === 'highlight' ? onTool('select') : markup('highlight'))} data-testid="pdf-highlight" primary />
+          <RibbonButton icon={Type} label={t('addText')} pressed={tool === 'addText'} disabled={!editable || !enabled('page.addText')} onClick={() => onTool(tool === 'addText' ? 'select' : 'addText')} data-testid="pdf-add-text" primary />
           <RibbonButton icon={Copy} label={t('copyText')} disabled={!enabled('text.extract')} onClick={() => void copyText()} data-testid="pdf-copy-text" />
         </RibbonStack>
         <RibbonStack>
-          <RibbonButton icon={Underline} label={t('underline')} disabled={!editable || !enabled('comment.add')} onClick={() => markup('underline')} data-testid="pdf-underline" />
-          <RibbonButton icon={Strikethrough} label={t('strikethrough')} disabled={!editable || !enabled('comment.add')} onClick={() => markup('strikeout')} data-testid="pdf-strikeout" />
+          <RibbonButton icon={Underline} label={t('underline')} pressed={tool === 'underline'} disabled={!editable || !enabled('comment.add')} onClick={() => (tool === 'underline' ? onTool('select') : markup('underline'))} data-testid="pdf-underline" />
+          <RibbonButton icon={Strikethrough} label={t('strikethrough')} pressed={tool === 'strikeout'} disabled={!editable || !enabled('comment.add')} onClick={() => (tool === 'strikeout' ? onTool('select') : markup('strikeout'))} data-testid="pdf-strikeout" />
+          {/* In a RibbonItem: in Single line a menu's own rows are drawn only under a primary item. */}
+          <RibbonItem primary>
+            <RibbonMenu icon={More} label={t('commentMore')} disabled={!editable} testId="pdf-comment-more" primary>
+              <MenuItem icon={MessageSquarePlus} label={t('noteDialog')} disabled={!enabled('comment.add')} onSelect={() => ask('comment.add')} testId="pdf-note-dialog" />
+              <MenuItem icon={Highlighter} label={t('highlightDialog')} disabled={!enabled('comment.add')} onSelect={() => ask('comment.add', { type: 'highlight', find: '' })} testId="pdf-highlight-dialog" />
+              <MenuItem icon={Type} label={t('addTextDialog')} disabled={!enabled('page.addText')} onSelect={() => ask('page.addText')} testId="pdf-add-text-dialog" />
+            </RibbonMenu>
+          </RibbonItem>
         </RibbonStack>
       </RibbonGroup>
       <RibbonGroup label={p('Select text')} icon={SelectTool}>
