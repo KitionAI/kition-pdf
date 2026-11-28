@@ -1,7 +1,15 @@
-/** Installed before any page script. Holds metadata and WeakMaps, never pixel copies. */
-export function installPerformanceProbe() {
+/**
+ * Installed before any page script. Holds metadata and WeakMaps, never pixel copies.
+ * A goal passes once a render it asked for is drawn on the editor's canvas and still shown two
+ * animation frames later. By default "still shown" means no other render was drawn on the canvas
+ * since. With `carriedPixels` a later draw of another render that lands beside the goal page's
+ * pixels (the canvas filling its margins in slices, a part of another page redrawn) leaves them
+ * shown: only a later draw over them replaces them (raster-geometry.mjs uses it).
+ */
+export function installPerformanceProbe({ carriedPixels = false } = {}) {
   const now = () => performance.timeOrigin + performance.now()
-  const buffers = new WeakMap(), bitmaps = new WeakMap(), visible = new WeakMap()
+  const buffers = new WeakMap(), bitmaps = new WeakMap(), visible = new WeakMap(), drawn = new WeakMap()
+  let drawSeq = 0
   let requestId = 0
   const probe = window.__kitionPerf = {
     schema: 1, pages: [], requests: [], requestCount: 0, counters: { renderBuffersMapped: 0, bitmapWritesMapped: 0, visibleDrawsMapped: 0 }, goal: { id: 'cold-open-0', page: 1, phase: 'cold-open', status: 'pending', started: null },
@@ -93,15 +101,34 @@ export function installPerformanceProbe() {
     if (!record) return result
     probe.counters.visibleDrawsMapped++
     visible.set(this.canvas, record.id)
+    // Where on the canvas this draw went: drawImage(image, dx, dy[, dw, dh]) or its nine-argument form.
+    const [dx, dy, dw, dh] = args.length >= 8 ? args.slice(4, 8) : args.length >= 4 ? args.slice(0, 4) : [args[0], args[1], source.width, source.height]
+    const draw = { id: record.id, seq: ++drawSeq, rect: { x0: dx, y0: dy, x1: dx + dw, y1: dy + dh } }
+    const list = drawn.get(this.canvas) ?? []
+    list.push(draw)
+    if (list.length > 64) list.shift()
+    drawn.set(this.canvas, list)
     if (!belongs(record)) return result
-    const canvas = this.canvas, goal = probe.goal, drawn = now()
+    const canvas = this.canvas, goal = probe.goal, drawnAt = now()
+    // The goal page's pixels this draw put on the canvas: the page's area in the request's
+    // document area, mapped to the draw's rectangle.
+    const page = probe.pages[goal.page - 1]?.area
+    const sx = dw / (record.area.x1 - record.area.x0), sy = dh / (record.area.y1 - record.area.y0)
+    const pagePixels = page && Number.isFinite(sx) && Number.isFinite(sy) ? {
+      x0: Math.max(draw.rect.x0, dx + (page.x - record.area.x0) * sx), y0: Math.max(draw.rect.y0, dy + (page.y - record.area.y0) * sy),
+      x1: Math.min(draw.rect.x1, dx + (page.x + page.width - record.area.x0) * sx), y1: Math.min(draw.rect.y1, dy + (page.y + page.height - record.area.y0) * sy),
+    } : draw.rect
+    const covers = (a, b) => a.x1 > b.x0 && a.x0 < b.x1 && a.y1 > b.y0 && a.y0 < b.y1
+    const shown = () => carriedPixels
+      ? (drawn.get(canvas) ?? []).every(later => later.seq <= draw.seq || later.id === record.id || !covers(later.rect, pagePixels))
+      : visible.get(canvas) === record.id
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (probe.goal !== goal || goal.status !== 'pending' || visible.get(canvas) !== record.id || !canvas.isConnected) return
+      if (probe.goal !== goal || goal.status !== 'pending' || !shown() || !canvas.isConnected) return
       const status = document.querySelector('[data-testid="pdf-status"]')?.textContent ?? ''
       if (!status.startsWith(`Page ${goal.page} of `)) return
       if (goal.action === 'edit' && (!(record.revision > goal.revisionBefore) || probe.dirty !== true)) return
       const presented = now()
-      Object.assign(goal, { status: 'passed', request: { ...record }, revisionAfter: probe.revision, drawn, presented, presentMs: presented - goal.started, endToFrameOpportunityMs: presented - goal.started, drawToRafMs: presented - drawn, renderMs: record.completed - record.started, actionToRequestMs: record.started - goal.started, actionToDrawMs: drawn - goal.started })
+      Object.assign(goal, { status: 'passed', request: { ...record }, revisionAfter: probe.revision, drawn: drawnAt, presented, presentMs: presented - goal.started, endToFrameOpportunityMs: presented - goal.started, drawToRafMs: presented - drawnAt, renderMs: record.completed - record.started, actionToRequestMs: record.started - goal.started, actionToDrawMs: drawnAt - goal.started })
     }))
     return result
   }

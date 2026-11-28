@@ -77,7 +77,7 @@ try {
       browser = await ({ chromium, webkit })[options.browser].launch()
       result.browserVersion = browser.version()
       context = await browser.newContext({ viewport: report.configuration.viewport, deviceScaleFactor: 1 })
-      await context.addInitScript({ content: `(${installPerformanceProbe.toString()})();\n(${installCacheQuietProbe.toString()})();` })
+      await context.addInitScript({ content: `(${installPerformanceProbe.toString()})({ carriedPixels: true });\n(${installCacheQuietProbe.toString()})();` })
       const page = await context.newPage()
       page.setDefaultTimeout(options.timeoutMs)
       page.on('pageerror', error => result.pageErrors.push(safeError(error)))
