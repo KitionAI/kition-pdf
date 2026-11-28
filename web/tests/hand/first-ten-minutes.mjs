@@ -582,8 +582,10 @@ try {
     await until(async () => (await value('subscribe')) === true, 60)
     await check('a click ticks the check box', (await value('subscribe')) === true)
     const country = kit.getByTestId('pdf-page-field-country')
-    await act(() => country.click())
-    // A native list's choices cannot be clicked in a headless browser: the choice is made as a person's pick.
+    // To the drop-down from the check box (just before it in the tab order) with Shift+Tab: a click
+    // would open the browser's own list, which Linux Chromium keeps open over the page, taking the
+    // keys, while a headless choice is made. The choice is made as a person's pick in the list.
+    await act(() => page.keyboard.press('Shift+Tab'))
     await act(() => country.selectOption('FI'))
     await until(async () => (await value('country')) === 'FI', 60)
     await check('a choice in the drop-down fills it', (await value('country')) === 'FI', String(await value('country')))
