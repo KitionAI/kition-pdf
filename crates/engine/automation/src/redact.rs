@@ -10,6 +10,9 @@ use serde_json::{Value, json};
 use crate::comments::{DEFAULT_AUTHOR, parse_color};
 use crate::{Args, Automation, Result, ToolError, failed};
 
+/// The most quads one `redaction.mark` with `quads` takes (a selection of that many lines).
+const MAX_QUADS: usize = 4096;
+
 impl Automation {
     pub(crate) fn redact_mark(&mut self, a: &Args) -> Result<Value> {
         let doc = self.doc(a)?;
@@ -46,13 +49,14 @@ impl Automation {
         let mut marks: Vec<(usize, Vec<[f64; 8]>)> = Vec::new();
         let chosen = [
             a.get("rect").is_some(),
+            a.get("quads").is_some(),
             a.get("find").is_some(),
             a.get("words").is_some(),
             a.get("pattern").is_some(),
             a.opt_bool("wholePages")?.unwrap_or(false),
         ];
         if chosen.iter().filter(|c| **c).count() != 1 {
-            return Err(ToolError::InvalidArgs("pass exactly one of rect (with page), find, words, pattern or wholePages: true".into()));
+            return Err(ToolError::InvalidArgs("pass exactly one of rect or quads (with page), find, words, pattern or wholePages: true".into()));
         }
         // Per searched word or phrase: how many marks it made.
         let mut matched_words: Vec<(String, usize)> = Vec::new();
@@ -63,6 +67,29 @@ impl Automation {
             let r = <[f64; 4]>::try_from(r).map_err(|_| ToolError::InvalidArgs("rect must be 4 numbers".into()))?;
             let q = info.view_rect_to_quad([r[0] as f32, r[1] as f32, r[2] as f32, r[3] as f32]);
             marks.push((page, vec![q]));
+        } else if let Some(given) = a.get("quads") {
+            // Text a person selected: one mark over its lines, each quad four corners (upper-left,
+            // upper-right, lower-left, lower-right) in points from the displayed page's top-left.
+            let page = self.page(a)?;
+            let info = &self.doc(a)?.info.pages[page];
+            let wrong = || ToolError::InvalidArgs("quads must be a list of 1 to 4096 arrays of 8 finite numbers".into());
+            let list = given.as_array().filter(|list| !list.is_empty() && list.len() <= MAX_QUADS).ok_or_else(wrong)?;
+            let mut quads = Vec::with_capacity(list.len());
+            for quad in list {
+                let v: Vec<f64> = quad.as_array().ok_or_else(wrong)?.iter().map(Value::as_f64).collect::<Option<_>>().ok_or_else(wrong)?;
+                let v: [f64; 8] = v.try_into().map_err(|_| wrong())?;
+                let mut out = [0.0; 8];
+                for i in 0..4 {
+                    let [x, y] = info.view_to_user(v[2 * i] as f32, v[2 * i + 1] as f32);
+                    (out[2 * i], out[2 * i + 1]) = (x as f64, y as f64);
+                }
+                // A number past f32's range turns infinite on the way to user space.
+                if !out.iter().all(|n| n.is_finite()) {
+                    return Err(wrong());
+                }
+                quads.push(out);
+            }
+            marks.push((page, quads));
         } else if a.opt_bool("wholePages")?.unwrap_or(false) {
             let info = &self.doc(a)?.info;
             for &p in &pages {

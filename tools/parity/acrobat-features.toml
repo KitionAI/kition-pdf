@@ -2167,7 +2167,7 @@ status = "shipped"
 commands = ["edit.link"]
 tools = ["link.add"]
 evidence = ["crates/engine/automation/tests/automation.rs::links_through_tools", "crates/engine/annot/src/tests.rs::links_are_added_edited_listed_and_removed"]
-notes = "drag a rectangle; go to a page or open a web page"
+notes = "Editor (web/, web/tests/hand/pick.mjs): Edit ▸ Add a link's Drag on the page puts the dialog away, the box dragged on a page comes back in Rectangle with its page, and Run makes the link there; there is no link tool on the rail (a dialog, a pick and Run). drag a rectangle; go to a page or open a web page"
 
 [[feature]]
 id = "edit.link-properties"
@@ -4179,7 +4179,7 @@ status = "partial"
 commands = ["measure.distance"]
 tools = ["measure.distance"]
 evidence = ["crates/engine/automation/tests/automation.rs::measurements_calibrate_draw_save_reopen_and_export", "crates/engine/measure/src/tests.rs::calibrated_lengths_concave_areas_and_axis_scales"]
-notes = "Two-point distance annotations with saved numeric captions and rectilinear scales. Partial: only single-unit decimal formats; compound (ft-in) and fractional formats are not supported (listed as unsupported, data kept), no leader lines or caption placement options, geospatial scales unsupported, and interop with Acrobat-authored measurements (reading theirs, Acrobat reading ours) is untested."
+notes = "Editor (web/, web/tests/hand/pick.mjs): Measure distance's Click points on the page takes two clicks on a page, marked as they are clicked, and Run measures between them; no measuring tool on the rail, no snapping or live reading while picking. Two-point distance annotations with saved numeric captions and rectilinear scales. Partial: only single-unit decimal formats; compound (ft-in) and fractional formats are not supported (listed as unsupported, data kept), no leader lines or caption placement options, geospatial scales unsupported, and interop with Acrobat-authored measurements (reading theirs, Acrobat reading ours) is untested."
 
 [[feature]]
 id = "comment.measure-perimeter"
@@ -4191,7 +4191,7 @@ status = "shipped"
 commands = ["measure.perimeter"]
 tools = ["measure.perimeter"]
 evidence = ["crates/engine/automation/tests/automation.rs::measurements_calibrate_draw_save_reopen_and_export", "crates/engine/measure/src/tests.rs::calibrated_lengths_concave_areas_and_axis_scales"]
-notes = "Connected-line lengths with click vertices and double-click/Enter finish. Repeat the first point to include a closing edge. Saved standard PolyLineDimension annotations."
+notes = "Editor (web/): Measure perimeter's Click points on the page takes clicks on one page until Enter, Done or a double click (Backspace takes the last away); no measuring tool on the rail. Connected-line lengths with click vertices and double-click/Enter finish. Repeat the first point to include a closing edge. Saved standard PolyLineDimension annotations."
 
 [[feature]]
 id = "comment.measure-area"
@@ -4203,7 +4203,7 @@ status = "shipped"
 commands = ["measure.area"]
 tools = ["measure.area"]
 evidence = ["crates/engine/automation/tests/automation.rs::measurements_calibrate_draw_save_reopen_and_export", "crates/engine/measure/src/tests.rs::calibrated_lengths_concave_areas_and_axis_scales"]
-notes = "Simple polygon areas, including concave boundaries and either winding. Self-intersecting boundaries are refused. Saved PolygonDimension annotations; no 3D surface measurement."
+notes = "Editor (web/): Measure area's Click points on the page takes at least three clicks on one page until Enter, Done or a double click; no measuring tool on the rail. Simple polygon areas, including concave boundaries and either winding. Self-intersecting boundaries are refused. Saved PolygonDimension annotations; no 3D surface measurement."
 
 [[feature]]
 id = "comment.measure-scale"
@@ -5215,7 +5215,7 @@ status = "shipped"
 commands = ["sign.fill.text"]
 tools = ["fillSign.add"]
 evidence = ["crates/engine/annot/src/tests.rs::fill_and_sign_items_are_drawn", "crates/engine/automation/tests/automation.rs::fill_and_sign_through_tools"]
-notes = "typewriter FreeText, 10 pt Helvetica"
+notes = "Editor (web/, web/tests/hand/pick.mjs): the Forms tab's Fill & Sign Text stays on; a click on a page opens a card at it and the text typed goes there (10 pt); the text is typed in the card, not in a box on the page. typewriter FreeText, 10 pt Helvetica"
 
 [[feature]]
 id = "form.fill-sign-marks"
@@ -5227,7 +5227,7 @@ status = "shipped"
 commands = ["sign.fill.check", "sign.fill.cross", "sign.fill.dot", "sign.fill.line"]
 tools = ["fillSign.add"]
 evidence = ["crates/engine/annot/src/tests.rs::fill_and_sign_items_are_drawn"]
-notes = "Kition PDF-drawn stamps"
+notes = "Editor (web/, web/tests/hand/pick.mjs): the Forms tab's Check Mark and Cross Mark stay on; each click on a page puts a 12 pt mark centred on it, a drag puts nothing. Dot and line go through Fill & Sign's dialog, with Click on the page for the position. Kition PDF-drawn stamps"
 
 [[feature]]
 id = "form.fill-sign-date"
@@ -5494,8 +5494,8 @@ milestone = "M8"
 status = "shipped"
 commands = ["redact.mark"]
 tools = ["redaction.mark"]
-evidence = ["crates/engine/automation/tests/automation.rs::redacting_through_tools", "crates/engine/redact/src/tests.rs::glyphs_under_a_mark_go_and_the_rest_stays_put"]
-notes = "drag across text (or select first) with the Redact tool"
+evidence = ["crates/engine/automation/tests/automation.rs::redacting_through_tools", "crates/engine/redact/src/tests.rs::glyphs_under_a_mark_go_and_the_rest_stays_put", "crates/engine/automation/tests/automation.rs::redacting_selected_text_through_quads"]
+notes = "Editor (web/, web/tests/hand/pick.mjs): text dragged over is marked from the selection bar's Mark for Redaction or its right-click menu, one redaction.mark with quads over its lines on each page, outlined on the page; no Redact tool that marks with one drag or a double-clicked word. drag across text (or select first) with the Redact tool"
 
 [[feature]]
 id = "protect.redact-area"
@@ -5507,7 +5507,7 @@ status = "shipped"
 commands = ["redact.mark"]
 tools = ["redaction.mark"]
 evidence = ["crates/engine/redact/src/tests.rs::images_are_removed_or_have_their_pixels_cleared"]
-notes = "drag a box anywhere else"
+notes = "Editor (web/): Protect ▸ Mark for redaction's Drag on the page picks the box on a page; no Redact tool that marks a box with one drag. drag a box anywhere else"
 
 [[feature]]
 id = "protect.redact-pages"
@@ -5627,7 +5627,7 @@ status = "shipped"
 commands = ["redact.apply"]
 tools = ["redaction.apply"]
 evidence = ["crates/engine/engine/src/tests.rs::redaction_marks_apply_for_good_and_undo", "crates/engine/automation/tests/automation.rs::redacting_through_tools"]
-notes = "confirmation; one undo step; next save is a full rewrite"
+notes = "Editor (web/, web/tests/hand/pick.mjs): Protect ▸ Apply redactions asks first, naming how many marks and what goes; Cancel keeps them. confirmation; one undo step; next save is a full rewrite"
 
 [[feature]]
 id = "protect.redact-glyph-removal"

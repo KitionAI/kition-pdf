@@ -1,6 +1,6 @@
 format: 1
 kit: pdf
-updated: "2026-11-27"
+updated: "2026-11-28"
 gate_budget_s: 600
 protected: []
 features:
@@ -252,7 +252,7 @@ features:
     priority: P0
     status: has
     paths: [web/src/App.tsx, web/src/ParamsDialog.tsx, web/src/params.ts, web/src/params.test.mjs, web/src/pdf.ts, web/src/SidePanel.tsx, web/src/strings.ts, web/src/app.css, web/tests/hand/fields-panel.mjs, web/tests/hand/fixture.mjs]
-    gap: "Points and rectangles are still typed: nothing is picked on the page (stage 10 of the plan). Lists of points of points (ink strokes) and objects (form values) are still JSON. Fields are filled in the panel and on the page (pdf.editor.forms-on-page). Measured in dev.html only."
+    gap: "Points, rectangles and lists of points can be picked on the page (pdf.editor.pick-on-page) or typed. Lists of points of points (ink strokes) and objects (form values) are still JSON. Fields are filled in the panel and on the page (pdf.editor.forms-on-page). Measured in dev.html only."
     cases: [regressions/issue-hand-e8-pages-input, regressions/issue-hand-h6-field-after-undo, regressions/issue-hand-l3-zh-labels]
     since: "2026-11-27"
   - id: pdf.editor.annotation-select
@@ -332,6 +332,36 @@ features:
     gap: "A press that starts selecting text still closes the find bar (test:selection holds it to that; a click in a margin or off the pages keeps it). The find bar opens empty, as the reference's does: an earlier query comes back with Up, not by itself. Four quick clicks do not select the page (the canvas counts clicks one to three, then starts again; text.select takes unit page). No single page, two-page or two-page scrolling layout and no view rotation: the page layout is the engine binding's one column and every page-local coordinate (selection, comments, fields, links) is the page as the file turns it. Focus on its own (Cmd+\\) keeps the view; only Full screen fits the page. Whole words only treats Chinese and Japanese characters as letters, so a word inside a longer run is not found. No search results panel. Measured in dev.html only (Kition Desktop's frame and full screen are not checked here)."
     cases: [regressions/issue-hand-c6-double-click-word, regressions/issue-hand-c10-autoscroll, regressions/issue-hand-d5-all-matches]
     since: "2026-11-27"
+  - id: pdf.editor.pick-on-page
+    title: "Pointing at the page for a command with no tool of its own: beside a point (at), a rectangle (rect) or points (points) of a command that takes a page (add a link, mark a box for redaction, measure, Fill & Sign, page text, a form field, a scale), the parameters dialog has Click on the page, Drag on the page or Click points on the page; the dialog goes away while a bar says what to do, the click, the box dragged (a click is no box) or the points clicked (marked on the page; Enter, Done or a double click ends them, a distance after two, Backspace takes one away) come back in the field in points from the page's top-left, with the page in Page and everything else as typed; Escape or Back to the form brings the form back as it was"
+    dimension: [function]
+    priority: P1
+    status: has
+    commands: [link.add, measure.distance, fillSign.add]
+    paths: [web/src/page/pick.ts, web/src/page/pick.test.mjs, web/src/page/usePickTool.ts, web/src/page/PickBar.tsx, web/src/ParamsDialog.tsx, web/src/App.tsx, web/src/strings.ts, web/src/app.css, web/tests/hand/pick.mjs]
+    gap: "The dialog still opens first: there is no link, redaction box, measuring or image tool on the rail, so these take a dialog, a pick and Run (the reference draws them with a tool). No snapping while picking (measure.setSnap is its own command), no live reading of a distance as it is picked, no moving or resizing what was picked. An image cannot be placed in the editor at all (page_add_image takes a file, which the web editor leaves out). Points are picked on one page, the first one clicked. Measured in dev.html only."
+    cases: [regressions/issue-hand-l4-pick-on-page]
+    since: "2026-11-28"
+  - id: pdf.editor.redact-selection
+    title: "Redacting by hand: text dragged over is marked for redaction from the selection bar's Mark for Redaction or its right-click menu, one redaction.mark (quads) over its lines on each page (one undo step a page), outlined in red on the page until applied; a box is marked by picking it on the page in Protect's Mark for redaction; Protect's Apply redactions asks first, naming how many marks and what goes, and Cancel keeps them"
+    dimension: [function, security]
+    priority: P1
+    status: has
+    commands: [redaction.mark, redaction.apply]
+    paths: [crates/engine/automation/src/redact.rs, crates/engine/automation/src/tools.rs, crates/engine/automation/tests/automation.rs, web/src/SelectionBar.tsx, web/src/page/PageMenu.tsx, web/src/page/ApplyRedactions.tsx, web/src/App.tsx, web/src/strings.ts, web/tests/hand/pick.mjs]
+    gap: "No Redact tool that marks text or a box with one drag (text is selected first, a box goes through the dialog), no double-click to mark a word, no redaction properties (overlay text, codes, fill) by hand (the dialog takes them), no list of the marks to step through before applying. A selection across pages makes one mark per page, each its own undo step. Measured in dev.html only."
+    cases: [regressions/issue-hand-redact-selection]
+    since: "2026-11-28"
+  - id: pdf.editor.fill-sign
+    title: "Fill & Sign by hand on a form with no fields: the Forms tab's Text, Check Mark and Cross Mark stay on; a click on a page puts a 12 pt check or cross centred on it, or opens a card where the typed text goes (10 pt), each one fillSign.add (one undo step); a drag puts nothing; a bar says what to do, Escape or Stop ends it"
+    dimension: [function]
+    priority: P1
+    status: has
+    commands: [fillSign.add]
+    paths: [web/src/ribbon/FillSignGroup.tsx, web/src/page/useFillTool.ts, web/src/App.tsx, web/src/strings.ts, web/tests/hand/pick.mjs]
+    gap: "Only text, check and cross have buttons: dot, line, date, signature and initials go through Fill & Sign's dialog (with its point picked on the page); the text is typed in a card beside the click, not in a box on the page that grows as it is typed; what is put is a comment that moves like one, not resized as a whole with its text. The reference's tools are on its rail; these are on the Forms tab and are not tools of the rail. Measured in dev.html only."
+    cases: [regressions/issue-hand-s4-fill-sign]
+    since: "2026-11-28"
   - id: pdf.view
     title: "Render pages and previews; list and move page objects"
     dimension: [function, fidelity]

@@ -1797,6 +1797,37 @@ fn redacting_through_tools() {
 }
 
 #[test]
+fn redacting_selected_text_through_quads() {
+    let dir = workdir("redact-quads");
+    std::fs::write(dir.join("memo.txt"), "Call Ada today\nAda is private\nPublic line").unwrap();
+    let mut a = auto(&dir);
+    let doc = ok(&mut a, "file.new", json!({ "from": "text", "path": "memo.txt" }))["doc"].as_u64().unwrap();
+    // What a person selected, as text.find (and text.select) answer it: page-local rectangles.
+    let found = ok(&mut a, "text.find", json!({ "doc": doc, "query": "private" }));
+    let rect: Vec<f64> = found["matches"][0]["rects"][0].as_array().unwrap().iter().map(|n| n.as_f64().unwrap()).collect();
+    let quad = json!([rect[0], rect[1], rect[2], rect[1], rect[0], rect[3], rect[2], rect[3]]);
+    let r = ok(&mut a, "redaction.mark", json!({ "doc": doc, "page": 1, "quads": [quad] }));
+    assert_eq!((r["marked"].as_u64(), r["marks_pending"].as_u64()), (Some(1), Some(1)), "{r}");
+    // The mark is listed where the text was (comment.list answers the same page-local space).
+    let marks: Vec<Value> =
+        ok(&mut a, "comment.list", json!({ "doc": doc }))["comments"].as_array().unwrap().iter().filter(|c| c["type"] == "Redact").cloned().collect();
+    assert_eq!(marks.len(), 1);
+    let at: Vec<f64> = marks[0]["rect"].as_array().unwrap().iter().map(|n| n.as_f64().unwrap()).collect();
+    assert!(at.iter().zip(&rect).all(|(x, y)| (x - y).abs() < 1.5), "{at:?} vs {rect:?}");
+    assert_eq!(ok(&mut a, "edit_undo", json!({ "doc": doc }))["undone"], "Mark for redaction", "one undo step");
+    ok(&mut a, "edit_redo", json!({ "doc": doc }));
+    ok(&mut a, "redaction.apply", json!({ "doc": doc }));
+    let text = page_text(&mut a, doc)[0].clone();
+    assert!(!text.contains("private") && text.contains("Ada is") && text.contains("Public line"), "{text}");
+    let bad = |a: &mut Automation, args: Value| matches!(a.call("redaction.mark", &args), Err(ToolError::InvalidArgs(_)));
+    for quads in [json!([]), json!([[1, 2, 3]]), json!("x"), json!([[0, 0, 1, 0, 0, 1, 1, "y"]])] {
+        assert!(bad(&mut a, json!({ "doc": doc, "page": 1, "quads": quads })), "{quads}");
+    }
+    assert!(bad(&mut a, json!({ "doc": doc, "quads": [quad] })), "quads needs a page");
+    assert!(bad(&mut a, json!({ "doc": doc, "page": 1, "quads": [quad], "find": "Ada" })), "one way at a time");
+}
+
+#[test]
 fn redacting_with_codes_through_tools() {
     let dir = workdir("redact-codes");
     std::fs::write(dir.join("memo.txt"), "Informant Jane Roe met the agent\nPublic line").unwrap();

@@ -1,6 +1,6 @@
 /**
  * The bar beside a text selection once the drag is let go: Add comment (a highlight with a note),
- * Highlight, Underline, Strikethrough and Copy. A markup marks the selection at once, each page of
+ * Highlight, Underline, Strikethrough, Mark for redaction and Copy. A markup marks the selection at once, each page of
  * it, and clears it; Copy copies and puts the bar away, keeping the selection. Hidden while the
  * mouse is held; Add comment is off for a selection across pages.
  */
@@ -16,17 +16,20 @@ const Highlighter = TesseraIcons.HighlighterIcon
 const Underline = TesseraIcons.UnderlineIcon
 const Strikethrough = TesseraIcons.StrikethroughIcon
 const Copy = TesseraIcons.CopyIcon
+const Redact = TesseraIcons.EraserIcon
 
 /** The bar's gap below the selection's last line, and its size, in CSS pixels. */
 const GAP = 6
-const BAR_WIDTH = 190
+const BAR_WIDTH = 226
 const BAR_HEIGHT = 44
 
-export function SelectionBar({ selected, pages, view, onMark, onCopy }: {
+export function SelectionBar({ selected, pages, view, onMark, onRedact, onCopy }: {
   selected: SelectionResult
   pages: PdfInfo['pages']
   view: KitCanvasView | null
   onMark: (type: MarkupType, contents?: string) => void
+  /** Marks the selection for redaction (each page of it). */
+  onRedact: () => void
   onCopy: () => void
 }) {
   const { t, enabled } = useKitEditor()
@@ -82,6 +85,7 @@ export function SelectionBar({ selected, pages, view, onMark, onCopy }: {
           <IconButton icon={Highlighter} label={t('highlight')} title={t('highlight')} disabled={!canMark} onClick={() => onMark('highlight')} data-testid="pdf-bar-highlight" />
           <IconButton icon={Underline} label={t('underline')} title={t('underline')} disabled={!canMark} onClick={() => onMark('underline')} data-testid="pdf-bar-underline" />
           <IconButton icon={Strikethrough} label={t('strikethrough')} title={t('strikethrough')} disabled={!canMark} onClick={() => onMark('strikeout')} data-testid="pdf-bar-strikeout" />
+          <IconButton icon={Redact} label={t('markRedaction')} title={t('markRedaction')} disabled={!enabled('redaction.mark')} onClick={onRedact} data-testid="pdf-bar-redact" />
           <IconButton icon={Copy} label={t('copy')} title={t('copy')} onClick={onCopy} data-testid="pdf-bar-copy" />
         </>
       )}

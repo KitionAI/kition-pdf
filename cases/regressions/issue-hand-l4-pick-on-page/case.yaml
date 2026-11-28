@@ -1,0 +1,28 @@
+format: 1
+id: regressions/issue-hand-l4-pick-on-page
+feature: pdf.editor.pick-on-page
+intent: >-
+  A command with no tool of its own (Add a link, Measure distance, Fill & Sign) took its place only
+  as numbers typed into the dialog: nobody knows where 72, 72, 300, 200 is on a page (L4, I2, I3).
+  Now the dialog's Drag on the page, Click on the page and Click points on the page put it away,
+  and the box dragged, the point clicked or the points clicked come back in the field with the
+  page filled in and what was typed kept; a click is no box; Escape and Back to the form bring the
+  form back as it was. web/tests/hand/pick.mjs reads link.list, measure.list and comment.list back.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings L4, I2, I3
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/pick.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-28"

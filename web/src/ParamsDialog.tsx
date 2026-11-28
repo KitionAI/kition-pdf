@@ -5,10 +5,14 @@
  * `300, 400` (`params.ts`); a value that is not one is refused at its field before anything runs,
  * and an error the command answers stays in the dialog, under the field it names, with everything
  * typed kept. Field ids are the SDK form's (`param-<name>`), and the Run button's test id too.
+ * A point, a rectangle or a list of points of a command that takes a page has a button beside it
+ * (stage 10): the dialog goes away while the person points at the page (`page/pick.ts`), and comes
+ * back with the value and the page filled in and everything else as it was typed.
  */
-import { useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Button, Dialog, useKitEditor, type KitCommand } from '@kition/sdk/editor'
 import { CHOICE_LABELS, PARAM_LABELS, errorField, humanize, initialText, parseValue, withBounds, type ParamError, type ParamNode } from './params'
+import { pickSpec, type PickSpec } from './page/pick'
 
 /** A long form shows what must be (or was) given first, the rest under "More options". */
 const FOLD_AFTER = 6
@@ -18,26 +22,46 @@ export type Asking = {
   values: Record<string, unknown>
   /** Values the dialog passes on without a field (the selected comment's id). */
   fixed?: Record<string, unknown>
+  /** What was typed before the dialog went away to point at the page (it wins over `values`). */
+  texts?: Record<string, string>
+  /** The field to give the keyboard to as the dialog opens (the one just picked). */
+  focus?: string
 }
 
-export function ParamsDialog({ asking, onRun, onClose }: { asking: Asking; onRun: (params: Record<string, unknown>) => Promise<unknown>; onClose: () => void }) {
+/** A field's label as the dialog shows it, in the editor's language. */
+export function paramLabel(key: string, phrase: (text: string) => string) {
+  return phrase(PARAM_LABELS[key] ?? humanize(key))
+}
+
+export function ParamsDialog({ asking, onRun, onClose, onPick }: {
+  asking: Asking
+  onRun: (params: Record<string, unknown>) => Promise<unknown>
+  onClose: () => void
+  /** Puts the dialog away to point at the page for `spec`'s field, with what is typed now. */
+  onPick?: (spec: PickSpec, texts: Record<string, string>) => void
+}) {
   const { t, phrase: p } = useKitEditor()
   const { command, values: given, fixed = {} } = asking
   const schema = useMemo(() => Object.fromEntries(Object.entries((command.schema ?? {}) as Record<string, ParamNode>).filter(([key]) => !(key in fixed)).map(([key, node]) => [key, withBounds(node)])), [command, fixed])
   const entries = Object.entries(schema)
-  const [texts, setTexts] = useState<Record<string, string>>(() => Object.fromEntries(entries.map(([key, node]) => [key, initialText(node, given[key])])))
+  const [texts, setTexts] = useState<Record<string, string>>(() => ({ ...Object.fromEntries(entries.map(([key, node]) => [key, initialText(node, given[key])])), ...asking.texts }))
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [failure, setFailure] = useState<string | null>(null)
   const [running, setRunning] = useState(false)
   const form = useRef<HTMLFormElement>(null)
 
   const fold = entries.length > FOLD_AFTER
-  const shownFirst = ([key, node]: [string, ParamNode]) => !fold || node.required || given[key] !== undefined
+  const askedFor = ([key, node]: [string, ParamNode]) => !!node.required || given[key] !== undefined
+  const pickable = ([key, node]: [string, ParamNode]) => !!onPick && pickSpec(command.id, key, node, schema) != null
+  // A command whose place is none of the fields shown first (a redaction's box) shows its
+  // fields that can be picked on the page first too.
+  const placeFirst = !entries.some((entry) => askedFor(entry) && pickable(entry))
+  const shownFirst = (entry: [string, ParamNode]) => !fold || askedFor(entry) || (placeFirst && pickable(entry))
   const main = entries.filter(shownFirst)
   const more = entries.filter((entry) => !shownFirst(entry))
-  const moreOpen = more.some(([key]) => errors[key])
+  const moreOpen = more.some(([key]) => errors[key] || key === asking.focus)
 
-  const label = (key: string) => p(PARAM_LABELS[key] ?? humanize(key))
+  const label = (key: string) => paramLabel(key, p)
   const hint = (node: ParamNode): string | null => {
     if (node.type !== 'array') return null
     if (node.items?.type === 'integer') return t('hintPages')
@@ -58,6 +82,12 @@ export function ParamsDialog({ asking, onRun, onClose }: { asking: Asking; onRun
     }
   }
   const focusField = (key: string) => requestAnimationFrame(() => form.current?.querySelector<HTMLElement>(`#param-${CSS.escape(key)}`)?.focus())
+  // Back from the page: the keyboard on the field that was picked (after the dialog's own focus).
+  useEffect(() => {
+    if (!asking.focus) return undefined
+    const late = window.setTimeout(() => focusField(asking.focus!), 0)
+    return () => window.clearTimeout(late)
+  }, [asking.focus])
 
   const missing = entries.some(([key, node]) => node.required && (texts[key] ?? '').trim() === '')
   const submit = async () => {
@@ -122,13 +152,21 @@ export function ParamsDialog({ asking, onRun, onClose }: { asking: Asking; onRun
         onChange={(event) => set(event.target.value)}
       />
     )
+    const pick = onPick ? pickSpec(command.id, key, node, schema) : null
+    const pickLabel = pick ? t(pick.kind === 'point' ? 'pickPoint' : pick.kind === 'rect' ? 'pickRect' : 'pickPoints') : ''
+    const picked = pick ? (
+      <div className="pdf-param-pick">
+        {control}
+        <Button onClick={() => onPick?.(pick, texts)} disabled={running} data-testid={`pdf-param-pick-${key}`}>{pickLabel}</Button>
+      </div>
+    ) : control
     return [
       <label key={`${key}-label`} htmlFor={id} title={node.description}>
         {label(key)}
         {node.required ? <span title={t('required')}> *</span> : null}
       </label>,
       <div key={key} className="pdf-param">
-        {control}
+        {picked}
         {error ? (
           <span id={`${id}-error`} className="pdf-param-error" role="alert" data-testid={`pdf-param-error-${key}`}>{error}</span>
         ) : help ? (

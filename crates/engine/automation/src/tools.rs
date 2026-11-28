@@ -413,13 +413,14 @@ pub fn tools() -> Vec<ToolDef> {
         t(
             "redaction.mark",
             "Mark for redaction",
-            "Mark content for redaction (nothing is removed until redaction.apply). One of: rect [x0, y0, x1, y1] (points from the top-left of the displayed page) with page; find (text, every match); words (a list of words or phrases, every match of each; the result's matched_words says how many marks each made); pattern (phone, email, credit-card, ssn, date: every match, Acrobat's Search & Redact patterns); wholePages: true. find, words, pattern and wholePages work on pages (default all). overlay: text shown on the box once applied, or codeSet (foia: U.S. FOIA (b)(1)(A)…(b)(9); privacy-act: U.S. Privacy Act (d)(5), (j)(1)…(k)(7)) with codes, shown as \"(b)(6), (b)(7)(C)\"; fill: box colour (default black). Undoable.",
+            "Mark content for redaction (nothing is removed until redaction.apply). One of: rect [x0, y0, x1, y1] (points from the top-left of the displayed page) with page; quads (selected text: one mark over its lines, each [x1, y1, x2, y2, x3, y3, x4, y4], the corners upper-left, upper-right, lower-left, lower-right in the same space, as text.select answers its rects and comment.add takes quads) with page; find (text, every match); words (a list of words or phrases, every match of each; the result's matched_words says how many marks each made); pattern (phone, email, credit-card, ssn, date: every match, Acrobat's Search & Redact patterns); wholePages: true. find, words, pattern and wholePages work on pages (default all). overlay: text shown on the box once applied, or codeSet (foia: U.S. FOIA (b)(1)(A)…(b)(9); privacy-act: U.S. Privacy Act (d)(5), (j)(1)…(k)(7)) with codes, shown as \"(b)(6), (b)(7)(C)\"; fill: box colour (default black). Undoable.",
         )
         .with(schema(
             json!({
                 "doc": doc(),
                 "page": { "type": "integer", "minimum": 1 },
                 "rect": { "type": "array", "items": { "type": "number" }, "minItems": 4, "maxItems": 4 },
+                "quads": { "type": "array", "items": { "type": "array", "items": { "type": "number" }, "minItems": 8, "maxItems": 8 }, "minItems": 1, "maxItems": 4096 },
                 "find": { "type": "string", "minLength": 1 },
                 "words": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "maxItems": 1000 },
                 "pattern": { "type": "string", "enum": ["phone", "email", "credit-card", "ssn", "date"] },

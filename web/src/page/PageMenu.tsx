@@ -18,6 +18,7 @@ export const COMMENT_COLORS = ['#FFD100', '#FF8A00', '#E32222', '#F06292', '#8E4
 export type PageMenuActions = {
   copy: () => void
   mark: (type: MarkupType) => void
+  redact: () => void
   findSelection: () => void
   editText: (item: PageComment) => void
   reply: (item: PageComment) => void
@@ -73,6 +74,7 @@ export function PageMenu({ target, onClose, actions, hasSelection, pageCount }: 
             <MenuItem icon={TesseraIcons.HighlighterIcon} label={t('highlight')} onSelect={() => actions.mark('highlight')} disabled={!canMark} testId="pdf-menu-highlight" />
             <MenuItem icon={TesseraIcons.UnderlineIcon} label={t('underline')} onSelect={() => actions.mark('underline')} disabled={!canMark} testId="pdf-menu-underline" />
             <MenuItem icon={TesseraIcons.StrikethroughIcon} label={t('strikethrough')} onSelect={() => actions.mark('strikeout')} disabled={!canMark} testId="pdf-menu-strikeout" />
+            <MenuItem icon={TesseraIcons.EraserIcon} label={t('markRedaction')} onSelect={actions.redact} disabled={!enabled('redaction.mark')} testId="pdf-menu-redact" />
             <MenuSeparator />
             <MenuItem icon={TesseraIcons.SearchIcon} label={t('menuFindSelection')} onSelect={actions.findSelection} testId="pdf-menu-find-selection" />
           </>

@@ -660,3 +660,46 @@ input.pdf-form-control[type='radio'][data-focused] {
   background: var(--kit-surface);
   box-shadow: var(--kit-shadow-card);
 }
+
+/* Pointing at the page for a dialog's field (stage 10): the button beside the field, the bar over
+   the pages while the dialog is away, and the points picked so far. */
+.pdf-param-pick {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.pdf-param-pick > .kui-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.pdf-param-pick > button {
+  flex: none;
+  white-space: nowrap;
+}
+
+.pdf-pick-bar {
+  border-color: var(--kit-primary);
+}
+
+.pdf-pick-marks {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.pdf-pick-marks polyline {
+  fill: none;
+  stroke: var(--kit-primary);
+  stroke-width: 1.5;
+}
+
+.pdf-pick-marks circle {
+  fill: var(--kit-surface);
+  stroke: var(--kit-primary);
+  stroke-width: 1.5;
+}

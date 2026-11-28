@@ -1,0 +1,28 @@
+format: 1
+id: regressions/issue-hand-redact-selection
+feature: pdf.editor.redact-selection
+intent: >-
+  Marking text for redaction meant typing it into Protect's dialog (find, words) or a box as
+  numbers; Apply redactions ran at once, with no question. Now text dragged over is marked from the
+  selection bar or its right-click menu (one redaction.mark with quads over its lines), outlined on
+  the page, and Apply redactions asks first: Cancel keeps the marks, Apply removes the marked lines
+  and keeps the rest. web/tests/hand/pick.mjs reads comment.list and text.find back; the engine's
+  quads are tested in crates/engine/automation/tests/automation.rs.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, gap-kition-pdf.md section 3 (redaction)
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/pick.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-28"

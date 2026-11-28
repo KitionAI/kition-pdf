@@ -1,0 +1,26 @@
+format: 1
+id: regressions/issue-hand-s4-fill-sign
+feature: pdf.editor.fill-sign
+intent: >-
+  A form with no fields could not be filled by hand: Fill & Sign was a dialog with a position as
+  numbers (reference N, S4). Now the Forms tab's Check Mark and Text stay on, each click on a page
+  puts a 12 pt check centred on it or the text typed in a card at it, and a drag puts nothing;
+  Escape stops. web/tests/hand/pick.mjs reads comment.list back.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, reference N S4 (R-H67 to R-H71)
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/pick.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-28"

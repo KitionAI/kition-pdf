@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent as ReactMouseEvent, type RefObject } from 'react'
 import { Scrollbar } from '@kition/tessera/ui'
 import {
+  Button,
   CommandTab,
   HAND_TOOL,
   KitDocumentCanvas,
@@ -39,7 +40,14 @@ import type { PageActions } from './Thumbnails'
 import type { BookmarkDraft } from './Bookmarks'
 import { currentAfterDelete, moveParams, orderAfterDrop, pageTargets, placeAfterMove } from './organize'
 import { commentRef, sameComment, type CommentItem } from './comments'
-import { ParamsDialog, type Asking } from './ParamsDialog'
+import { ParamsDialog, paramLabel, type Asking } from './ParamsDialog'
+import { shownValue } from './params'
+import { pickedValue, type PickSpec } from './page/pick'
+import { usePickTool } from './page/usePickTool'
+import { PickBar, PickMarks } from './page/PickBar'
+import { ApplyRedactions } from './page/ApplyRedactions'
+import { useFillTool } from './page/useFillTool'
+import { FillSignGroup, type FillMark } from './ribbon/FillSignGroup'
 import { SelectionBar } from './SelectionBar'
 import { matchRuns, selectionBounds, selectionRuns, type MarkupRun, type MarkupType } from './markup'
 import { FindBar, type FindControl, type FindOptions, type Match } from './FindBar'
@@ -91,6 +99,12 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   // The editor's own parameters dialog (`ParamsDialog.tsx`), in place of the SDK's.
   const [asking, setAsking] = useState<(Asking & { key: number }) | null>(null)
   const askCount = useRef(0)
+  // A dialog put away to point at the page (stage 10): what it had, the field, what is picked so far.
+  const [picking, setPicking] = useState<{ asking: Asking & { key: number }; spec: PickSpec; texts: Record<string, string>; page: number | null; points: [number, number][] } | null>(null)
+  const pickingRef = useRef(picking)
+  pickingRef.current = picking
+  // Apply redactions asks first (the content under the marks goes for good once saved).
+  const [applyAsk, setApplyAsk] = useState<Record<string, unknown> | null>(null)
   const openDialog = useCallback((command: KitCommand, values: Record<string, unknown> = {}, fixed?: Record<string, unknown>) => {
     askCount.current += 1
     const start = commandDefaults(where.current)(command)
@@ -131,6 +145,11 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
         enabled: (id: string) => editor.enabled(id) && (!COMMENT_COMMANDS.has(id) || chosenRef.current != null),
         run: async (id: string, params?: Record<string, unknown>) => {
           const command = editor.byId.get(id)
+          // Applying redactions removes what is under the marks: the person confirms it first.
+          if (id === 'redaction.apply' && editor.enabledByEngine(id)) {
+            setApplyAsk(params ?? {})
+            return null
+          }
           const fixed = target(id, params)
           // Editing the chosen comment asks what to change, starting from its text.
           if (fixed && id === 'comment.edit' && !params) {
@@ -174,6 +193,33 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     if (refused) throw new Error(refused)
     setAsking(null)
   }, [editor.session, runLeased, t])
+  /** Puts the dialog away to point at the page for one field, keeping what is typed. */
+  const askingRef = useRef(asking)
+  askingRef.current = asking
+  const startPick = useCallback((spec: PickSpec, texts: Record<string, string>) => {
+    const open = askingRef.current
+    if (!open) return
+    const next = { asking: open, spec, texts, page: null, points: [] }
+    pickingRef.current = next
+    setAsking(null)
+    setPicking(next)
+  }, [])
+  /** Brings the dialog back: with what was picked in its field and its page in `page`, or as it was. */
+  const endPick = useCallback((picked: { page: number; points: [number, number][] } | null) => {
+    const open = pickingRef.current
+    if (!open) return
+    pickingRef.current = null
+    setPicking(null)
+    const texts = { ...open.texts }
+    const schema = (open.asking.command.schema ?? {}) as Record<string, { type?: string }>
+    const value = picked ? pickedValue(open.spec.kind, picked.points) : null
+    if (picked && value) {
+      texts[open.spec.key] = shownValue(schema[open.spec.key] ?? {}, value)
+      if ('page' in schema && !(open.asking.fixed && 'page' in open.asking.fixed)) texts.page = String(picked.page)
+    }
+    askCount.current += 1
+    setAsking({ ...open.asking, texts, focus: open.spec.key, key: askCount.current })
+  }, [])
   // Edits an undo or redo of a whole-file rewrite dropped (`droppedEdits.ts`): the person is told.
   const dropped = useRef<{ doc: unknown; count: number }>({ doc: null, count: 0 })
   useEffect(() => {
@@ -209,6 +255,8 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const stylesRef = useRef(styles)
   stylesRef.current = styles
   const [keepTool, setKeepTool] = useState(false)
+  // Fill & Sign (the Forms tab, stage 10): text, a check or a cross put where the page is clicked.
+  const [fillMark, setFillMark] = useState<FillMark | null>(null)
   const keepRef = useRef(keepTool)
   keepRef.current = keepTool
   // The opacity and width of comments this session made or changed (comment.list answers neither).
@@ -312,6 +360,24 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     void markRuns(type, runs, contents)
     return true
   }
+  /**
+   * Marks the selected text for redaction (stage 10): one `redaction.mark` over its lines on each
+   * page it has lines on; the marks show outlined on the page until Protect's Apply redactions.
+   */
+  const redactSelection = () => {
+    const runs = selectionRuns(selection.selected)
+    if (!runs.length) return
+    selection.clear()
+    void (async () => {
+      let marked = 0
+      for (const run of runs) {
+        const done = await leased.run('redaction.mark', { page: run.page, quads: run.quads })
+        if (done == null) break
+        marked += 1
+      }
+      if (marked) toast('info', t('redactMarked'))
+    })()
+  }
   /** One markup comment per run (a page each), in its tool's look; answers the last one's result. */
   const markRuns = async (type: MarkupType, runs: readonly MarkupRun[], contents?: string) => {
     let last: string | null = null
@@ -329,7 +395,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   }
   // The selection's bar shows once the drag is let go, until Copy puts it away.
   const [barHidden, setBarHidden] = useState<unknown>(null)
-  const showBar = !!selection.selected?.text && !selection.dragging && barHidden !== selection.selected && toolId === 'select'
+  const showBar = !!selection.selected?.text && !selection.dragging && barHidden !== selection.selected && toolId === 'select' && !picking && !fillMark
 
   // The current page: the one in the middle of the view.
   const follow = useCallback(
@@ -583,6 +649,9 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     setLinkAsk(null)
     setHover(null)
     setToolId('select')
+    setPicking(null)
+    setApplyAsk(null)
+    setFillMark(null)
     knownStyles.current = new Map()
   }, [doc])
   /** Chooses a comment on the page: the Comments panel follows, the view stays. */
@@ -637,6 +706,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const chooseTool = (id: ToolId) => {
     setHover(null)
     setMenu(null)
+    setFillMark(null)
     if (toolDef(id).kind === 'markup' && selection.selected?.text) mark(id as MarkupType)
     setToolId(id)
     focusPages()
@@ -684,7 +754,72 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     mark: markDrag,
     add: addDrawn,
   })
-  const canvasTool: KitTool = toolId === 'select' ? pageTool : toolId === 'hand' ? HAND_TOOL : drawTool
+  const pickTool = usePickTool({
+    spec: picking?.spec ?? null,
+    pages,
+    page: picking?.page ?? null,
+    points: picking?.points ?? [],
+    zoom: () => canvas.current?.view()?.zoom ?? 1,
+    done: (page, points) => endPick({ page, points }),
+    add: (page, point) => {
+      const open = pickingRef.current
+      if (!open || open.spec.kind !== 'points') return
+      const points = [...(open.page === page ? open.points : []), point]
+      const next = { ...open, page, points }
+      pickingRef.current = next
+      setPicking(next)
+      if (points.length >= open.spec.max) endPick({ page, points })
+    },
+    finish: () => finishPoints(),
+  })
+  /** Several points end (Enter, Done, a double click) once there are enough. */
+  const finishPoints = () => {
+    const open = pickingRef.current
+    if (!open || open.spec.kind !== 'points' || open.page == null || open.points.length < open.spec.min) return
+    endPick({ page: open.page, points: open.points })
+  }
+  // While pointing at the page: Escape goes back to the form as it was, Enter ends several
+  // points, Backspace takes the last one away. Heard first, whatever has the keyboard.
+  useEffect(() => {
+    if (!picking) return undefined
+    const key = (event: globalThis.KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+      const open = pickingRef.current
+      if (!open) return
+      if (event.key === 'Escape') endPick(null)
+      else if (event.key === 'Enter' && open.spec.kind === 'points') finishPoints()
+      else if ((event.key === 'Backspace' || event.key === 'Delete') && open.spec.kind === 'points' && open.points.length) {
+        const next = { ...open, points: open.points.slice(0, -1), page: open.points.length > 1 ? open.page : null }
+        pickingRef.current = next
+        setPicking(next)
+      } else return
+      event.preventDefault()
+      event.stopPropagation()
+    }
+    document.addEventListener('keydown', key, true)
+    return () => document.removeEventListener('keydown', key, true)
+  }, [picking != null, endPick])
+  /** Turns a Fill & Sign mark on (Select underneath it) or off. */
+  const chooseFill = (mark: FillMark | null) => {
+    setFillMark(mark)
+    if (mark) {
+      setToolId('select')
+      setMenu(null)
+      setHover(null)
+      choosePageComment(null)
+      selection.clear()
+    }
+    focusPages()
+  }
+  const fillTool = useFillTool({
+    mark: fillMark,
+    pages,
+    place: (mark, page, point) => {
+      if (mark === 'text') setCard({ kind: 'new', tool: 'fillText', page, point, rect: null })
+      else void leased.run('fillSign.add', { page, type: mark, at: point })
+    },
+  })
+  const canvasTool: KitTool = picking ? pickTool : fillMark ? fillTool : toolId === 'select' ? pageTool : toolId === 'hand' ? HAND_TOOL : drawTool
 
   // Filling the form on the page (stage 6): a control over every field, the bar a document with
   // a form opens with, and whether the fields are highlighted (on at first, then as last set).
@@ -775,6 +910,10 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   /** The right-click on the pages: a comment's menu (it is chosen), the selection's, or the page's. */
   const contextMenu = (event: ReactMouseEvent<HTMLDivElement>) => {
     const target = event.target instanceof Element ? event.target : null
+    if (pickingRef.current) {
+      event.preventDefault()
+      return
+    }
     // A field's own menu stays the browser's (the note card's text, the selection bar's).
     if (!target || isTextControl(target) || target.closest('.pdf-selection-bar, .pdf-note-card')) return
     event.preventDefault()
@@ -804,6 +943,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const menuActions: PageMenuActions = {
     copy: () => selection.copy(),
     mark: (type) => void mark(type),
+    redact: () => redactSelection(),
     findSelection: () => openFind(),
     editText: (item) => setCard({ kind: 'edit', comment: item }),
     reply: (item) => {
@@ -846,6 +986,11 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       return
     }
     const { tool, page, point } = open
+    if (tool === 'fillText') {
+      // Fill & Sign text: 10 pt at the click; empty text is nothing. The tool stays on.
+      if (text.trim()) void leased.run('fillSign.add', { page, type: 'text', at: point.map(round2), text })
+      return
+    }
     const style = styleParams(tool, stylesRef.current[tool])
     if (tool === 'note') {
       void leased.run('comment.add', { type: 'note', page, at: point.map(round2), contents: text, ...style }).then((answer) => { if (answer != null) void chooseMade(answer, tool) })
@@ -866,7 +1011,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       ? (() => { const rect = asRect(card.comment.rect); return rect ? { page: card.comment.page, rect } : null })()
       : { page: card.page, rect: card.rect ?? [card.point[0], card.point[1], card.point[0] + 20, card.point[1] + 20] }
     : null
-  const cardTitle = !card ? '' : card.kind === 'edit' ? t('editComment') : card.tool === 'textbox' ? t('textBox') : card.tool === 'addText' ? t('pageText') : t('stickyNote')
+  const cardTitle = !card ? '' : card.kind === 'edit' ? t('editComment') : card.tool === 'textbox' ? t('textBox') : card.tool === 'addText' ? t('pageText') : card.tool === 'fillText' ? t('fillText') : t('stickyNote')
   const canvasBox = hover ? region.current?.querySelector('.kui-canvas')?.getBoundingClientRect() ?? null : null
 
   /** Opens the find bar (Cmd+F, a menu's Find), with the selected text as what it looks for. */
@@ -908,6 +1053,10 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       }
       // Then the comment selected on the page (or in the panel), then a comment tool (back to
       // Select), then the text selection.
+      if (fillMark) {
+        chooseFill(null)
+        return true
+      }
       if (chosen) {
         choosePageComment(null)
         return true
@@ -1066,6 +1215,13 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     ribbon:
       item.id === 'home' ? (
         state ? <HomeTab info={state} current={current} targets={pageTargetList} onPage={goTo} onZoom={zoomTo} onFullScreen={toggleFullScreen} selectionAvailable={!!selection.selected?.text} onCopySelection={selection.copy} onMark={mark} tool={toolId} onTool={chooseTool} /> : null
+      ) : item.id === 'forms' ? (
+        <>
+          <FillSignGroup mark={fillMark} editable={!!state?.editable} onMark={chooseFill} />
+          {item.menus.map((menu) => (
+            <CommandTab key={menu} menu={menu} primary={item.primary} />
+          ))}
+        </>
       ) : item.id === 'pages' ? (
         state ? <PagesTab info={state} targets={pageTargetList} onNewBookmark={() => newBookmark()} /> : null
       ) : (
@@ -1139,11 +1295,12 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
               {allMatches ? <FoundMatches matches={allMatches} current={selectedMatch} pages={pages} view={canvasView} /> : null}
               {selectedMatch ? <SearchHighlights page={pages[selectedMatch.page - 1]?.area} pageNumber={selectedMatch.page} rects={selectedMatch.rects} view={canvasView} /> : null}
               <SelectionHighlights selected={selection.selected} pages={pages} view={canvasView} />
+              {picking?.page != null ? <PickMarks area={pages[picking.page - 1]?.area} points={picking.points} view={canvasView} /> : null}
               <FormFields
                 fields={objects.fields}
                 pages={pages}
                 view={canvasView}
-                active={toolId === 'select'}
+                active={toolId === 'select' && !picking && !fillMark}
                 highlight={highlightFields}
                 canFill={leased.enabled('form.fill')}
                 fill={fillField}
@@ -1177,6 +1334,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
                   pages={pages}
                   view={canvasView}
                   onMark={(type, contents) => void mark(type, contents)}
+                  onRedact={redactSelection}
                   onCopy={() => {
                     selection.copy()
                     setBarHidden(selection.selected)
@@ -1186,12 +1344,30 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
               ) : null}
             </KitDocumentCanvas>
           </div>
-          {fieldCount > 0 && formBarClosed !== doc ? (
+          {picking ? (
+            <PickBar spec={picking.spec} field={paramLabel(picking.spec.key, phrase)} count={picking.points.length} onDone={finishPoints} onCancel={() => endPick(null)} />
+          ) : fillMark ? (
+            <div className="kui-bar pdf-form-bar pdf-pick-bar" data-testid="pdf-fill-bar" role="status">
+              <span>{t(fillMark === 'text' ? 'fillHelpText' : fillMark === 'check' ? 'fillHelpCheck' : 'fillHelpCross')}</span>
+              <Button onClick={() => chooseFill(null)} data-testid="pdf-fill-stop">{t('fillStop')}</Button>
+            </div>
+          ) : fieldCount > 0 && formBarClosed !== doc ? (
             <FormBar count={fieldCount} highlight={highlightFields} onHighlight={setHighlightFields} onClose={() => setFormBarClosed(doc)} />
           ) : null}
           <PageMenu target={menu} onClose={() => setMenu(null)} actions={menuActions} hasSelection={!!selection.selected?.text} pageCount={pages.length} />
           {linkAsk ? <LinkDialog url={linkAsk} onOpen={() => openUrl(linkAsk)} onClose={() => { setLinkAsk(null); focusPages() }} /> : null}
-          {asking ? <ParamsDialog key={asking.key} asking={asking} onRun={(params) => runDialog(asking.command, params)} onClose={() => setAsking(null)} /> : null}
+          {asking ? <ParamsDialog key={asking.key} asking={asking} onRun={(params) => runDialog(asking.command, params)} onClose={() => setAsking(null)} onPick={startPick} /> : null}
+          {applyAsk ? (
+            <ApplyRedactions
+              marks={objects.comments.filter((item) => item.type === 'Redact').length}
+              onApply={() => {
+                const params = applyAsk
+                setApplyAsk(null)
+                void runLeased('redaction.apply', () => editor.run('redaction.apply', params)).finally(returnKeyboardLater)
+              }}
+              onClose={() => setApplyAsk(null)}
+            />
+          ) : null}
           {canvasView && panBounds ? <PageScrollbars view={canvasView} bounds={panBounds} controls={viewportId} canvas={canvas} vertical={t('verticalScroll')} horizontal={t('horizontalScroll')} /> : null}
         </div>
       </EditorFrame>
@@ -1226,7 +1402,7 @@ const NO_PAGES: number[] = []
 const round2 = (value: number) => Math.round(value * 100) / 100
 
 /** The tools that open a card where they are clicked. */
-type PlaceTool = 'note' | 'textbox' | 'addText'
+type PlaceTool = 'note' | 'textbox' | 'addText' | 'fillText'
 
 /** What the editor remembers a comment's look under: its id, else its page and place. */
 const styleKey = (item: Pick<PageComment, 'id' | 'page' | 'index'>) => item.id ?? `${item.page}/${item.index}`
