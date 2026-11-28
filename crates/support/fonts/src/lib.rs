@@ -13,6 +13,7 @@ mod encodings;
 mod kition_fonts;
 pub mod pdf;
 mod script;
+mod type3;
 pub use arabic::{ShapedCluster, arabic_glyph, arabic_has, shape_arabic};
 pub use document::{DocumentFace, add_document_font, breaks_around, document_font, document_fonts, face_for, is_japanese, metric_face};
 pub use kition_fonts::{
@@ -21,6 +22,7 @@ pub use kition_fonts::{
     ui_telugu_fonts,
 };
 pub use script::{GlyphError, GlyphOutline, MAX_SIGNATURE_CHARS, ScriptOutline, japanese_glyph, japanese_glyph_from, script_outline};
+pub use type3::{TYPE3_GLYPHS, type3_font};
 
 /// Approximate advance of `s` in Helvetica (or Arial) at `size` points.
 pub fn helvetica_width(s: &str, size: f64) -> f64 {

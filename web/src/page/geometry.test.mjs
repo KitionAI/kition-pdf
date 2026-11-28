@@ -77,3 +77,17 @@ test('screen boxes and client points follow the view', () => {
   assert.equal(screenBox(pages[0].area, [0, 0, 1, 1], { x: 0, y: 0, zoom: 0 }), null)
   assert.deepEqual(clientToDocument(250, 120, { left: 10, top: 20 }, view), [140, 80])
 })
+
+test('a press on any widget of a field finds the field, not only on its first (issue-hand-radio-widgets)', () => {
+  const size = { name: 'size', page: 1, type: 'radio', rect: [10, 10, 22, 22], widgets: [
+    { page: 1, rect: [10, 10, 22, 22], export: 'S' },
+    { page: 1, rect: [40, 10, 52, 22], export: 'M' },
+    { page: 2, rect: [70, 10, 82, 22], export: 'L' },
+    { page: 1, rect: [100, 10, 112, 22], export: 'X', hidden: true },
+  ] }
+  const form = { comments: [], fields: [size], links: [] }
+  assert.equal(hitTest(form, null, 1, [46, 16], 1).kind, 'field')
+  assert.equal(hitTest(form, null, 2, [76, 16], 1).field.name, 'size')
+  assert.equal(hitTest(form, null, 1, [76, 16], 1).kind, 'page')
+  assert.equal(hitTest(form, null, 1, [106, 16], 1).kind, 'page', 'a hidden widget takes no press')
+})

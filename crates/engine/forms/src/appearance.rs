@@ -10,13 +10,21 @@
 //! Japanese forms use (text encoded in that CMap). Otherwise (other composite fonts, missing
 //! resources) Helvetica is used, so text is always visible. Widths use the approximate metrics
 //! of `kition-pdf-fonts` (Helvetica, or one em per full-width character in composite fonts).
+//! Characters a WinAnsi font can't draw (Chinese in a Helvetica field) come from the document
+//! faces as Type 3 glyphs of their outlines, as page text does; only a character no face has is
+//! drawn as `?`.
 //!
 //! `/MK /R` (0, 90, 180, 270, counterclockwise) lays the content out in the upright box and sets
 //! the appearance `/Matrix` so that box lands on the widget rectangle. Any other value is 0, and
 //! rotation 0 leaves `/Matrix` off.
 
+use std::collections::HashMap;
+
 use kition_pdf_cos::{Dict, Document, Object, Stream};
-use kition_pdf_fonts::{UnicodeCMap, cjk_width, helvetica_width, literal, win_ansi, wrap_with};
+use kition_pdf_fonts::{
+    DocumentFace, GlyphOutline, TYPE3_GLYPHS, UnicodeCMap, cjk_width, face_for, helvetica_width, is_japanese, literal, type3_font, win_ansi,
+    win_ansi_encodable, wrap_with,
+};
 
 use crate::{Field, FieldKind, Widget, acroform, flags};
 
@@ -286,13 +294,110 @@ fn frame(doc: &Document, wd: &Dict, w: f64, h: f64) -> (String, f64) {
 }
 
 /// The appearance of a text or choice field's widget showing `values`.
-pub fn field_appearance(doc: &Document, f: &Field, w: &Widget, values: &[String]) -> Stream {
+pub fn field_appearance(doc: &mut Document, f: &Field, w: &Widget, values: &[String]) -> Stream {
     field_appearance_as(doc, f, w, values, true)
+}
+
+/// Characters the field's own font can't draw (Chinese in a Helvetica field, say), drawn from the
+/// document faces (the built-in kition-fonts faces and the ones the host added) as Type 3 glyphs
+/// of their outlines, so the appearance carries only the glyphs it shows. A character no face has
+/// stays with the field's font (a `?`).
+#[derive(Default)]
+struct Outlined {
+    fonts: Vec<OutlinedFont>,
+    /// Each outlined character: its font (an index into `fonts`) and its code there.
+    codes: HashMap<char, (usize, u8)>,
+    glyphs: HashMap<char, GlyphOutline>,
+}
+
+struct OutlinedFont {
+    face: DocumentFace,
+    chars: Vec<char>,
+    name: String,
+}
+
+/// The most different characters one appearance draws from document faces.
+const MAX_OUTLINED: usize = 2048;
+
+impl Outlined {
+    /// What `texts` need from the document faces, when the field's font is WinAnsi-encoded;
+    /// `taken` is the field font's resource name.
+    fn plan(texts: &[&str], enc: FontText, taken: &str) -> Self {
+        let mut out = Self::default();
+        if enc != FontText::WinAnsi {
+            return out;
+        }
+        let japanese = texts.iter().any(|t| is_japanese(t));
+        for c in texts.iter().flat_map(|t| t.chars()) {
+            if win_ansi_encodable(c) || c.is_control() || out.codes.contains_key(&c) || out.glyphs.len() >= MAX_OUTLINED {
+                continue;
+            }
+            let Some(face) = face_for(c, japanese) else { continue };
+            let Ok(glyph) = face.glyph(c) else { continue };
+            let index = match out.fonts.iter().position(|f| f.face == face && f.chars.len() < TYPE3_GLYPHS) {
+                Some(i) => i,
+                None => {
+                    let mut name = format!("KPT{}", out.fonts.len());
+                    while name == taken {
+                        name.push('x');
+                    }
+                    out.fonts.push(OutlinedFont { face, chars: Vec::new(), name });
+                    out.fonts.len() - 1
+                }
+            };
+            let Some(font) = out.fonts.get_mut(index) else { continue };
+            font.chars.push(c);
+            let code = u8::try_from(font.chars.len()).unwrap_or(u8::MAX);
+            out.codes.insert(c, (index, code));
+            out.glyphs.insert(c, glyph);
+        }
+        out
+    }
+
+    fn is_empty(&self) -> bool {
+        self.codes.is_empty()
+    }
+
+    /// The width of `text` at `size`: outlined characters by their glyphs, the rest in `enc`.
+    fn width(&self, enc: FontText, text: &str, size: f64) -> f64 {
+        if self.is_empty() {
+            return enc.width(text, size);
+        }
+        let mut buf = [0u8; 4];
+        text.chars().map(|c| self.glyphs.get(&c).map_or_else(|| enc.width(c.encode_utf8(&mut buf), size), |g| g.width * size)).sum()
+    }
+
+    /// `text` in runs of one font each: `None` for the field's font, else the outlined font's index.
+    fn runs<'t>(&self, text: &'t str) -> Vec<(Option<usize>, &'t str)> {
+        let mut out: Vec<(Option<usize>, &'t str)> = Vec::new();
+        let mut start = 0;
+        let mut current: Option<Option<usize>> = None;
+        for (at, c) in text.char_indices() {
+            let font = self.codes.get(&c).map(|(i, _)| *i);
+            if current.is_some_and(|f| f != font) {
+                out.push((current.flatten(), text.get(start..at).unwrap_or_default()));
+                start = at;
+            }
+            current = Some(font);
+        }
+        if let Some(font) = current {
+            out.push((font, text.get(start..).unwrap_or_default()));
+        }
+        out
+    }
+
+    /// The fonts as Type 3 fonts in `doc`, set in `fonts` under their names.
+    fn write(&self, doc: &mut Document, fonts: &mut Dict) {
+        for font in &self.fonts {
+            let r = type3_font(doc, &font.face, &font.chars, |c| self.glyphs.get(&c));
+            fonts.set(font.name.clone().into_bytes(), Object::Ref(r));
+        }
+    }
 }
 
 /// [`field_appearance`], where `format` false means `values` are already what to show (a
 /// custom Format script ran).
-pub fn field_appearance_as(doc: &Document, f: &Field, w: &Widget, values: &[String], format: bool) -> Stream {
+pub fn field_appearance_as(doc: &mut Document, f: &Field, w: &Widget, values: &[String], format: bool) -> Stream {
     // The Format event: what is shown, not what is stored.
     let formatted: Vec<String>;
     let values = if format
@@ -315,16 +420,43 @@ pub fn field_appearance_as(doc: &Document, f: &Field, w: &Widget, values: &[Stri
         Some((o, enc)) => (da.font.clone(), o, enc),
         None => ("Helv".to_string(), helvetica(), FontText::WinAnsi),
     };
-    let width_of = |text: &str, size: f64| enc.width(text, size);
+    // What the widget shows: a list's options, or one line (or block) of text.
+    let text: String = match f.kind {
+        FieldKind::List => String::new(),
+        FieldKind::Combo => {
+            values.iter().map(|v| f.options.iter().find(|(e, _)| e == v).map_or(v.clone(), |(_, d)| d.clone())).collect::<Vec<_>>().join(", ")
+        }
+        _ => values.first().cloned().unwrap_or_default(),
+    };
+    let text = if f.kind != FieldKind::List && f.has(flags::PASSWORD) { "*".repeat(text.chars().count()) } else { text };
+    let shown: Vec<&str> = if f.kind == FieldKind::List { f.options.iter().map(|(_, d)| d.as_str()).collect() } else { vec![text.as_str()] };
+    let outlined = Outlined::plan(&shown, enc, &font_name);
+    let width_of = |text: &str, size: f64| outlined.width(enc, text, size);
     let (mut c, bw) = frame(doc, &wd, width, height);
     let pad = 2.0 + bw;
     let inner_w = (width - 2.0 * pad).max(1.0);
     let q = wd.get(b"Q").and_then(|o| doc.resolve(o).as_int()).unwrap_or(f.quadding);
     let mut body: Vec<u8> = Vec::new();
-    let show = |body: &mut Vec<u8>, x: f64, y: f64, text: &str| {
-        body.extend(format!("1 0 0 1 {} {} Tm ", n(x), n(y)).bytes());
-        body.extend(literal(&enc.encode(text)));
-        body.extend_from_slice(b" Tj\n");
+    let show = |body: &mut Vec<u8>, x: f64, y: f64, text: &str, size: f64| {
+        if outlined.is_empty() {
+            body.extend(format!("1 0 0 1 {} {} Tm ", n(x), n(y)).bytes());
+            body.extend(literal(&enc.encode(text)));
+            body.extend_from_slice(b" Tj\n");
+            return;
+        }
+        // Each run in its own font, the pen moved on by its width.
+        let mut pen = x;
+        for (font, run) in outlined.runs(text) {
+            let name = font.and_then(|i| outlined.fonts.get(i)).map_or(font_name.as_str(), |f| f.name.as_str());
+            body.extend(format!("/{name} {} Tf 1 0 0 1 {} {} Tm ", n(size), n(pen), n(y)).bytes());
+            let bytes: Vec<u8> = match font {
+                None => enc.encode(run),
+                Some(_) => run.chars().filter_map(|c| outlined.codes.get(&c).map(|(_, code)| *code)).collect(),
+            };
+            body.extend(literal(&bytes));
+            body.extend_from_slice(b" Tj\n");
+            pen += outlined.width(enc, run, size);
+        }
     };
     let x_for = |text: &str, size: f64| -> f64 {
         let tw = width_of(text, size);
@@ -351,17 +483,11 @@ pub fn field_appearance_as(doc: &Document, f: &Field, w: &Widget, values: &[Stri
                 if values.contains(export) {
                     c.push_str(&format!("0.6 0.75 0.86 rg\n{} {} {} {} re f\n", n(bw), n(y - line), n(width - 2.0 * bw), n(line)));
                 }
-                show(&mut body, pad, y - line + size * 0.25, display);
+                show(&mut body, pad, y - line + size * 0.25, display, size);
                 y -= line;
             }
         }
         _ => {
-            let text: String = if f.kind == FieldKind::Combo {
-                values.iter().map(|v| f.options.iter().find(|(e, _)| e == v).map_or(v.clone(), |(_, d)| d.clone())).collect::<Vec<_>>().join(", ")
-            } else {
-                values.first().cloned().unwrap_or_default()
-            };
-            let text = if f.has(flags::PASSWORD) { "*".repeat(text.chars().count()) } else { text };
             let comb = f.has(flags::COMB) && !f.has(flags::MULTILINE) && !f.has(flags::PASSWORD) && f.max_len.is_some_and(|m| m > 0);
             if f.kind == FieldKind::Text && f.has(flags::MULTILINE) {
                 if size == 0.0 {
@@ -376,7 +502,7 @@ pub fn field_appearance_as(doc: &Document, f: &Field, w: &Widget, values: &[Stri
                     if y < -size {
                         break;
                     }
-                    show(&mut body, x_for(&line, size), y, &line);
+                    show(&mut body, x_for(&line, size), y, &line, size);
                     y -= size * 1.15;
                 }
             } else {
@@ -394,10 +520,10 @@ pub fn field_appearance_as(doc: &Document, f: &Field, w: &Widget, values: &[Stri
                     let cell = width / cells as f64;
                     for (i, ch) in text.chars().take(cells).enumerate() {
                         let s = ch.to_string();
-                        show(&mut body, cell * i as f64 + (cell - width_of(&s, size)) / 2.0, y, &s);
+                        show(&mut body, cell * i as f64 + (cell - width_of(&s, size)) / 2.0, y, &s, size);
                     }
                 } else {
-                    show(&mut body, x_for(&text, size), y, &text);
+                    show(&mut body, x_for(&text, size), y, &text, size);
                 }
             }
         }
@@ -420,6 +546,7 @@ pub fn field_appearance_as(doc: &Document, f: &Field, w: &Widget, values: &[Stri
     content.extend_from_slice(b"ET\nQ\nEMC\n");
     let mut fonts = Dict::new();
     fonts.set(font_name.into_bytes(), font_obj);
+    outlined.write(doc, &mut fonts);
     let mut res = Dict::new();
     res.set(b"Font".to_vec(), Object::Dict(fonts));
     let mut d = Dict::new();

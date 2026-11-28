@@ -300,7 +300,7 @@ pub fn tools() -> Vec<ToolDef> {
             }),
             &["doc", "from", "to"],
         )),
-        t("form.listFields", "List form fields", "Every interactive form field: name, type (text, checkbox, radio, combo, list, button, signature), value, options, page, rect (top-left-origin points) and rotation (0, 90, 180 or 270 degrees counterclockwise), read-only and required flags.")
+        t("form.listFields", "List form fields", "Every interactive form field: name, type (text, checkbox, radio, combo, list, button, signature), value, options, page, rect (top-left-origin points) and rotation (0, 90, 180 or 270 degrees counterclockwise) of its first widget, read-only and required flags, font_size (0: auto), and widgets: every widget's page, rect, rotation, tab (its place in the document's tab order), appearance (whether it has one to show) and, for check boxes and radio buttons, its export value and whether it is on.")
             .ro()
             .with(schema(json!({ "doc": doc() }), &["doc"])),
         t(

@@ -1,0 +1,23 @@
+format: 1
+id: regressions/issue-hand-radio-widgets
+feature: pdf.editor.forms-on-page
+intent: >-
+  form.listFields gave a field's first widget only, so on the page a radio group's other buttons
+  could not be pressed (and a field shown on several pages was found on one). Now every widget
+  comes with its page, rectangle, rotation, place in the document's tab order, whether it has an
+  appearance and, for a check box or radio button, its export value and whether it is on; the
+  page layer hits every widget, and web/tests/hand/forms.mjs chooses the second and third radio
+  buttons on the page.
+layer: unit
+tags: [guard]
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, stage 4 finding (plan section 14)
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-automation, test: automation, filter: listing_fields_gives_every_widget }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-27"

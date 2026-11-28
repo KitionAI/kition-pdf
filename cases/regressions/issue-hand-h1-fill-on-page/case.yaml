@@ -1,0 +1,30 @@
+format: 1
+id: regressions/issue-hand-h1-fill-on-page
+feature: pdf.editor.forms-on-page
+intent: >-
+  A form could not be filled on the page: a click in a text field or on a check box did nothing,
+  and the only way was the Fields panel. Now each field has a control where it is on the page: a
+  click in a text field and typing fills it as it lets go (Enter, Tab, a press elsewhere), Tab and
+  Shift+Tab go through the document's tab order across pages, a drop-down's choice, a check box
+  and a radio button fill at once, Chinese fills as itself, Escape drops what was typed and gives
+  the keyboard to the pages, letters and arrows typed in a field stay the field's, a read-only
+  field takes nothing and says so, and an undo shows on the page and in the Fields panel at once.
+  web/tests/hand/forms.mjs fills the hand fixture's form with the real pointer and keys.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings H1
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/forms.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

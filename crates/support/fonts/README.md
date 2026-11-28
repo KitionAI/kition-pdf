@@ -10,6 +10,9 @@ Today it holds what generated appearances need without a font program:
 - `wrap`: greedy line breaking with that measure (paragraphs on newlines, long words split).
 - `win_ansi`: Unicode → WinAnsiEncoding bytes (`?` for characters it can't represent), and
   `literal` to write bytes as a PDF literal string.
+- `type3_font`: a Type 3 font drawn from a document face's glyph outlines, with a ToUnicode map,
+  holding only the characters given (at most `TYPE3_GLYPHS`): how added page text and form-field
+  appearances draw what the standard fonts can't (Chinese in a Helvetica field, say).
 
 It also holds the built-in faces from the optional [kition-fonts](https://github.com/KitionAI/kition-fonts)
 build input. When the build sets `KITION_FONTS_DIR=<checkout>`, `build.rs` embeds the checkout's

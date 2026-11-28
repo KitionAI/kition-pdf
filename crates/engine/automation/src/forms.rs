@@ -147,6 +147,18 @@ fn format_json(f: &Format) -> Value {
     }
 }
 
+/// The font size a field's `/DA` sets (`size Tf`); 0 is auto (and what a `/DA` without one means).
+fn da_size(da: &str) -> f64 {
+    let tokens: Vec<&str> = da.split_whitespace().collect();
+    tokens
+        .iter()
+        .rposition(|t| *t == "Tf")
+        .and_then(|i| tokens.get(i.checked_sub(1)?))
+        .and_then(|t| t.parse::<f64>().ok())
+        .filter(|s| s.is_finite() && *s >= 0.0)
+        .map_or(0.0, |s| s.min(300.0))
+}
+
 fn kind_name(k: FormFieldKind) -> &'static str {
     match k {
         FormFieldKind::Text => "text",
@@ -185,11 +197,38 @@ impl Automation {
             .iter()
             .map(|f| {
                 let w = f.widgets.first();
-                let rect = w.and_then(|w| {
+                let view_rect = |w: &kition_pdf_engine::FormWidget| {
                     let p = doc.info.pages.get(w.page?)?;
                     let (a, b) = (p.user_to_view(w.rect[0] as f32, w.rect[1] as f32), p.user_to_view(w.rect[2] as f32, w.rect[3] as f32));
                     Some([a[0].min(b[0]), a[1].min(b[1]), a[0].max(b[0]), a[1].max(b[1])].map(|v| (v * 100.0).round() / 100.0))
-                });
+                };
+                let rect = w.and_then(view_rect);
+                // Every widget where it is: a radio group's buttons, a field shown on several pages.
+                let selected = f.value.first();
+                let widgets: Vec<Value> = f
+                    .widgets
+                    .iter()
+                    .enumerate()
+                    .map(|(i, w)| {
+                        let mut item = json!({
+                            "page": w.page.map(|p| p + 1),
+                            "rect": view_rect(w),
+                            "rotation": w.rotation,
+                            "tab": (w.tab != usize::MAX).then_some(w.tab),
+                            "appearance": w.appearance,
+                        });
+                        if let Value::Object(m) = &mut item {
+                            if w.hidden {
+                                m.insert("hidden".into(), json!(true));
+                            }
+                            if matches!(f.kind, FormFieldKind::CheckBox | FormFieldKind::Radio) {
+                                m.insert("export".into(), json!(f.export_of(i)));
+                                m.insert("on".into(), json!(w.on_state.is_some() && w.on_state.as_ref() == selected));
+                            }
+                        }
+                        item
+                    })
+                    .collect();
                 let mut v = json!({
                     "name": f.name,
                     "type": kind_name(f.kind),
@@ -204,6 +243,8 @@ impl Automation {
                     "rotation": w.map(|w| w.rotation).unwrap_or(0),
                     "read_only": f.read_only(),
                     "required": f.has(field_flags::REQUIRED),
+                    "font_size": da_size(&f.da),
+                    "widgets": widgets,
                 });
                 let mut more = serde_json::Map::new();
                 let o = &mut more;

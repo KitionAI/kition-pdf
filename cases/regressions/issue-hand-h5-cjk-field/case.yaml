@@ -1,0 +1,24 @@
+format: 1
+id: regressions/issue-hand-h5-cjk-field
+feature: pdf.editor.forms-on-page
+intent: >-
+  A Chinese value in a field whose font is Helvetica ("奥斯陆" in the walkthrough's city field)
+  showed on the page as "???": the appearance wrote it in WinAnsi. Now the characters the field's
+  font cannot draw come from a document face (the kition-fonts face the host adds, Droid Sans
+  Fallback in the web editor) as Type 3 glyphs of their outlines with a ToUnicode map, only the
+  glyphs the value shows, and the Latin text around them stays in the field's font; a multiline
+  field and a drop-down's Chinese option are drawn the same way. The test adds the face the way a
+  host does and reads the appearance stream back after save and reopen.
+layer: unit
+tags: [guard]
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings H5
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-forms, test: cjk_value }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-27"

@@ -23,7 +23,32 @@ export type PageComment = {
   color?: string | null
   locked?: boolean
 }
-export type PageField = { name: string; page: number | null; rect: number[] | null; type: string; read_only?: boolean }
+/** One of a field's widgets (`form.listFields`'s `widgets`): where it is, its place in the tab order, whether it has an appearance to show, and a check box's or radio button's export value and state. */
+export type FieldWidget = { page: number | null; rect: number[] | null; rotation?: number; tab?: number | null; appearance?: boolean; hidden?: boolean; export?: string | null; on?: boolean }
+export type FieldOption = string | { value: string; label: string }
+/** A form field as `form.listFields` answers it. */
+export type PageField = {
+  name: string
+  page: number | null
+  rect: number[] | null
+  type: string
+  value?: unknown
+  read_only?: boolean
+  required?: boolean
+  tooltip?: string
+  options?: FieldOption[]
+  multiline?: boolean
+  multi_select?: boolean
+  editable?: boolean
+  max_length?: number
+  font_size?: number
+  widgets?: FieldWidget[]
+}
+
+/** A field's widgets; an answer without them stands for its one widget (its page and rect). */
+export function widgetsOf(field: PageField): FieldWidget[] {
+  return field.widgets?.length ? field.widgets : [{ page: field.page, rect: field.rect }]
+}
 export type PageLink = { page: number; index: number; rect: number[]; to_page?: number; url?: string; other?: string }
 export type PageObjects = { comments: PageComment[]; fields: PageField[]; links: PageLink[] }
 
@@ -127,8 +152,10 @@ export function hitTest(objects: PageObjects, chosen: PageComment | null, page: 
   }
   for (let i = objects.fields.length - 1; i >= 0; i -= 1) {
     const field = objects.fields[i]
-    const rect = asRect(field.rect)
-    if (field.page === page && rect && inRect(rect, x, y)) return { kind: 'field', field }
+    for (const widget of widgetsOf(field)) {
+      const rect = asRect(widget.rect)
+      if (widget.page === page && !widget.hidden && rect && inRect(rect, x, y)) return { kind: 'field', field }
+    }
   }
   let markup: PageComment | null = null
   for (let i = objects.comments.length - 1; i >= 0; i -= 1) {

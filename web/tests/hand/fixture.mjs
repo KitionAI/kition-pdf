@@ -7,6 +7,7 @@
 // handPdf({ marks: true }) adds what the page layer's tests point at (MARKS): on page 1 a link to
 // page 7 over line 3 and a link to a web address over line 30; on page 2 a red square and a second
 // sticky note; page 8 turned a quarter (/Rotate 90) with a square of its own.
+// handPdf({ readOnly: true }) adds a read-only text field "code" holding READ_ONLY.value on page 4.
 import { writeFileSync } from 'node:fs'
 
 export const PAGES = 8
@@ -16,6 +17,8 @@ export const AURORA_PER_PAGE = 3
 /** The drop-down's options: export value and what it shows. */
 export const COUNTRIES = [['NO', 'Norway'], ['IS', 'Iceland'], ['FI', 'Finland']]
 export const SIZES = ['S', 'M', 'L']
+/** The read-only field handPdf({ readOnly: true }) adds on page 4 (user space). */
+export const READ_ONLY = { name: 'code', value: 'A-1', rect: [380, 600, 460, 618] }
 /** The sticky note the file starts with. */
 export const NOTE = { page: 6, contents: 'Fixture note', author: 'Fixture author' }
 /** What handPdf({ marks: true }) adds, rectangles in PDF user space ([x0, y0, x1, y1], y up). */
@@ -30,7 +33,7 @@ export const MARKS = {
 const esc = (text) => text.replace(/([\\()])/g, '\\$1')
 const stream = (data) => `<< /Length ${Buffer.byteLength(data, 'latin1')} >>\nstream\n${data}\nendstream`
 
-export function handPdf({ marks = false } = {}) {
+export function handPdf({ marks = false, readOnly = false } = {}) {
   const objects = []
   const add = (body) => { objects.push(body); return objects.length }
   const reserve = () => add(null)
@@ -70,7 +73,9 @@ export function handPdf({ marks = false } = {}) {
       const kids = SIZES.map((state, index) => add(`<< /Type /Annot /Subtype /Widget /Parent ${size} 0 R /AS /Off /P ${page} 0 R /Rect [${380 + index * 30} 630 ${392 + index * 30} 642] /F 4 /AP << /N << /${state} ${on} 0 R /Off ${off} 0 R >> >> >>`))
       set(size, `<< /FT /Btn /Ff 49152 /T (size) /V /Off /Kids [${kids.map((kid) => `${kid} 0 R`).join(' ')}] >>`)
       fields.push(city, country, subscribe, size)
-      annots = ` /Annots [${[city, country, subscribe, ...kids].map((id) => `${id} 0 R`).join(' ')}]`
+      const locked = readOnly ? [add(`<< /Type /Annot /Subtype /Widget /FT /Tx /T (${READ_ONLY.name}) /Ff 1 /V (${READ_ONLY.value}) /P ${page} 0 R /Rect [${READ_ONLY.rect.join(' ')}] ${box} >>`)] : []
+      fields.push(...locked)
+      annots = ` /Annots [${[city, country, subscribe, ...kids, ...locked].map((id) => `${id} 0 R`).join(' ')}]`
     }
     const square = ({ rect, id, contents }) => {
       const [x0, y0, x1, y1] = rect

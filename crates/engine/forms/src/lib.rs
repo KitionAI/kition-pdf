@@ -103,6 +103,9 @@ pub struct Widget {
     pub hidden: bool,
     /// `/MK /R` as 0, 90, 180 or 270 degrees counterclockwise. Anything else is stored as 0.
     pub rotation: i64,
+    /// Whether the widget has a normal appearance (`/AP /N`): without one, a viewer that does not
+    /// draw `/NeedAppearances` shows nothing where the field is.
+    pub appearance: bool,
 }
 
 /// A terminal form field.
@@ -764,6 +767,11 @@ fn walk(
             let wd = wo.as_dict()?;
             let rect = nums(doc, wd.get(b"Rect")).filter(|r| r.len() == 4).unwrap_or_else(|| vec![0.0; 4]);
             let annot_flags = wd.get(b"F").and_then(|f| doc.resolve(f).as_int()).unwrap_or(0);
+            let has_ap = wd
+                .get(b"AP")
+                .map(|ap| doc.resolve(ap))
+                .and_then(|ap| ap.as_dict().and_then(|a| a.get(b"N").cloned()))
+                .is_some_and(|n| !matches!(&*doc.resolve(&n), Object::Null));
             let on_state = wd
                 .get(b"AP")
                 .map(|ap| doc.resolve(ap))
@@ -780,6 +788,7 @@ fn walk(
                 locked: annot_flags & 128 != 0,
                 hidden: annot_flags & (2 | 32) != 0,
                 rotation: appearance::mk_rotation(doc, wd),
+                appearance: has_ap,
             })
         })
         .collect();

@@ -1975,6 +1975,49 @@ fn tab_order_and_field_appearance_through_tools() {
     ));
 }
 
+/// `regressions/issue-hand-radio-widgets`: form.listFields gave only a field's first widget, so
+/// the editor could not put a radio group's other buttons on the page. Now every widget comes with
+/// its page, rect, place in the tab order, whether it has an appearance and, for a radio button or
+/// a check box, its export value and whether it is on.
+#[test]
+fn listing_fields_gives_every_widget() {
+    let dir = workdir("widgets");
+    let mut a = auto(&dir);
+    let doc = ok(&mut a, "doc_open", json!({ "path": "a.pdf" }))["doc"].as_u64().unwrap();
+    for (export, x) in [("S", 20), ("M", 60), ("L", 100)] {
+        ok(
+            &mut a,
+            "form.addField",
+            json!({ "doc": doc, "page": 1, "type": "radio", "group": "size", "export": export, "rect": [x, 40, x + 14, 54] }),
+        );
+    }
+    ok(&mut a, "form.addField", json!({ "doc": doc, "page": 2, "type": "text", "rect": [20, 80, 180, 102], "name": "city" }));
+    ok(&mut a, "form.fill", json!({ "doc": doc, "values": { "size": "M" } }));
+    let list = ok(&mut a, "form.listFields", json!({ "doc": doc }));
+    let fields = list["fields"].as_array().unwrap();
+    let size = fields.iter().find(|f| f["name"] == "size").unwrap();
+    let widgets = size["widgets"].as_array().unwrap();
+    assert_eq!(widgets.len(), 3, "{size}");
+    for (w, (export, x)) in widgets.iter().zip([("S", 20.0), ("M", 60.0), ("L", 100.0)]) {
+        assert_eq!(w["page"], 1);
+        assert_eq!(w["export"], export);
+        assert_eq!(w["on"], export == "M", "{w}");
+        assert_eq!(w["appearance"], true);
+        let rect: Vec<f64> = w["rect"].as_array().unwrap().iter().map(|v| v.as_f64().unwrap()).collect();
+        assert_eq!(rect, [x, 40.0, x + 14.0, 54.0], "{w}");
+    }
+    let tabs: Vec<u64> = widgets.iter().map(|w| w["tab"].as_u64().unwrap()).collect();
+    assert!(tabs.windows(2).all(|t| t[0] < t[1]), "left to right in the tab order: {tabs:?}");
+    // The first widget still answers for the field, as before.
+    assert_eq!(size["rect"], widgets[0]["rect"]);
+    let city = fields.iter().find(|f| f["name"] == "city").unwrap();
+    let w = &city["widgets"][0];
+    assert_eq!(w["page"], 2);
+    assert!(w["tab"].as_u64().unwrap() > tabs[2], "page 2 after page 1");
+    assert!(w.get("export").is_none() && w.get("on").is_none(), "{w}");
+    assert!(city["font_size"].as_f64().is_some(), "{city}");
+}
+
 #[test]
 fn comments_and_form_data_travel_as_xfdf_fdf_and_text() {
     let dir = workdir("xfdf");

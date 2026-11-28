@@ -924,73 +924,7 @@ fn draw_outlined(doc: &mut Document, t: &AddedText, standard: &str, taken: &Dict
 /// A Type 3 font with `f.chars` as codes 1…, each drawn from the face's glyph outlines (`glyphs`,
 /// keyed by the font's index `i` and the character).
 fn type3_face(doc: &mut Document, f: &FaceFont, i: usize, glyphs: &HashMap<(usize, char), GlyphOutline>) -> ObjRef {
-    let mut charprocs = Dict::new();
-    let mut differences = vec![Object::Int(1)];
-    let mut widths = Vec::with_capacity(f.chars.len());
-    let mut bbox = [0.0f64; 4];
-    let mut to_unicode = Vec::new();
-    for (k, c) in f.chars.iter().enumerate() {
-        let code = k + 1;
-        let Some(g) = glyphs.get(&(i, *c)) else { continue };
-        let mut paths = Vec::new();
-        for contour in &g.contours {
-            for (j, p) in contour.iter().enumerate() {
-                paths.extend(format!("{} {} {}\n", n(p[0] * 1000.0), n(p[1] * 1000.0), if j == 0 { "m" } else { "l" }).bytes());
-            }
-            paths.extend_from_slice(b"h\n");
-        }
-        let [x0, y0, x1, y1] = if g.contours.is_empty() {
-            [0.0; 4]
-        } else {
-            [(g.bbox[0] * 1000.0).floor(), (g.bbox[1] * 1000.0).floor(), (g.bbox[2] * 1000.0).ceil(), (g.bbox[3] * 1000.0).ceil()]
-        };
-        bbox = [bbox[0].min(x0), bbox[1].min(y0), bbox[2].max(x1), bbox[3].max(y1)];
-        let mut proc = format!("{} 0 {} {} {} {} d1\n", n(g.width * 1000.0), n(x0), n(y0), n(x1), n(y1)).into_bytes();
-        if !paths.is_empty() {
-            proc.extend(paths);
-            proc.extend_from_slice(b"f\n");
-        }
-        let glyph = format!("g{code:02X}");
-        charprocs.set(glyph.clone().into_bytes(), Object::Ref(doc.add(Object::Stream(Stream::flate(Dict::new(), &proc)))));
-        differences.push(Object::name(&glyph));
-        widths.push(Object::Real((g.width * 1000.0).round()));
-        let hex: String = c.encode_utf16(&mut [0u16; 2]).iter().map(|u| format!("{u:04X}")).collect();
-        to_unicode.push(format!("<{code:02X}> <{hex}>\n"));
-    }
-    let mut cmap = String::from(
-        "/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n/CMapType 2 def\n1 begincodespacerange\n<01> <FF>\nendcodespacerange\n",
-    );
-    for block in to_unicode.chunks(100) {
-        cmap.push_str(&format!("{} beginbfchar\n{}endbfchar\n", block.len(), block.concat()));
-    }
-    cmap.push_str("endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend\n");
-    let cmap = doc.add(Object::Stream(Stream::flate(Dict::new(), cmap.as_bytes())));
-    let family = f.face.face.family;
-    let mut descriptor = Dict::new();
-    descriptor.set(b"Type".to_vec(), Object::name("FontDescriptor"));
-    descriptor.set(b"FontName".to_vec(), Object::name(&f.face.font_name()));
-    descriptor.set(b"FontFamily".to_vec(), Object::String(PdfString::literal(family.as_bytes().to_vec())));
-    descriptor.set(b"Flags".to_vec(), Object::Int(4));
-    descriptor.set(b"ItalicAngle".to_vec(), Object::Int(0));
-    let mut encoding = Dict::new();
-    encoding.set(b"Type".to_vec(), Object::name("Encoding"));
-    encoding.set(b"Differences".to_vec(), Object::Array(differences));
-    let mut font = Dict::new();
-    font.set(b"Type".to_vec(), Object::name("Font"));
-    font.set(b"Subtype".to_vec(), Object::name("Type3"));
-    font.set(b"FontDescriptor".to_vec(), Object::Ref(doc.add(Object::Dict(descriptor))));
-    font.set(b"FontBBox".to_vec(), Object::Array(bbox.iter().map(|v| Object::Real(*v)).collect()));
-    font.set(
-        b"FontMatrix".to_vec(),
-        Object::Array(vec![Object::Real(0.001), Object::Int(0), Object::Int(0), Object::Real(0.001), Object::Int(0), Object::Int(0)]),
-    );
-    font.set(b"FirstChar".to_vec(), Object::Int(1));
-    font.set(b"LastChar".to_vec(), Object::Int(f.chars.len() as i64));
-    font.set(b"Widths".to_vec(), Object::Array(widths));
-    font.set(b"Encoding".to_vec(), Object::Dict(encoding));
-    font.set(b"CharProcs".to_vec(), Object::Dict(charprocs));
-    font.set(b"ToUnicode".to_vec(), Object::Ref(cmap));
-    doc.add(Object::Dict(font))
+    kition_pdf_fonts::type3_font(doc, &f.face, &f.chars, |c| glyphs.get(&(i, c)))
 }
 
 fn params(c: &Content) -> Dict {

@@ -1,0 +1,28 @@
+format: 1
+id: regressions/issue-hand-h2-blank-fields
+feature: pdf.editor.forms-on-page
+intent: >-
+  Text fields and a drop-down without an appearance (a file that leaves them to the viewer with
+  /NeedAppearances) were not drawn on the page at all, so nobody could see where to fill. Now the
+  control over such a field shows the field itself, on the widget's rectangle and following the
+  zoom; a document with a form opens with a bar that says how many fields it has, with Highlight
+  fields / Hide field highlights (on at first), the required field framed in the danger colour.
+  web/tests/hand/forms.mjs reads the bar, the highlight and where each control lies.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings H2
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/forms.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

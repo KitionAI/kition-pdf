@@ -53,6 +53,7 @@ import { usePageTool, type Dragging, type Hovering } from './page/usePageTool'
 import { CommentTip, NoteCard, SelectionFrame } from './page/PageOverlays'
 import { PageMenu, type PageMenuActions, type PageMenuTarget } from './page/PageMenu'
 import { LinkDialog } from './page/LinkDialog'
+import { FormBar, FormFields, fillableCount, type FormFieldsHandle } from './page/FormFields'
 import { useDrawTool } from './page/useDrawTool'
 import { TOOL_LABELS, ToolOptions, railTools, toolIcon } from './page/ToolOptions'
 import { DEFAULT_STYLES, fitTextBox, isToolId, styleParams, toolDef, type ToolId, type ToolStyle } from './page/tools'
@@ -517,6 +518,28 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     add: addDrawn,
   })
   const canvasTool: KitTool = toolId === 'select' ? pageTool : toolId === 'hand' ? HAND_TOOL : drawTool
+
+  // Filling the form on the page (stage 6): a control over every field, the bar a document with
+  // a form opens with, and whether the fields are highlighted (on at first, then as last set).
+  const formFields = useRef<FormFieldsHandle>(null)
+  const [highlightFields, setHighlightFields] = useState(true)
+  const [formBarClosed, setFormBarClosed] = useState<unknown>(null)
+  const fieldCount = fillableCount(objects.fields)
+  const fillField = useCallback((name: string, value: unknown) => leased.run('form.fill', { values: { [name]: value } }), [leased])
+  const canvasSurface = useCallback(() => region.current?.querySelector('[data-testid="kit-canvas-surface"]') ?? null, [])
+  /** Brings a document rectangle into view when it is not all in it: a little below the view's top. */
+  const reveal = useCallback((rect: Rect) => {
+    const handle = canvas.current
+    const view = handle?.view()
+    if (!handle || !view || !(view.zoom > 0)) return
+    const width = view.width / view.zoom
+    const height = view.height / view.zoom
+    const margin = 16 / view.zoom
+    const across = rect[0] >= view.x + margin && rect[2] <= view.x + width - margin
+    const down = rect[1] >= view.y + margin && rect[3] <= view.y + height - margin
+    if (across && down) return
+    handle.panTo(across ? view.x : rect[0] - width * 0.2, down ? view.y : rect[1] - height * 0.3)
+  }, [])
   /** A text box's width for its text: Helvetica at its size, as the engine sets it. */
   const measureContext = useRef<CanvasRenderingContext2D | null>(null)
   const measureLine = (line: string) => {
@@ -730,6 +753,10 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       selection.clear()
       return !!selection.selected
     }
+    // Tab from the pages goes to the form's first field (Shift+Tab its last) from the current page on.
+    if (key === 'Tab' && !command && !event.altKey && toolId === 'select' && event.target instanceof Element && (event.target === region.current || event.target.classList.contains('kui-app'))) {
+      if (formFields.current?.enter(event.shiftKey, current + 1)) return true
+    }
     // V and H: Select and the hand (the only tools with a key of their own).
     if (plain && (key === 'v' || key === 'h') && !isTextControl(event.target) && !(event.target instanceof Element && event.target.closest('[role="menu"], [role="listbox"], [role="dialog"]'))) {
       chooseTool(key === 'v' ? 'select' : 'hand')
@@ -918,6 +945,24 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
             <KitDocumentCanvas canvas={canvas} viewMemory={viewMemory} initialArea={pageWidthArea(pages[0]?.area)} panBounds={panBounds} framed={false} onView={follow} tool={canvasTool}>
               {selectedMatch ? <SearchHighlights page={pages[selectedMatch.page - 1]?.area} pageNumber={selectedMatch.page} rects={selectedMatch.rects} view={canvasView} /> : null}
               <SelectionHighlights selected={selection.selected} pages={pages} view={canvasView} />
+              <FormFields
+                fields={objects.fields}
+                pages={pages}
+                view={canvasView}
+                active={toolId === 'select'}
+                highlight={highlightFields}
+                canFill={leased.enabled('form.fill')}
+                fill={fillField}
+                onEnter={() => {
+                  selection.clear()
+                  choosePageComment(null)
+                  setMenu(null)
+                }}
+                onReadOnly={(field) => toast('info', t('fieldReadOnly', { name: field.tooltip || field.name }))}
+                reveal={reveal}
+                surface={canvasSurface}
+                handle={formFields}
+              />
               {chosen?.rect ? <SelectionFrame comment={chosen} area={pages[chosen.page - 1]?.area} view={canvasView} drag={drag} /> : null}
               {hover && !drag && !menu && !card ? <CommentTip hover={hover} box={canvasBox} /> : null}
               {card && cardPlace ? (
@@ -948,6 +993,9 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
               ) : null}
             </KitDocumentCanvas>
           </div>
+          {fieldCount > 0 && formBarClosed !== doc ? (
+            <FormBar count={fieldCount} highlight={highlightFields} onHighlight={setHighlightFields} onClose={() => setFormBarClosed(doc)} />
+          ) : null}
           <PageMenu target={menu} onClose={() => setMenu(null)} actions={menuActions} hasSelection={!!selection.selected?.text} pageCount={pages.length} />
           {linkAsk ? <LinkDialog url={linkAsk} onOpen={() => openUrl(linkAsk)} onClose={() => { setLinkAsk(null); focusPages() }} /> : null}
           {asking ? <ParamsDialog key={asking.key} asking={asking} onRun={(params) => runDialog(asking.command, params)} onClose={() => setAsking(null)} /> : null}

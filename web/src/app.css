@@ -407,3 +407,133 @@
   width: 207px;
   height: 18px;
 }
+
+/* Filling the form on the page (stage 6): a control over each field's widget. The page's own
+   pixels show a field that has an appearance, so its control is clear until it has the keyboard;
+   one without (a file leaving them to the viewer) shows the field itself. Only with Select do the
+   controls take the pointer. */
+.pdf-form-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.pdf-form-control {
+  position: absolute;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 3px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--kit-text);
+  font-family: Helvetica, Arial, sans-serif;
+  line-height: 1.15;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  pointer-events: none;
+}
+
+.pdf-form-layer[data-active] .pdf-form-control {
+  pointer-events: auto;
+}
+
+textarea.pdf-form-control {
+  padding: 2px 3px;
+  resize: none;
+  overflow: hidden;
+}
+
+input.pdf-form-control[type='checkbox'],
+input.pdf-form-control[type='radio'],
+select.pdf-form-control {
+  cursor: pointer;
+}
+
+input.pdf-form-control[type='radio'] {
+  border-radius: 50%;
+}
+
+.pdf-form-control[data-readonly] {
+  cursor: not-allowed;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.pdf-form-control[data-drawn]:not([data-focused]) {
+  color: transparent;
+}
+
+.pdf-form-control[data-drawn]:not([data-focused]) option {
+  color: var(--kit-text);
+  background: var(--kit-surface);
+}
+
+/* No appearance: the control is what shows the field. */
+.pdf-form-control:not([data-drawn]) {
+  background-color: var(--kit-surface);
+  border-color: var(--kit-border);
+}
+
+.pdf-form-control:hover {
+  outline: 1px solid var(--kit-border);
+  outline-offset: 1px;
+}
+
+/* Highlight fields: every field that takes input tinted, a required one framed in the danger colour. */
+.pdf-form-layer[data-highlight] .pdf-form-control:not([data-readonly]) {
+  border-color: var(--kit-primary);
+  box-shadow: inset 0 0 0 100vmax color-mix(in srgb, var(--kit-primary) 19%, transparent);
+}
+
+.pdf-form-layer[data-highlight] .pdf-form-control[data-required]:not([data-readonly]) {
+  border: 2px solid var(--kit-danger);
+}
+
+/* The field with the keyboard: its text on the editor's surface, framed. */
+.pdf-form-control[data-focused],
+.pdf-form-layer[data-highlight] .pdf-form-control[data-focused] {
+  color: var(--kit-text);
+  background-color: var(--kit-surface);
+  border: 1.5px solid var(--kit-primary);
+  box-shadow: none;
+}
+
+input.pdf-form-control[type='checkbox'][data-focused],
+input.pdf-form-control[type='radio'][data-focused] {
+  background-color: transparent;
+  box-shadow: 0 0 0 2px var(--kit-primary-soft);
+}
+
+.pdf-form-mark {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--kit-text);
+  pointer-events: none;
+}
+
+.pdf-form-ink {
+  display: block;
+  overflow: hidden;
+  color: var(--kit-text);
+}
+
+/* The bar a document with a form opens with, over the pages' top. */
+.pdf-form-bar {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  gap: 8px;
+  max-width: calc(100% - 48px);
+  border: 1px solid var(--kit-border);
+  border-radius: var(--kit-radius-card);
+  background: var(--kit-surface);
+  box-shadow: var(--kit-shadow-card);
+}

@@ -4339,7 +4339,7 @@ status = "planned"
 commands = []
 tools = []
 evidence = []
-notes = "remembered for the next document and session; required fields get a red border (round for radio buttons); the tint is drawn over the field, where Acrobat paints the highlight colour behind it"
+notes = "Editor (web/, web/tests/hand/forms.mjs): a document with a form opens with a bar that counts its fields, with Highlight fields / Hide field highlights, on at first and kept for the next document of the session (not across sessions); a highlighted field is tinted in the theme's primary colour, a required one framed in its danger colour. remembered for the next document and session; required fields get a red border (round for radio buttons); the tint is drawn over the field, where Acrobat paints the highlight colour behind it"
 
 [[feature]]
 id = "form.field-appearance-display"
@@ -4362,8 +4362,8 @@ milestone = "M6"
 status = "shipped"
 commands = ["form.fields"]
 tools = ["form.fill", "form.listFields"]
-evidence = ["crates/engine/forms/src/tests.rs::text_fields_get_new_appearances", "crates/engine/engine/src/tests.rs::filling_a_form_shows_saves_and_undoes", "crates/engine/automation/tests/automation.rs::orphan_form_fields_through_tools"]
-notes = "Editor (web/, web/tests/hand/fields-panel.mjs): in the form fields panel only (not on the page yet); its box shows the value an undo brings back. in-place editor; Enter or clicking away commits, Escape cancels; no format/keystroke JavaScript yet (M6.4)"
+evidence = ["crates/engine/forms/src/tests.rs::text_fields_get_new_appearances", "crates/engine/engine/src/tests.rs::filling_a_form_shows_saves_and_undoes", "crates/engine/automation/tests/automation.rs::orphan_form_fields_through_tools", "crates/engine/forms/tests/cjk_value.rs::chinese_values_are_drawn_from_a_document_face"]
+notes = "Editor (web/, web/tests/hand/forms.mjs, web/tests/hand/fields-panel.mjs): on the page, a text box over the field (a text area for several lines) filled as it lets go or on Enter, Escape keeps the field's value; and in the form fields panel; both show the value an undo brings back. A value the field's font can't draw (Chinese in a Helvetica field) is drawn from a document face as Type 3 glyphs. in-place editor; Enter or clicking away commits, Escape cancels; no format/keystroke JavaScript yet (M6.4) in-place editor; Enter or clicking away commits, Escape cancels; no format/keystroke JavaScript yet (M6.4)"
 
 [[feature]]
 id = "form.fill-checkbox-radio"
@@ -4374,8 +4374,8 @@ milestone = "M6"
 status = "shipped"
 commands = ["form.fields"]
 tools = ["form.fill"]
-evidence = ["crates/engine/forms/src/tests.rs::check_boxes_and_radios_switch_states"]
-notes = "Editor (web/, web/tests/hand/fields-panel.mjs): the form fields panel draws a check box and a group of radio buttons. NoToggleToOff honoured; widgets without appearances get our own"
+evidence = ["crates/engine/forms/src/tests.rs::check_boxes_and_radios_switch_states", "crates/engine/automation/tests/automation.rs::listing_fields_gives_every_widget"]
+notes = "Editor (web/, web/tests/hand/forms.mjs, web/tests/hand/fields-panel.mjs): on the page, a click on a check box or on any radio button of a group fills at once (form.listFields gives every widget with its export value and state), Space and Enter turn a check box, the arrows go round a radio group; the form fields panel draws a check box and a group of radio buttons. A click on the chosen radio button does not clear the group. NoToggleToOff honoured; widgets without appearances get our own"
 
 [[feature]]
 id = "form.fill-choice"
@@ -4387,7 +4387,7 @@ status = "shipped"
 commands = ["form.fields"]
 tools = ["form.fill"]
 evidence = ["crates/engine/forms/src/tests.rs::choices_accept_exports_or_display_text"]
-notes = "Editor (web/, web/tests/hand/fields-panel.mjs): the form fields panel draws a drop-down's options by name (free text for an editable one) and a list. combo and list boxes, multi-select lists; editable combo boxes accept free text"
+notes = "Editor (web/, web/tests/hand/forms.mjs, web/tests/hand/fields-panel.mjs): on the page a drop-down (a text box with its options when editable) or a list over the field fills as it is chosen; the form fields panel draws a drop-down's options by name (free text for an editable one) and a list. combo and list boxes, multi-select lists; editable combo boxes accept free text"
 
 [[feature]]
 id = "form.push-buttons"
@@ -4411,7 +4411,7 @@ status = "partial"
 commands = ["form.fields"]
 tools = []
 evidence = []
-notes = "Tab / Shift+Tab move between text and choice fields in field order; entering with Tab selects the value"
+notes = "Editor (web/, web/tests/hand/forms.mjs): on the page Tab and Shift+Tab go through the document's tab order (each widget's tab from form.listFields), across pages and round, bringing the next field into view; Tab from the pages comes into the form on the current page; read-only fields are passed. Tab / Shift+Tab move between text and choice fields in field order; entering with Tab selects the value"
 
 [[feature]]
 id = "form.appearance-regeneration"
@@ -4591,7 +4591,7 @@ status = "partial"
 commands = []
 tools = ["form.setProps"]
 evidence = []
-notes = "required fields get a red border when fields are highlighted"
+notes = "Editor (web/, web/tests/hand/forms.mjs): a required field is framed in the theme's danger colour while fields are highlighted. required fields get a red border when fields are highlighted"
 
 [[feature]]
 id = "form.reset-form"
