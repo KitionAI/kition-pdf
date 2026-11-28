@@ -3,10 +3,10 @@ id: pdf.document-identity/no-replica
 feature: pdf.document-identity
 intent: >-
   Through the real kition-pdf process: a .pdf embeds no replica (the kit makes one under a new id
-  each time it opens a file), so document.identity answers no docId for a PDF the kit made and
-  edited, or for a byte copy of it; document.fork writes the same bytes to a new file with no
+  each time it opens a file), so file.identity answers no docId for a PDF the kit made and
+  edited, or for a byte copy of it; file.fork writes the same bytes to a new file with no
   docId, leaves the source unchanged, and never replaces an existing file. The headless kit lists
-  the feature document.identity.
+  the feature file.identity.
 layer: gate
 tags: [headless]
 source:

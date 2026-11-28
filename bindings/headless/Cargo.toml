@@ -29,6 +29,6 @@ kition-kit-server = { workspace = true }
 serde_json = { workspace = true }
 # outside.rs, premises.rs, ids.rs: the kits' MCP server's tools drive the executable as an agent.
 kition-kits = { workspace = true }
-# document.identity and document.fork through the real process (tests/identity.rs).
+# file.identity and file.fork through the real process (tests/identity.rs).
 kition-kit-host = { workspace = true }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

@@ -2,7 +2,7 @@
 //! (`kition-pdf-kit`), served headless over the Kit Protocol by `kition-headless`, as the kit's
 //! `kit.json` declares it, with the object model
 //! (`model.describe`, `model.batch`) over the document's change exchange, and the identity a file
-//! carries (`document.identity`, `document.fork`): a `.pdf` embeds no replica (the kit makes one
+//! carries (`file.identity`, `file.fork`): a `.pdf` embeds no replica (the kit makes one
 //! under a new id each time it opens a file), so it carries none and a fork is the same bytes. The
 //! host owns every file (KHP A29): the kit reaches none by path, starts no program and opens no
 //! connection.

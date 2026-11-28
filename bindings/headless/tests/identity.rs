@@ -1,4 +1,4 @@
-//! `document.identity` and `document.fork` (Kit Process Protocol section 5.6, KitModel M7a)
+//! `file.identity` and `file.fork` (Kit Process Protocol section 5.6, KitModel M7a)
 //! through the real `kition-pdf` process. A `.pdf` embeds no replica: the kit saves the PDF's own
 //! objects (an incremental update, or a rewrite), and makes a replica under a new document id each
 //! time it opens a file (`kition_pdf_engine`'s `kdm_bridge`). So a PDF file carries no identity,
@@ -47,7 +47,7 @@ async fn a_pdf_carries_no_identity_and_forks_as_the_same_bytes() {
     let bytes = report();
     std::fs::write(dir.join("Report.pdf"), &bytes).unwrap();
     let kit = launch(&dir).await;
-    assert!(kit.serves("document.identity"), "{}", kit.capabilities());
+    assert!(kit.serves("file.identity"), "{}", kit.capabilities());
 
     // The file carries no identity, and neither does a byte copy of it.
     assert_eq!(kit.identity("Report.pdf", LIMIT).await.unwrap().doc_id, None, "a .pdf embeds no replica");
