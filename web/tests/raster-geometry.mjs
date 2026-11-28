@@ -142,9 +142,11 @@ try {
         }
       }
       await quiet()
-      await frame.evaluate(() => window.__kitionPerf.arm({ id: 'geometry-canvas-refresh', page: 1, action: 'navigate' }))
-      await kit.getByTestId('pdf-page-field').fill('1')
-      await kit.getByTestId('pdf-page-field').press('Enter')
+      // Fit Width: a zoom above 1:1, which the canvas renders afresh (going back to page 1 of a
+      // one-page document keeps the frame on screen, as does Fit Page, whose frame is 1:1 pixels
+      // like Actual Size's, and renders nothing).
+      await frame.evaluate(() => window.__kitionPerf.arm({ id: 'geometry-canvas-refresh', page: 1, action: 'zoom' }))
+      await kit.getByTestId('pdf-fit-width').click()
       result.interface.refreshed = await finish('geometry-canvas-refresh')
       result.interface.canvas = await frame.evaluate(() => {
         const canvas = document.querySelector('[data-testid="kit-canvas-surface"]')

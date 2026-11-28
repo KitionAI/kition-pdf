@@ -108,18 +108,44 @@ try {
     assert.ok(pixel.every((value, channel) => Math.abs(value - expected[channel]) <= 1), 'Visible page-center color does not match the requested original fixture page')
     step.pixel = { actual: pixel, expected, tolerance: 1 }
   }
-  // The editor renders ahead of the view, so one 1:1 request may reach the neighbouring page too;
-  // returns every page it reaches, which the LRU replay checks lookup by lookup.
-  const confirmOneToOne = async step => {
-    const request = step.render.request
-    assert.equal(request.method, 'render'); assert.equal(request.scale, 1)
+  // The render requests a step sent: the view first, then (once the canvas is still) its margin
+  // past the view in slices, or only the strip a scroll uncovers. Every one is a 1:1 render;
+  // returns every lookup they made, request after request, which the LRU replay checks one by one.
+  const requestCount = () => frame.evaluate(() => window.__kitionPerf.requestCount)
+  const confirmOneToOne = async (step, before) => {
+    const { requests, count, pages } = await frame.evaluate(() => ({ requests: window.__kitionPerf.requests, count: window.__kitionPerf.requestCount, pages: window.__kitionPerf.pages }))
+    const sent = requests.filter(request => request.id > before)
+    assert.equal(sent.length, count - before, 'More render requests than the probe keeps: some went unrecorded')
+    assert.equal(sent.length, step.quietAfter.dispatched - step.quietBefore.dispatched, 'Render requests went unrecorded in the counter interval')
+    assert.ok(sent.length >= 1, 'The measured operation sent no render request')
+    assert.ok(sent.some(request => request.id === step.render.request.id), 'The drawn render is not among the measured requests')
+    for (const request of sent) {
+      assert.equal(request.method, 'render'); assert.equal(request.scale, 1)
+      assert.equal(request.status, 'passed', 'A measured render request failed')
+    }
     assert.equal(await frame.evaluate(() => window.devicePixelRatio), 1)
-    step.pagesReached = pagesReached(request.area, await frame.evaluate(() => window.__kitionPerf.pages))
-    return step.pagesReached
+    step.requests = sent.map(request => ({ id: request.id, area: request.area, pages: pagesReached(request.area, pages) }))
+    step.pagesReached = [...new Set(step.requests.flatMap(request => request.pages))]
+    return step.requests.flatMap(request => request.pages)
   }
   await finish(activeStep)
   assert.equal(await frame.evaluate(() => window.__kitionPerf.pages.length), PAGE_COUNT)
   await kit.getByTestId('pdf-panel-bookmarks').click()
+  // The document opens at Fit Width (93 %), whose frame kit-editor renders at 1:1 pixels (every
+  // zoom from 50 % to 100 % is), so Actual Size from there keeps it and renders nothing: the
+  // baseline ends at 200 %, and the measured Actual Size step renders the view at 1:1. Space
+  // scrolls that 200 % view two screens down page 1 first (its centre stays on page 1), so Actual
+  // Size (around the view's centre) leaves page 1's top and the frame's margin above the view
+  // short of it, and the next step, page 1 from the page field, renders the strip it uncovers (a
+  // view the frame already shows renders nothing).
+  await quiet()
+  await kit.getByTestId('pdf-zoom-field').fill('200')
+  await kit.getByTestId('pdf-zoom-field').press('Enter')
+  await quiet()
+  for (let screen = 0; screen < 2; screen++) {
+    await page.keyboard.press('Space')
+    await quiet()
+  }
   activeStep.quiet = await quiet()
   activeStep.after = await snapshot()
   activeStep.status = 'passed'
@@ -130,6 +156,7 @@ try {
     activeStep = step
     step.quietBefore = await quiet()
     step.before = await snapshot()
+    const requestsBefore = await requestCount()
     await frame.evaluate(sample => window.__kitionPerf.arm(sample), step)
     if (step.action === 'zoom') await kit.getByTestId('pdf-actual-size').click()
     else if (step.action === 'edit') {
@@ -144,9 +171,8 @@ try {
     step.quietAfter = await quiet()
     step.after = await snapshot()
     step.delta = counterDelta(step.before, step.after)
-    const reached = await confirmOneToOne(step)
+    const reached = await confirmOneToOne(step, requestsBefore)
     await centerPixel(step)
-    assert.equal(step.quietAfter.dispatched - step.quietBefore.dispatched, 1, 'Background or duplicate render requests contaminated the counter interval')
     assert.equal(modelResidents(model), step.before.residentEntries, 'The cache changed outside the measured intervals')
     // An edit replaces the renderer, whose new cache starts empty.
     if (step.expectation === 'invalidate') model = cacheModel(0)
@@ -176,10 +202,10 @@ try {
     }
     step.status = 'passed'
     await save()
-    console.log(JSON.stringify({ phase: step.phase, page: step.page, reached: step.pagesReached, status: step.status, hits: step.delta.hits, misses: step.delta.misses, evictions: step.delta.evictions, residentBytes: step.after.residentBytes }))
+    console.log(JSON.stringify({ phase: step.phase, page: step.page, requests: step.requests.length, reached: step.pagesReached, status: step.status, hits: step.delta.hits, misses: step.delta.misses, evictions: step.delta.evictions, residentBytes: step.after.residentBytes }))
   }
   assert.deepEqual(report.pageErrors, [])
-  report.assertions.push('Every measured render looks up exactly the pages it reaches (the editor renders ahead of the view), with hit, miss, admission and eviction deltas equal to an LRU replay', 'Warm and reconstructed pages use exact hit deltas with unchanged synthetic center pixels; evicted pages require a new full render', 'After edit invalidation the second page misses, then the edited first page hits in its new revision')
+  report.assertions.push('Every render request of a measured step (the view, then its margin in slices, or the strip a scroll uncovers) looks up exactly the pages it reaches, and the hit, miss, admission and eviction deltas equal an LRU replay of those lookups, request after request', 'Warm and reconstructed pages use exact hit deltas with unchanged synthetic center pixels; evicted pages require a new full render', 'After edit invalidation the second page misses, then the edited first page hits in its new revision')
 } catch (error) {
   const message = safeError(error)
   report.errors.push(message)

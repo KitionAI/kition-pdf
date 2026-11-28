@@ -56,7 +56,11 @@ match, but their sampled populations and metrics are not claimed identical.
 
 Pixel geometry is evaluated directly on returned worker RGBA bytes. A separate
 editor check requires Actual Size at DPR 1, followed by a fresh completed canvas
-render after the direct calls. The exact-buffer presentation probe confirms that
+render after the direct calls: Fit Width, a zoom above 1:1 that the canvas
+renders afresh. (Until the owner's approval of 2026-11-27 this was going back to
+page 1 in the page field; kit-editor's raster viewport now keeps a frame that
+still shows the view, so on a one-page document that renders nothing, and so
+does Fit Page, whose frame is 1:1 pixels like Actual Size's.) The exact-buffer presentation probe confirms that
 the worker pixels reach the live canvas and remain current through two animation
 frame opportunities; substantial dark fixture ink must also exist on that canvas.
 This is interface sanity, not a claim that every direct scale was displayed.

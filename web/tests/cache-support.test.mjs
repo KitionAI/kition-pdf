@@ -25,6 +25,35 @@ test('a render ahead of the view looks up each page it reaches in page order', (
   assert.throws(() => assertLookup(step(2, 'miss'), counterDelta(snapshot(), snapshot({ misses: 1, admissions: 1, fullRenderRequests: 1 })), replayLookups(modelWith(1), [1, 2], 1)))
   assert.deepEqual(model.known, [1, 2])
 })
+test('a step of several render requests replays their lookups one after another', () => {
+  // The view (page 1), then its margin in slices reaching page 2, then page 1 again.
+  const model = modelWith(1)
+  const replay = replayLookups(model, [1, 1, 2, 2, 1], 4)
+  assert.deepEqual(replay.pages, [1, 2])
+  assert.deepEqual(replay.delta, { hits: 4, misses: 1, admissions: 1, evictions: 0, fullRenderRequests: 1 })
+  assert.equal(replay.outcomes.get(2), 'miss', 'the expectation holds for the first lookup of the page')
+  assert.deepEqual(model.known, [2, 1])
+  assertLookup(step(2, 'miss'), counterDelta(snapshot(), snapshot({ hits: 4, misses: 1, admissions: 1, fullRenderRequests: 1 })), replayLookups(modelWith(1), [1, 1, 2, 2, 1], 4))
+  assert.throws(() => assertLookup(step(2, 'hit'), counterDelta(snapshot(), snapshot({ hits: 4, misses: 1, admissions: 1, fullRenderRequests: 1 })), replayLookups(modelWith(1), [1, 1, 2, 2, 1], 4)))
+  assert.throws(() => replayLookups(modelWith(1), [1, 1, 2], 1), 'hits the replay does not predict are refused')
+  // A page evicted between two requests of one step misses again.
+  const capacity = CACHE_BUDGET / PAGE_BYTES
+  const full = modelWith(...Array.from({ length: capacity }, (_, index) => index + 1))
+  const evicted = replayLookups(full, [1, capacity + 1, 2], 1)
+  assert.deepEqual(evicted.delta, { hits: 1, misses: 2, admissions: 2, evictions: 2, fullRenderRequests: 2 })
+  assert.equal(modelResidents(full), capacity)
+})
+test('residents of unknown identity resolve once across a step of several requests', () => {
+  const model = cacheModel(1)
+  const replay = replayLookups(model, [1, 1], 2)
+  assert.equal(replay.certain, false)
+  assert.deepEqual(replay.delta, { hits: 2, misses: 0, admissions: 0, evictions: 0, fullRenderRequests: 0 })
+  assert.deepEqual(model, { capacity: CACHE_BUDGET / PAGE_BYTES, known: [1], unknown: 0 })
+  const missed = cacheModel(1)
+  assert.deepEqual(replayLookups(missed, [1, 1], 1).delta, { hits: 1, misses: 1, admissions: 1, evictions: 0, fullRenderRequests: 1 })
+  assert.deepEqual(missed, { capacity: CACHE_BUDGET / PAGE_BYTES, known: [1], unknown: 1 })
+  assert.throws(() => replayLookups(cacheModel(1), [1, 1], 3))
+})
 test('the LRU replay evicts the least recently used page at capacity', () => {
   const capacity = CACHE_BUDGET / PAGE_BYTES
   const model = modelWith(...Array.from({ length: capacity }, (_, index) => index + 1))
