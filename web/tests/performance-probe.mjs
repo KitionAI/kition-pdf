@@ -103,9 +103,9 @@ export function installPerformanceProbe({ carriedPixels = false } = {}) {
     visible.set(this.canvas, record.id)
     // Where on the canvas this draw went: drawImage(image, dx, dy[, dw, dh]) or its nine-argument form.
     const [dx, dy, dw, dh] = args.length >= 8 ? args.slice(4, 8) : args.length >= 4 ? args.slice(0, 4) : [args[0], args[1], source.width, source.height]
-    const draw = { id: record.id, seq: ++drawSeq, rect: { x0: dx, y0: dy, x1: dx + dw, y1: dy + dh } }
+    const entry = { id: record.id, seq: ++drawSeq, rect: { x0: dx, y0: dy, x1: dx + dw, y1: dy + dh } }
     const list = drawn.get(this.canvas) ?? []
-    list.push(draw)
+    list.push(entry)
     if (list.length > 64) list.shift()
     drawn.set(this.canvas, list)
     if (!belongs(record)) return result
@@ -115,13 +115,19 @@ export function installPerformanceProbe({ carriedPixels = false } = {}) {
     const page = probe.pages[goal.page - 1]?.area
     const sx = dw / (record.area.x1 - record.area.x0), sy = dh / (record.area.y1 - record.area.y0)
     const pagePixels = page && Number.isFinite(sx) && Number.isFinite(sy) ? {
-      x0: Math.max(draw.rect.x0, dx + (page.x - record.area.x0) * sx), y0: Math.max(draw.rect.y0, dy + (page.y - record.area.y0) * sy),
-      x1: Math.min(draw.rect.x1, dx + (page.x + page.width - record.area.x0) * sx), y1: Math.min(draw.rect.y1, dy + (page.y + page.height - record.area.y0) * sy),
-    } : draw.rect
+      x0: Math.max(entry.rect.x0, dx + (page.x - record.area.x0) * sx), y0: Math.max(entry.rect.y0, dy + (page.y - record.area.y0) * sy),
+      x1: Math.min(entry.rect.x1, dx + (page.x + page.width - record.area.x0) * sx), y1: Math.min(entry.rect.y1, dy + (page.y + page.height - record.area.y0) * sy),
+    } : entry.rect
     const covers = (a, b) => a.x1 > b.x0 && a.x0 < b.x1 && a.y1 > b.y0 && a.y0 < b.y1
-    const shown = () => carriedPixels
-      ? (drawn.get(canvas) ?? []).every(later => later.seq <= draw.seq || later.id === record.id || !covers(later.rect, pagePixels))
-      : visible.get(canvas) === record.id
+    // Shown: this render was the last drawn (the rule without carriedPixels), or, with it, no draw
+    // of another render since this render was last drawn lands over the goal page's pixels.
+    const shown = () => {
+      if (visible.get(canvas) === record.id) return true
+      if (!carriedPixels) return false
+      const list = drawn.get(canvas) ?? []
+      const last = Math.max(entry.seq, ...list.filter(item => item.id === record.id).map(item => item.seq))
+      return list.every(later => later.seq <= last || later.id === record.id || !covers(later.rect, pagePixels))
+    }
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (probe.goal !== goal || goal.status !== 'pending' || !shown() || !canvas.isConnected) return
       const status = document.querySelector('[data-testid="pdf-status"]')?.textContent ?? ''
