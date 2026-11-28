@@ -1,0 +1,27 @@
+format: 1
+id: regressions/issue-hand-n27-undo-after-choice
+feature: pdf.editor.forms-on-page
+intent: >-
+  Cmd+Z right after a choice in a drop-down on the page undoes it: a choice made in the drop-down's
+  list leaves the keyboard on the drop-down, which the editor's keys treated as a text control, so
+  Cmd+Z did nothing (seen in the stage 9 CI run on Linux Chromium). Cmd+Z, Shift+Cmd+Z and Cmd+Y on a
+  drop-down, list, check box or radio button now go to the editor. web/tests/hand/first-ten-minutes.mjs
+  (thing 27) chooses, keeps the keyboard on the drop-down and presses Cmd+Z twice.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF stage 9 acceptance (first ten minutes, thing 27), CI run 46137129034, 2026-11-28
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/first-ten-minutes.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-28"

@@ -19,7 +19,7 @@
 import { useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type Ref } from 'react'
 import { Button, IconButton, TesseraIcons, useKitEditor, type RasterView } from '@kition/sdk/editor'
 import { asRect, screenBox, widgetsOf, type Area, type FieldOption, type FieldWidget, type PageField, type Rect } from './geometry'
-import { focusPages } from '../focus'
+import { focusPages, pagesRegion } from '../focus'
 
 const X = TesseraIcons.XIcon
 
@@ -237,6 +237,19 @@ function FieldControl({ slot, box, zoom, takes, focused, label, noChoice, fill, 
   // pages; a key without Cmd stays the field's (no tool or command letter, no page scrolling).
   const keys = (event: KeyboardEvent<HTMLElement>, more?: (event: KeyboardEvent<HTMLElement>) => boolean) => {
     if (event.nativeEvent.isComposing || event.keyCode === 229) return
+    // Cmd+Z and Shift+Cmd+Z (Cmd+Y) on a drop-down, list, check box or radio button, which take no
+    // typed text, are the editor's undo and redo: the pages take the keyboard and hear the key
+    // (a choice made in a drop-down's list leaves the keyboard on it).
+    const control = event.currentTarget
+    const choice = control instanceof HTMLSelectElement || (control instanceof HTMLInputElement && (control.type === 'checkbox' || control.type === 'radio'))
+    const undoKey = (event.metaKey || event.ctrlKey) && !event.altKey && ['z', 'y'].includes(event.key.toLowerCase())
+    if (choice && undoKey && focusPages()) {
+      event.preventDefault()
+      event.stopPropagation()
+      const { key, code, metaKey, ctrlKey, shiftKey } = event
+      pagesRegion()?.dispatchEvent(new globalThis.KeyboardEvent('keydown', { key, code, metaKey, ctrlKey, shiftKey, bubbles: true, cancelable: true }))
+      return
+    }
     if (event.key === 'Tab' && !event.metaKey && !event.ctrlKey && !event.altKey) {
       event.preventDefault()
       event.stopPropagation()
