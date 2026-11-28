@@ -18,8 +18,8 @@ source = "Contributor-original: clean-room translations of the upstream English 
 licence = "MIT"
 licence_file = "NOTICE"
 kind = "translation"
-usage = "Simplified Chinese UI strings, loaded by web/src/main.tsx"
-sha256 = "5def2642f53269730c7eed9bbaf91a856d39d076c35ff62ee043904d455512ce"
+usage = "Simplified Chinese UI strings, loaded by web/src/main.tsx; Kition changed every redaction term (密文) to 涂黑 (2026-11-28)"
+sha256 = "702c9c0043154713271eac07f9086976ca1263caa6e37da488b4d2e8effc1357"
 
 [[asset]]
 path = "web/src/i18n/upstream/zh-hant.tsv"
