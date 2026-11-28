@@ -1,0 +1,27 @@
+format: 1
+id: regressions/issue-hand-c6-double-click-word
+feature: pdf.editor.reading
+intent: >-
+  A double click or a triple click on a page's text did nothing: only a drag selected. Now a double
+  click selects the word under the pointer and a triple click its line (dragging on after them
+  takes whole words or lines); a Shift+click runs the selection on from its anchor, and Shift with
+  the arrow keys moves its end a character (Alt: a word, up and down: a line) and back (C7).
+  web/tests/hand/reading.mjs reads the selected text back with a copy event.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings C6, C7
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/reading.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

@@ -176,19 +176,30 @@ pub fn tools() -> Vec<ToolDef> {
                 }),
                 &["doc"],
             )),
-        t("text.find", "Find text", "Find a phrase (case-insensitive, whitespace-normalised) and return each match with its page and line rectangles in points (origin top-left).")
+        t("text.find", "Find text", "Find a phrase (whitespace-normalised; case-insensitive unless caseSensitive) and return each match with its page and line rectangles in points (origin top-left). With wholeWords, a match may not touch a letter or digit on either side.")
             .ro()
             .cmd("edit.find")
-            .with(schema(json!({ "doc": doc(), "query": { "type": "string", "minLength": 1 }, "limit": { "type": "integer", "minimum": 1, "description": "Maximum matches (default 500)." } }), &["doc", "query"])),
-        t("text.select", "Select text", "Read text and highlight rectangles between inclusive nearest-glyph endpoints in displayed page-local top-left points (rotation and crop already applied). Range selection normalizes direction and page order; intermediate pages are complete. Column selection includes glyph centers inside the rectangle and requires one page. Returns {text,pages:[{page,text,rects}]}, retaining blank pages and joining page text with a newline. Refuses spans over 64 pages, text over 1 MiB UTF-8 including page separators, or over 16384 rectangles; never returns a partial selection.")
+            .with(schema(json!({
+                "doc": doc(), "query": { "type": "string", "minLength": 1 },
+                "limit": { "type": "integer", "minimum": 1, "description": "Maximum matches (default 500)." },
+                "caseSensitive": { "type": "boolean", "default": false, "description": "Match upper and lower case as written." },
+                "wholeWords": { "type": "boolean", "default": false, "description": "Only matches with no letter or digit right before or after them." }
+            }), &["doc", "query"])),
+        t("text.select", "Select text", "Read text and highlight rectangles between inclusive nearest-glyph endpoints in displayed page-local top-left points (rotation and crop already applied). Range selection normalizes direction and page order; intermediate pages are complete. Column selection includes glyph centers inside the rectangle and requires one page. Returns {text,pages:[{page,text,rects}]}, retaining blank pages and joining page text with a newline. Refuses spans over 64 pages, text over 1 MiB UTF-8 including page separators, or over 16384 rectangles; never returns a partial selection. A range end is a point (anchor, focus) or a glyph index (anchorGlyph, focusGlyph, as a previous answer's ends gave it); unit widens both ends to whole words, lines or the page (double, triple and quadruple clicks); step moves the focus end by stepBy glyphs, words or lines on its page (Shift with the arrow keys). With ends, a range answer also gives its ends: {anchor:{page,glyph},head:{page,glyph}}, null on a page without text.")
             .ro()
             .with(schema(json!({
                 "doc": doc(), "page": {"type":"integer","minimum":1},
                 "endPage": {"type":"integer","minimum":1,"description":"Focus page; defaults to page."},
-                "anchor": {"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2},
-                "focus": {"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2},
-                "mode": {"type":"string","enum":["range","column"],"default":"range"}
-            }), &["doc","page","anchor","focus"])),
+                "anchor": {"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2,"description":"Anchor point; or give anchorGlyph."},
+                "focus": {"type":"array","items":{"type":"number"},"minItems":2,"maxItems":2,"description":"Focus point; or give focusGlyph."},
+                "anchorGlyph": {"type":"integer","minimum":0,"description":"The anchor's glyph index on page, in place of anchor (range only)."},
+                "focusGlyph": {"type":"integer","minimum":0,"description":"The focus's glyph index on endPage, in place of focus (range only)."},
+                "mode": {"type":"string","enum":["range","column"],"default":"range"},
+                "unit": {"type":"string","enum":["glyph","word","line","page"],"default":"glyph","description":"Widen both ends to whole units (range only)."},
+                "step": {"type":"integer","default":0,"description":"Move the focus end this many stepBy units on its page, back when negative (range only)."},
+                "stepBy": {"type":"string","enum":["glyph","word","line"],"default":"glyph"},
+                "ends": {"type":"boolean","default":false,"description":"Also answer where the range's ends are, as glyphs (range only)."}
+            }), &["doc","page"])),
         t("page.rotate", "Rotate pages", "Rotate pages by a multiple of 90 degrees (positive is clockwise): the listed pages (default all), filtered like Acrobat's Rotate Pages by subset (all, even, odd page numbers) and orientation (all, landscape, portrait). Undoable.")
             .cmd("page.rotate")
             .with(schema(

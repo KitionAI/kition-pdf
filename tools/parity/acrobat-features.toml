@@ -1083,7 +1083,7 @@ status = "partial"
 commands = ["view.full_screen"]
 tools = []
 evidence = []
-notes = ""
+notes = "Editor (web/, web/tests/hand/reading.mjs): Full Screen (Cmd+L, the Home tab's Zoom group) enters Focus with the page whole in view and the browser's full screen where the host allows it (dev.html does); the arrows and Page Up/Down turn a page, Home and End go to the first and last; Escape or Cmd+L again goes back to the zoom from before, at the page reached. No black background, no hiding pointer, no click to turn the page."
 
 [[feature]]
 id = "view.full-screen-presentation"
@@ -1371,7 +1371,7 @@ status = "partial"
 commands = ["edit.find"]
 tools = []
 evidence = []
-notes = ""
+notes = "Editor (web/, web/tests/hand/keys.mjs, web/tests/hand/reading.mjs): Enter and Shift+Enter in the find field, Cmd+G and Shift+Cmd+G (F3) anywhere while the bar is open, and its arrows step through every match, wrapping; every match on the pages in view is marked faintly and the current one stronger; a click off the text keeps the bar. A press that starts selecting text closes it."
 
 [[feature]]
 id = "view.find-options"
@@ -1379,11 +1379,11 @@ title = "Find options: whole words, case-sensitive"
 area = "B"
 tier = "P1"
 milestone = "M3"
-status = "partial"
+status = "shipped"
 commands = ["edit.find"]
-tools = []
-evidence = []
-notes = "whole words only, case-sensitive"
+tools = ["text.find"]
+evidence = ["crates/engine/automation/tests/automation.rs::find_matches_case_and_whole_words_when_asked"]
+notes = "Editor (web/, web/tests/hand/reading.mjs): Match case and Whole words only buttons on the find bar search again at once and last the session; text_find takes caseSensitive and wholeWords. Whole words only treats Chinese and Japanese characters as letters, so a word inside a longer run of them is not found."
 
 [[feature]]
 id = "view.find-in-comments-bookmarks"
@@ -1478,8 +1478,8 @@ milestone = "M3"
 status = "shipped"
 commands = []
 tools = ["text.select"]
-evidence = ["crates/engine/automation/tests/text_selection.rs::inclusive_full_partial_reverse_and_single_glyph_ranges_follow_rotations_and_crops"]
-notes = "Drag to select; ⇧-click extends the selection to the click, keeping its anchor (same page only); with the Select tool, quick clicks select a word (two), the line (three) or all the text on the page (four). The markup and Redact tools mark a double-clicked word and stop there. Missing: selection across pages (dragging or ⇧-clicking onto another page), paragraph selection, and ⌘A across the whole document (it selects the current page). In the kit, mouse drag selects inclusive glyph ranges across up to 64 pages through read-only text_select, with live rotation/crop/zoom highlights, cancellation and revision cleanup. The browser harness is web/tests/selection.mjs. Shift extension, multiple-click word/line selection, automatic edge scrolling, touch/pen and real-font fidelity are not covered; preceding notes describe the historical native UI."
+evidence = ["crates/engine/automation/tests/text_selection.rs::inclusive_full_partial_reverse_and_single_glyph_ranges_follow_rotations_and_crops", "crates/engine/automation/tests/text_selection.rs::units_widen_both_ends_and_answer_where_the_ends_are", "crates/engine/automation/tests/text_selection.rs::a_step_moves_the_focus_end_on_its_page_and_stops_at_its_edges"]
+notes = "Editor (web/, web/tests/hand/reading.mjs): a double click selects a word and a triple click its line (dragging on takes whole words or lines); Shift+click runs the selection on from its anchor, across pages; Shift with the arrows moves its end a character (Alt: a word, up and down: a line); a drag held near the top or bottom of the view scrolls; text_select takes glyph ends, unit and step for these. Four clicks do not select the page in the editor (its canvas counts to three). Drag to select; ⇧-click extends the selection to the click, keeping its anchor (same page only); with the Select tool, quick clicks select a word (two), the line (three) or all the text on the page (four). The markup and Redact tools mark a double-clicked word and stop there. Missing: selection across pages (dragging or ⇧-clicking onto another page), paragraph selection, and ⌘A across the whole document (it selects the current page). In the kit, mouse drag selects inclusive glyph ranges across up to 64 pages through read-only text_select, with live rotation/crop/zoom highlights, cancellation and revision cleanup. The browser harness is web/tests/selection.mjs. Touch/pen and real-font fidelity are not covered; preceding notes describe the historical native UI."
 
 [[feature]]
 id = "view.column-select"

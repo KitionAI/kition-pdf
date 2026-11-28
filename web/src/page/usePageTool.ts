@@ -151,6 +151,8 @@ export function usePageTool(options: Options): KitTool {
           }
           case 'markup': {
             const item = hit.comment
+            // The second press of a double click is the highlight's: its note opens (doubleClick).
+            if ((start.clicks ?? 1) >= 2) return {}
             return select(start, context, () => live.current.choose(item))
           }
           default:

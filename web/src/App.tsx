@@ -12,8 +12,11 @@ import {
   kitLeases,
   needsParams,
   toast,
+  useFrameDisplay,
+  useFrameMode,
   useKitEditorState,
   useKitSession,
+  type DisplayModeState,
   type FrameTab,
   type HostConnection,
   type KitCanvasHandle,
@@ -39,8 +42,8 @@ import { commentRef, sameComment, type CommentItem } from './comments'
 import { ParamsDialog, type Asking } from './ParamsDialog'
 import { SelectionBar } from './SelectionBar'
 import { matchRuns, selectionBounds, selectionRuns, type MarkupRun, type MarkupType } from './markup'
-import { FindBar, type FindControl, type Match } from './FindBar'
-import { SearchHighlights } from './SearchHighlights'
+import { FindBar, type FindControl, type FindOptions, type Match } from './FindBar'
+import { FoundMatches, SearchHighlights } from './SearchHighlights'
 import { searchPanTarget } from './searchGeometry'
 import { SelectionHighlights } from './SelectionHighlights'
 import { useTextSelection } from './useTextSelection'
@@ -211,11 +214,22 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   // The opacity and width of comments this session made or changed (comment.list answers neither).
   const knownStyles = useRef(new Map<string, { opacity?: number; width?: number }>())
   const [finding, setFinding] = useState(false)
+  // The find options and the queries asked this session: they outlast the find bar (Up recalls one).
+  const [findOptions, setFindOptions] = useState<FindOptions>({ caseSensitive: false, wholeWords: false })
+  const [findHistory, setFindHistory] = useState<string[]>([])
+  const rememberQuery = useCallback((text: string) => setFindHistory((list) => {
+    const query = text.trim()
+    if (!query || list.at(-1) === query) return list
+    return [...list.filter((item) => item !== query), query].slice(-FIND_HISTORY)
+  }), [])
+  // Every match of the query, marked faintly on the pages in view.
+  const [foundMatches, setFoundMatches] = useState<{ doc: unknown; revision: number; matches: Match[] } | null>(null)
   // The canvas's view and size: the search and selection highlights and the scrollbars follow it.
   const [canvasView, setCanvasView] = useState<KitCanvasView | null>(null)
   const viewportId = useId()
   const [searchMatch, setSearchMatch] = useState<{ doc: typeof doc; revision: number; match: Match } | null>(null)
   const selectedMatch = finding && searchMatch?.doc === doc && searchMatch.revision === session.change.revision ? searchMatch.match : null
+  const allMatches = finding && foundMatches?.doc === doc && foundMatches.revision === session.change.revision ? foundMatches.matches : null
   const pages = state?.pages ?? []
   // The side panel shown (session state), and the one a document asks to open with (/PageMode).
   const [panel, setPanel] = useState<Panel>('pages')
@@ -241,11 +255,20 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     setBookmarkDraft({ key: draftCount.current, parent: null, ...(page != null ? { page } : {}) })
   }
   const panBounds = useMemo(() => pagesPanBounds((state?.pages ?? []).map((page) => page.area)), [state?.pages])
+  // A page's text lines (the page layer reads them for the cursor), for whether a press is on text.
+  const pageLines = useRef<(page: number) => Rect[] | null>(() => null)
+  /** Whether a press on the pages is on (or within a few points of) a line of text; unknown lines count as text. */
+  const pressOnText = (at: { page: number; point: [number, number] } | null) => {
+    if (!at) return false
+    const known = pageLines.current(at.page)
+    return !known || known.some((line) => inRect(line, at.point[0], at.point[1], 4))
+  }
   const selectText = useCallback(async (request: SelectionRequest) => doc ? JSON.parse(await doc.execute('text.select', request)) as SelectionResult : null, [doc])
   const selection = useTextSelection({ document: doc, revision: session.change.revision, pages, execute: selectText, t,
     onStart: (at) => {
-      // A press with the highlighter (or underline, strikethrough) keeps the find bar: the next match is a Cmd+G away.
-      if (toolDef(toolRef.current).kind !== 'markup') {
+      // A press with the highlighter (or underline, strikethrough) keeps the find bar: the next match is a
+      // Cmd+G away; so does a press off the text (the margins, between paragraphs, off the pages).
+      if (toolDef(toolRef.current).kind !== 'markup' && pressOnText(at)) {
         setFinding(false)
         setSearchMatch(null)
         searchOpener.current = null
@@ -403,6 +426,76 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   /** Cmd+0 and Fit: the current page whole in view. */
   const fitPage = () => zoomTo('page')
 
+  // Full screen (Cmd+L, the Zoom group's button): Focus with the page whole in view, the arrows
+  // turning a page at a time, and the browser's full screen where the host allows it; leaving goes
+  // back to the zoom from before, at the page reached. Focus on its own (Cmd+\) keeps the view.
+  const display = useRef<DisplayModeState | null>(null)
+  const [reading, setReading] = useState(false)
+  const readingRef = useRef(false)
+  const beforeFocus = useRef<number | null>(null)
+  const fullByUs = useRef(false)
+  const showWholePage = (index: number) => {
+    const target = Math.max(0, Math.min(pages.length - 1, index))
+    const area = pages[target]?.area
+    if (!area) return
+    canvas.current?.show(wholePageArea(area)!)
+    setCurrent(target)
+  }
+  /** The page whole in view, the zoom from before kept for leaving. */
+  const startReading = () => {
+    readingRef.current = true
+    setReading(true)
+    beforeFocus.current = canvas.current?.view()?.zoom ?? null
+    showWholePage(current)
+  }
+  const focusChanged = (on: boolean) => {
+    if (on) {
+      if (readingRef.current) startReading()
+      return
+    }
+    const was = readingRef.current
+    readingRef.current = false
+    setReading(false)
+    if (fullByUs.current && document.fullscreenElement) void document.exitFullscreen?.().catch(() => undefined)
+    fullByUs.current = false
+    const zoom = beforeFocus.current
+    beforeFocus.current = null
+    if (!was || zoom == null) return
+    const page = current
+    // After the frame has laid its chrome out again.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      canvas.current?.zoomTo(zoom)
+      goTo(page)
+    }))
+  }
+  const toggleFullScreen = () => {
+    const frame = display.current
+    if (!frame) return
+    if (frame.focus && readingRef.current) {
+      frame.exitFocus()
+      return
+    }
+    if (frame.focus) startReading()
+    else {
+      readingRef.current = true
+      frame.toggleFocus()
+    }
+    const root = document.documentElement
+    if (document.fullscreenEnabled && !document.fullscreenElement && root.requestFullscreen) {
+      root.requestFullscreen().then(() => { fullByUs.current = true }, () => undefined)
+    }
+  }
+  // The browser's full screen left (its own Escape): Focus goes with it.
+  useEffect(() => {
+    const left = () => {
+      if (document.fullscreenElement || !fullByUs.current) return
+      fullByUs.current = false
+      display.current?.exitFocus()
+    }
+    document.addEventListener('fullscreenchange', left)
+    return () => document.removeEventListener('fullscreenchange', left)
+  }, [])
+
   // The keyboard is the pages' as soon as a document opens, before anything is clicked (K1).
   const focusedDoc = useRef<unknown>(null)
   const ready = !!state
@@ -468,6 +561,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   // The page layer (web/src/page, stage 4): what is on the pages, the pointer tool that sends a
   // press to it, the selected comment's frame, its tip, its menu, the card its text is written in.
   const { objects, lines } = usePageObjects(doc, session.change.revision)
+  pageLines.current = lines
   const [drag, setDrag] = useState<Dragging | null>(null)
   const [hover, setHover] = useState<Hovering | null>(null)
   const [menu, setMenu] = useState<PageMenuTarget | null>(null)
@@ -857,6 +951,8 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     // nothing) hold the keyboard; each press is one undo step.
     const arrow = key === 'ArrowLeft' ? [-1, 0] : key === 'ArrowRight' ? [1, 0] : key === 'ArrowUp' ? [0, -1] : key === 'ArrowDown' ? [0, 1] : null
     const onPages = event.target instanceof Element && (event.target === document.body || event.target.classList.contains('kui-app') || !!region.current?.contains(event.target)) && !isTextControl(event.target)
+    // Shift with the arrows moves the selected text's end a character (Alt: a word; up and down: a line).
+    if (arrow && event.shiftKey && !command && onPages && toolId === 'select' && !chosen && selection.extend(arrow[0] + arrow[1], arrow[1] ? 'line' : event.altKey ? 'word' : 'glyph')) return true
     if (arrow && chosen && viewing && !event.altKey && onPages && movable(chosen)) {
       const rect = asRect(chosen.rect)
       const area = pages[chosen.page - 1]?.area
@@ -875,6 +971,11 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     }
     if (command && !event.altKey && !event.shiftKey && key === 'a') {
       selection.selectAll(current)
+      return true
+    }
+    // Cmd+L: full screen (Focus, and the browser's full screen where the host allows it); again to leave.
+    if (command && !event.altKey && !event.shiftKey && key === 'l' && !isTextControl(event.target)) {
+      toggleFullScreen()
       return true
     }
     // Zoom: Cmd+1 is 100 %, Cmd+2 fits the current page's width (Cmd+0 fits the page: the
@@ -899,6 +1000,14 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     const handle = canvas.current
     const view = handle?.view()
     if (!handle || !view || !panBounds) return false
+    // Full screen: the arrows, Page Up and Page Down turn a whole page; Home and End go to the first and last.
+    if (reading && !command && !event.shiftKey) {
+      const by = { ArrowRight: 1, ArrowDown: 1, PageDown: 1, ArrowLeft: -1, ArrowUp: -1, PageUp: -1 }[event.key]
+      if (by != null || event.key === 'Home' || event.key === 'End') {
+        showWholePage(event.key === 'Home' ? 0 : event.key === 'End' ? pages.length - 1 : current + (by ?? 0))
+        return true
+      }
+    }
     switch (event.key) {
       case ' ':
         if (command) return false
@@ -956,7 +1065,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     view: item.id === 'home' || item.id === 'comment',
     ribbon:
       item.id === 'home' ? (
-        state ? <HomeTab info={state} current={current} targets={pageTargetList} onPage={goTo} onZoom={zoomTo} selectionAvailable={!!selection.selected?.text} onCopySelection={selection.copy} onMark={mark} tool={toolId} onTool={chooseTool} /> : null
+        state ? <HomeTab info={state} current={current} targets={pageTargetList} onPage={goTo} onZoom={zoomTo} onFullScreen={toggleFullScreen} selectionAvailable={!!selection.selected?.text} onCopySelection={selection.copy} onMark={mark} tool={toolId} onTool={chooseTool} /> : null
       ) : item.id === 'pages' ? (
         state ? <PagesTab info={state} targets={pageTargetList} onNewBookmark={() => newBookmark()} /> : null
       ) : (
@@ -1007,12 +1116,27 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       >
         {finding ? (
           <FrameChrome>
-            <FindBar document={doc} revision={session.change.revision} inputRef={searchInput} initial={findSeed} control={findControl} onMatch={showMatch} onClose={closeSearch} />
+            <FindBar
+              document={doc}
+              revision={session.change.revision}
+              inputRef={searchInput}
+              initial={findSeed}
+              control={findControl}
+              onMatch={showMatch}
+              onMatches={(matches) => setFoundMatches(matches ? { doc, revision: session.change.revision, matches } : null)}
+              options={findOptions}
+              onOptions={setFindOptions}
+              history={findHistory}
+              onRemember={rememberQuery}
+              onClose={closeSearch}
+            />
           </FrameChrome>
         ) : null}
         <div className="pdf-workspace">
           <div ref={region} id={viewportId} className="pdf-pages" tabIndex={-1} onContextMenu={contextMenu}>
             <KitDocumentCanvas canvas={canvas} viewMemory={viewMemory} initialArea={pageWidthArea(pages[0]?.area)} panBounds={panBounds} framed={false} onView={follow} tool={canvasTool}>
+              <FrameWatch display={display} onFocus={focusChanged} />
+              {allMatches ? <FoundMatches matches={allMatches} current={selectedMatch} pages={pages} view={canvasView} /> : null}
               {selectedMatch ? <SearchHighlights page={pages[selectedMatch.page - 1]?.area} pageNumber={selectedMatch.page} rects={selectedMatch.rects} view={canvasView} /> : null}
               <SelectionHighlights selected={selection.selected} pages={pages} view={canvasView} />
               <FormFields
@@ -1073,6 +1197,26 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       </EditorFrame>
     </KitEditorProvider>
   )
+}
+
+/** How many queries the find bar remembers. */
+const FIND_HISTORY = 20
+
+/** Tells the editor when the frame enters and leaves Focus, and hands it the frame's mode controls. */
+function FrameWatch({ display, onFocus }: { display: RefObject<DisplayModeState | null>; onFocus: (on: boolean) => void }) {
+  const mode = useFrameMode()
+  const controls = useFrameDisplay()
+  display.current = controls
+  const focus = mode === 'focus'
+  const seen = useRef(focus)
+  const report = useRef(onFocus)
+  report.current = onFocus
+  useEffect(() => {
+    if (seen.current === focus) return
+    seen.current = focus
+    report.current(focus)
+  }, [focus])
+  return null
 }
 
 /** No pages selected (one array, so the selection keeps its identity between renders). */

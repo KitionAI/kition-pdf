@@ -29,14 +29,17 @@ const BookOpen = TesseraIcons.BookOpenIcon
 export const SelectTool = TesseraIcons.TextCursorIcon
 const FileIcon = TesseraIcons.FileIcon
 const More = TesseraIcons.EllipsisIcon
+const Fullscreen = TesseraIcons.FullscreenIcon
 
-export function HomeTab({ info, current, targets, onPage, onZoom, selectionAvailable, onCopySelection, onMark, tool, onTool }: {
+export function HomeTab({ info, current, targets, onPage, onZoom, onFullScreen, selectionAvailable, onCopySelection, onMark, tool, onTool }: {
   info: PdfInfo
   current: number
   /** The pages the Page group acts on (0-based): those selected in the thumbnails, else the current one. */
   targets: readonly number[]
   onPage: (index: number) => void
   onZoom: (to: 'width' | 'page' | 'actual') => void
+  /** Full screen: the page whole, a page at a time (Cmd+L). */
+  onFullScreen: () => void
   selectionAvailable: boolean
   onCopySelection: () => void
   /** Marks the selected text (or the find bar's match) at once; false when there is none. */
@@ -123,6 +126,7 @@ export function HomeTab({ info, current, targets, onPage, onZoom, selectionAvail
         <RibbonStack>
           <RibbonButton icon={Scan} label={t('fitPage')} onClick={() => onZoom('page')} data-testid="pdf-fit-page" primary />
           <RibbonButton icon={ScanSearch} label={t('actualSize')} onClick={() => onZoom('actual')} data-testid="pdf-actual-size" primary />
+          <RibbonButton icon={Fullscreen} label={t('fullScreen')} onClick={onFullScreen} data-testid="pdf-full-screen" />
         </RibbonStack>
       </RibbonGroup>
 

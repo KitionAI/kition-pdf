@@ -1607,10 +1607,12 @@ impl Automation {
         let (id, n) = (doc.id, doc.info.pages.len());
         let query = a.str("query")?;
         let limit = a.opt_int("limit")?.unwrap_or(500).max(1) as usize;
+        let case_sensitive = a.opt_bool("caseSensitive")?.unwrap_or(false);
+        let whole_words = a.opt_bool("wholeWords")?.unwrap_or(false);
         let texts = self.page_texts(id, &(0..n).collect::<Vec<_>>())?;
         let mut matches = Vec::new();
         'pages: for (p, text) in texts.iter().enumerate() {
-            for r in text.find(query) {
+            for r in text.find_opts(query, case_sensitive, whole_words) {
                 if matches.len() == limit {
                     break 'pages;
                 }

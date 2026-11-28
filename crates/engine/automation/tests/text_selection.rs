@@ -118,6 +118,75 @@ fn blank_pages_and_maximum_page_span_are_safe_without_partial_results() {
 }
 
 #[test]
+fn units_widen_both_ends_and_answer_where_the_ends_are() {
+    let (mut automation, id) = open();
+    let page = fixture::pages()[0];
+    let at = |index| center(glyph(page, index));
+    // Each fixture line is one word: a double click on B takes "AB", a triple its line, four clicks the page.
+    for (unit, expected) in [("glyph", "B"), ("word", "AB"), ("line", "AB"), ("page", "AB\nCD")] {
+        let result = call(&mut automation, "text.select", json!({"doc":id,"page":1,"anchor":at(1),"focus":at(1),"unit":unit}));
+        assert_eq!(result["text"], expected, "{unit}");
+    }
+    // A word drag from D back to B: the later end widens forward, the earlier back.
+    let result = call(&mut automation, "text.select", json!({"doc":id,"page":1,"anchor":at(3),"focus":at(1),"unit":"word","ends":true}));
+    assert_eq!(result["text"], "AB\nCD");
+    assert_eq!(result["ends"], json!({"anchor":{"page":1,"glyph":3},"head":{"page":1,"glyph":0}}));
+    // Asked for no ends, the answer has none.
+    let plain = call(&mut automation, "text.select", json!({"doc":id,"page":1,"anchor":at(3),"focus":at(1),"unit":"word"}));
+    assert!(plain.get("ends").is_none());
+    // The ends given back as glyphs select the same.
+    let again = call(&mut automation, "text.select", json!({"doc":id,"page":1,"anchorGlyph":3,"focusGlyph":0}));
+    assert_eq!(again["text"], result["text"]);
+}
+
+#[test]
+fn a_step_moves_the_focus_end_on_its_page_and_stops_at_its_edges() {
+    let (mut automation, id) = open();
+    let select = |automation: &mut Automation, args: Value| {
+        let mut base = json!({"doc":id,"page":1,"anchorGlyph":0,"focusGlyph":0,"ends":true});
+        base.as_object_mut().unwrap().extend(args.as_object().unwrap().clone());
+        call(automation, "text.select", base)
+    };
+    for (args, expected, head) in [
+        (json!({"step":1}), "AB", 1),
+        (json!({"step":2}), "AB\nC", 2),
+        (json!({"step":-1}), "A", 0),
+        (json!({"step":99}), "AB\nCD", 3),
+        (json!({"step":i64::MIN}), "A", 0),
+        (json!({"step":1,"stepBy":"line"}), "AB\nC", 2),
+        (json!({"step":2,"stepBy":"word"}), "AB\nCD", 3),
+    ] {
+        let result = select(&mut automation, args.clone());
+        assert_eq!(result["text"], expected, "{args}");
+        assert_eq!(result["ends"]["head"]["glyph"], head, "{args}");
+    }
+    // Back past the anchor: the anchor stays, the range turns around it.
+    let result = select(&mut automation, json!({"anchorGlyph":2,"focusGlyph":2,"step":-2}));
+    assert_eq!(result["text"], "AB\nC");
+    assert_eq!(result["ends"], json!({"anchor":{"page":1,"glyph":2},"head":{"page":1,"glyph":0}}));
+}
+
+#[test]
+fn glyph_ends_units_and_steps_are_checked() {
+    let (mut automation, id) = open();
+    for args in [
+        json!({"doc":id,"page":1,"anchor":[1,1],"anchorGlyph":0,"focus":[2,2]}),
+        json!({"doc":id,"page":1,"anchorGlyph":4,"focus":[2,2]}),
+        json!({"doc":id,"page":1,"anchorGlyph":-1,"focus":[2,2]}),
+        json!({"doc":id,"page":1,"anchor":[1,1],"focus":[2,2],"unit":"sentence"}),
+        json!({"doc":id,"page":1,"anchor":[1,1],"focus":[2,2],"stepBy":"page","step":1}),
+        json!({"doc":id,"page":1,"anchor":[1,1],"focus":[2,2],"step":0.5}),
+        json!({"doc":id,"page":1,"anchor":[1,1],"focus":[2,2],"mode":"column","unit":"word"}),
+        json!({"doc":id,"page":1,"anchorGlyph":0,"focus":[2,2],"mode":"column"}),
+        json!({"doc":id,"page":1,"anchor":[1,1],"focus":[2,2],"mode":"column","ends":true}),
+        json!({"doc":id,"page":1,"anchor":[1,1],"focus":[2,2],"ends":"yes"}),
+        json!({"doc":id,"page":1,"focus":[2,2]}),
+    ] {
+        assert!(matches!(automation.call("text.select", &args), Err(ToolError::InvalidArgs(_))), "{args}");
+    }
+}
+
+#[test]
 fn invalid_arguments_and_cross_page_columns_are_actionable_errors() {
     let (mut automation, id) = open();
     let base = json!({"doc":id,"page":1,"anchor":[1,1],"focus":[2,2]});

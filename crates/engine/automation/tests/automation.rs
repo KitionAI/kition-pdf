@@ -96,6 +96,21 @@ fn file_writing_tools_are_not_read_only() {
 }
 
 #[test]
+fn find_matches_case_and_whole_words_when_asked() {
+    let dir = workdir("find-options");
+    let mut a = auto(&dir);
+    let doc = ok(&mut a, "doc_open", json!({ "path": "a.pdf" }))["doc"].as_u64().unwrap();
+    let count = |a: &mut Automation, args: Value| ok(a, "text.find", args)["count"].as_u64().unwrap();
+    assert_eq!(count(&mut a, json!({ "doc": doc, "query": "page 2" })), 1, "case-insensitive by default");
+    assert_eq!(count(&mut a, json!({ "doc": doc, "query": "page 2", "caseSensitive": true })), 0);
+    assert_eq!(count(&mut a, json!({ "doc": doc, "query": "Page 2", "caseSensitive": true })), 1);
+    assert_eq!(count(&mut a, json!({ "doc": doc, "query": "Pag" })), 3, "a part of a word matches by default");
+    assert_eq!(count(&mut a, json!({ "doc": doc, "query": "Pag", "wholeWords": true })), 0);
+    assert_eq!(count(&mut a, json!({ "doc": doc, "query": "Page", "wholeWords": true })), 3);
+    assert!(a.call("text.find", &json!({ "doc": doc, "query": "Page", "wholeWords": "yes" })).is_err());
+}
+
+#[test]
 fn open_inspect_render_and_find() {
     let dir = workdir("inspect");
     let mut a = auto(&dir);

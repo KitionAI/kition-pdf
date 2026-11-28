@@ -1,6 +1,7 @@
 /* The PDF editor's own layout; colors and shapes come from @kition/sdk/editor's tokens. */
 
 .pdf-search-highlights,
+.pdf-search-matches,
 .pdf-selection-highlights {
   position: absolute;
   inset: 0;
@@ -8,12 +9,31 @@
   pointer-events: none;
 }
 
+/*
+ * Marks over the page's text, tinted with the theme's selection colour and multiplied into the
+ * paper so the text stays readable: the selected text, every match of a search faint, the current
+ * match stronger and ringed.
+ */
 .pdf-search-highlight,
+.pdf-search-match,
 .pdf-selection-highlight {
   position: absolute;
   box-sizing: border-box;
-  background: var(--kit-primary-soft);
-  border: 1px solid var(--kit-primary);
+  border-radius: 2px;
+  mix-blend-mode: multiply;
+}
+
+.pdf-selection-highlight {
+  background: color-mix(in srgb, var(--kit-primary) 30%, transparent);
+}
+
+.pdf-search-match {
+  background: color-mix(in srgb, var(--kit-primary) 16%, transparent);
+}
+
+.pdf-search-highlight {
+  background: color-mix(in srgb, var(--kit-primary) 38%, transparent);
+  box-shadow: 0 0 0 1px var(--kit-primary);
 }
 
 .pdf-workspace {

@@ -18,7 +18,7 @@
     "test:focus": "node tests/focus.mjs chromium && node tests/focus.mjs webkit",
     "test:drafts": "node tests/drafts.mjs chromium && node tests/drafts.mjs webkit",
     "test:hand-input": "node tests/hand/keys.mjs chromium && node tests/hand/zoom.mjs chromium && node tests/hand/fields-panel.mjs chromium && node tests/hand/keys.mjs webkit && node tests/hand/zoom.mjs webkit && node tests/hand/fields-panel.mjs webkit",
-    "test:hand-page": "node tests/hand/markup.mjs chromium && node tests/hand/annotations.mjs chromium && node tests/hand/annotation-tools.mjs chromium && node tests/hand/forms.mjs chromium && node tests/hand/pages.mjs chromium && node tests/hand/markup.mjs webkit && node tests/hand/annotations.mjs webkit && node tests/hand/annotation-tools.mjs webkit && node tests/hand/forms.mjs webkit && node tests/hand/pages.mjs webkit",
+    "test:hand-page": "node tests/hand/markup.mjs chromium && node tests/hand/annotations.mjs chromium && node tests/hand/annotation-tools.mjs chromium && node tests/hand/forms.mjs chromium && node tests/hand/pages.mjs chromium && node tests/hand/reading.mjs chromium && node tests/hand/markup.mjs webkit && node tests/hand/annotations.mjs webkit && node tests/hand/annotation-tools.mjs webkit && node tests/hand/forms.mjs webkit && node tests/hand/pages.mjs webkit && node tests/hand/reading.mjs webkit",
     "test:hand-accept": "node tests/hand/repaint.mjs chromium && node tests/hand/repaint.mjs webkit",
     "test:performance": "node tests/performance.mjs",
     "test:cache": "node tests/ci.mjs cache",

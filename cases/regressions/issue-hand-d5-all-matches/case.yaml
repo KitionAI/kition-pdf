@@ -1,0 +1,27 @@
+format: 1
+id: regressions/issue-hand-d5-all-matches
+feature: pdf.editor.reading
+intent: >-
+  The find bar marked only its current match: the other matches on the screen had no mark. Now
+  every match on the pages in view is marked faintly and the current one stronger (pages out of
+  view mark none); a click off the text keeps the bar and its marks (D7); Match case and Whole
+  words only search again, and Up in the empty field brings back an earlier query (D8).
+  web/tests/hand/reading.mjs reads the marks and the count back.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings D5, D7, D8
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/reading.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"
