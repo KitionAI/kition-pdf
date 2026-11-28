@@ -161,7 +161,7 @@
 	Add comments	添加注释
 	Scan & OCR	扫描和 OCR
 	Protect a PDF	保护 PDF
-	Redact a PDF	密文 PDF
+	Redact a PDF	涂黑 PDF
 	Compress a PDF	压缩 PDF
 	Add a stamp	添加图章
 	Use a certificate	使用证书
@@ -798,27 +798,27 @@
 	Text in images isn't found; recognise text (OCR) first.	图像中的文本无法找到；请先识别文本（OCR）。
 	No matches.	无匹配。
 	Some bookmarks are not shown here: the panel lists a limited number, nested a limited depth.	此处未显示部分书签：面板列出的书签数量和嵌套深度有限。
-	{n} match(es) marked for redaction.	已标记 {n} 个匹配以待密文。
+	{n} match(es) marked for redaction.	已标记 {n} 个匹配待涂黑。
 	Multiple words or phrases	多个单词或短语
 	One word or phrase per line	每行一个单词或短语
 	Import list…	导入列表…
 	{n} word(s) or phrase(s)	{n} 个单词或短语
 	{name} is too large for a word list (at most 1 MB).	{name} 太大，无法用作单词列表（最大 1 MB）。
-	Redaction Tool Properties	密文工具属性
-	Redacted area fill colour:	密文区域填充颜色：
+	Redaction Tool Properties	涂黑工具属性
+	Redacted area fill colour:	涂黑区域填充颜色：
 	Use overlay text	使用覆盖文本
 	Custom text:	自定义文本：
-	Redaction code:	密文代码：
+	Redaction code:	涂黑代码：
 	Font:	字体：
 	Font size:	字号：
-	Auto-size text to fit redaction region	自动调整文本大小以适应密文区域
+	Auto-size text to fit redaction region	自动调整文本大小以适应涂黑区域
 	Font colour:	字体颜色：
 	Repeat overlay text	重复覆盖文本
 	Text alignment:	文本对齐：
 	Center	居中
-	Apply redactions	应用密文
-	You are about to apply 1 redaction mark. Text, images and drawings under the marks, and comments and form fields that overlap them, are removed permanently.	即将应用 1 个密文标记。标记下的文本、图像和绘图，以及与其重叠的注释和表单域，将被永久删除。
-	You are about to apply {n} redaction marks. Text, images and drawings under the marks, and comments and form fields that overlap them, are removed permanently.	即将应用 {n} 个密文标记。标记下的文本、图像和绘图，以及与其重叠的注释和表单域，将被永久删除。
+	Apply redactions	应用涂黑
+	You are about to apply 1 redaction mark. Text, images and drawings under the marks, and comments and form fields that overlap them, are removed permanently.	即将应用 1 个涂黑标记。标记下的文本、图像和绘图，以及与其重叠的注释和表单域，将被永久删除。
+	You are about to apply {n} redaction marks. Text, images and drawings under the marks, and comments and form fields that overlap them, are removed permanently.	即将应用 {n} 个涂黑标记。标记下的文本、图像和绘图，以及与其重叠的注释和表单域，将被永久删除。
 	Save the document afterwards: saving rewrites the whole file so no trace of the removed content stays in it.	之后请保存文档：保存将重写整个文件，使删除的内容不留痕迹。
 	Select the items to remove from this document.	选择要从本文档中删除的项目。
 	Metadata	元数据
@@ -892,8 +892,8 @@
 	Removed 1 hidden item. Save to remove them from the file.	已删除 1 个隐藏项。保存以从文件中删除它们。
 	Removed {n} hidden items. Save to remove them from the file.	已删除 {n} 个隐藏项。保存以从文件中删除它们。
 	Document sanitized. Save to finish: saving rewrites the whole file.	文档已清理。保存以完成：保存将重写整个文件。
-	Applied 1 redaction mark. Save to remove the content from the file.	已应用 1 个密文标记。保存以从文件中删除内容。
-	Applied {n} redaction marks. Save to remove the content from the file.	已应用 {n} 个密文标记。保存以从文件中删除内容。
+	Applied 1 redaction mark. Save to remove the content from the file.	已应用 1 个涂黑标记。保存以从文件中删除内容。
+	Applied {n} redaction marks. Save to remove the content from the file.	已应用 {n} 个涂黑标记。保存以从文件中删除内容。
 	JavaScript Console	JavaScript 控制台
 	JavaScript is turned off (Preferences ▸ JavaScript).	JavaScript 已关闭（首选项 ▸ JavaScript）。
 	Output appears here.	输出显示在此处。
@@ -927,7 +927,7 @@
 	Settings	设置
 	Protect	保护
 	Advanced options	高级选项
-	Redact	密文
+	Redact	涂黑
 	Optimize	优化
 	Fields	字段
 	Add form components	添加表单组件
@@ -978,9 +978,9 @@
 	Remove hidden information	删除隐藏信息
 	Encrypt with certificate	使用证书加密
 	Security properties	安全性属性
-	Redact text and images	密文文本和图像
-	Redact pages	密文页面
-	Find text and redact	查找文本并密文
+	Redact text and images	涂黑文本和图像
+	Redact pages	涂黑页面
+	Find text and redact	查找文本并涂黑
 	Set properties	设置属性
 	Sanitize document	清理文档
 	Reduce file size	减小文件大小
@@ -1051,7 +1051,7 @@
 	Sign Here	签名处
 	Standard Business	标准业务
 	Choose a stamp, then click on the page to place it.	选择图章，然后单击页面放置。
-	Redact all	全部密文
+	Redact all	全部涂黑
 	Clear all	全部清除
 	Add text	添加文本
 	Checkmark	对勾
@@ -1116,11 +1116,11 @@
 	Add an image field	添加图像字段
 	Add image…	添加图像…
 	Add or edit links	添加或编辑链接
-	Apply redactions…	应用密文…
+	Apply redactions…	应用涂黑…
 	Attach a file	附加文件
 	Change reading options…	更改阅读选项…
 	Check for accessibility	无障碍检查
-	Clear redaction marks	清除密文标记
+	Clear redaction marks	清除涂黑标记
 	Compare files…	比较文件…
 	Create links from URLs	从 URL 创建链接
 	Detect form fields	检测表单域
@@ -1143,7 +1143,7 @@
 	Fill & Sign: initials	填写与签名：姓名首字母
 	Fill & Sign: line	填写与签名：直线
 	Fill & Sign: sign	填写与签名：签名
-	Find text and redact…	查找文本并密文…
+	Find text and redact…	查找文本并涂黑…
 	Hide all comments	隐藏所有注释
 	Import comments…	导入注释…
 	Import form data…	导入表单数据…
@@ -1152,8 +1152,8 @@
 	Optimize scanned documents…	优化扫描文档…
 	Prepare for distribution…	准备分发…
 	Recognize text in multiple files…	识别多个文件中的文本…
-	Redact pages…	密文页面…
-	Redaction properties…	密文属性…
+	Redact pages…	涂黑页面…
+	Redaction properties…	涂黑属性…
 	Remove all links	删除所有链接
 	Remove background	删除背景
 	Remove header & footer	删除页眉和页脚
@@ -1660,7 +1660,7 @@
 	This document has no form fields you can fill in	本文档没有可填写的表单域
 	This document has no comments to flatten	本文档没有可拼合的注释
 	This document has no form fields to flatten	本文档没有可拼合的表单域
-	There are no redaction marks (mark text, areas or pages first)	没有密文标记（请先标记文本、区域或页面）
+	There are no redaction marks (mark text, areas or pages first)	没有涂黑标记（请先标记文本、区域或页面）
 	This document has no {kind} to change	本文档没有可更改的{kind}
 	header or footer	页眉或页脚
 	watermark	水印
@@ -1672,7 +1672,7 @@
 	Security will be removed when you save	保存时将删除安全性设置
 	Click text or an image to edit it	单击文本或图像进行编辑
 	Drag a rectangle to create a link; double-click a link to edit it	拖动矩形创建链接；双击链接进行编辑
-	There are no redaction marks to apply	没有可应用的密文标记
+	There are no redaction marks to apply	没有可应用的涂黑标记
 	Drag to draw the area where the signature should appear.	拖动绘制签名应显示的区域。
 	Couldn't fit the visible content: {e}	无法适应可见内容：{e}
 	Drag a rectangle around the area to copy	拖动框选要复制的区域
@@ -1869,7 +1869,7 @@
 	Add oval	添加椭圆
 	Add polygon	添加多边形
 	Add rectangle	添加矩形
-	Add redaction mark	添加密文标记
+	Add redaction mark	添加涂黑标记
 	Add signature	添加签名
 	Add squiggly underline	添加波浪下划线
 	Add stamp	添加图章
@@ -1955,7 +1955,7 @@
 	Presentation (.pptx)	演示文稿（.pptx）
 	PushButton	按钮
 	Radio	单选按钮
-	Remove redaction marks	移除密文标记
+	Remove redaction marks	移除涂黑标记
 	Rename bookmark	重命名书签
 	Rendering: hayro (bootstrap) · UI: egui · Icons: Lucide (ISC) · Fonts: Inter, JetBrains Mono, Dancing Script (OFL)	渲染：hayro（初期实现） · 界面：egui · 图标：Lucide（ISC） · 字体：Inter、JetBrains Mono、Dancing Script（OFL）
 	Replace page	替换页面
@@ -2041,7 +2041,7 @@
 	nothing to redo	没有可重做的操作
 	nothing to undo	没有可撤销的操作
 	pages	页
-	there are no redaction marks to apply	没有可应用的密文标记
+	there are no redaction marks to apply	没有可应用的涂黑标记
 	Create PDF from images	从图像创建 PDF
 	Selected image files: {count}	已选择的图像文件：{count}
 	Use image resolution	使用图像分辨率
