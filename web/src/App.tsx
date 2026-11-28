@@ -237,6 +237,9 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   // The one tool, text selection, named in the Focus bar (the editor has no engine tools).
   const selectTool = useMemo(() => ({ label: phrase('Select text'), icon: SelectTool }), [phrase])
   const canvas = useRef<KitCanvasHandle>(null)
+  /** The fit the view keeps (Cmd+0, Cmd+2, Fit), with the zoom and view size it came to. */
+  const fitKept = useRef<{ to: 'page' | 'width'; zoom: number | null; width: number; height: number } | null>(null)
+  const keepFitRef = useRef<(view: KitCanvasView) => void>(() => undefined)
   useEngineBackdrop(doc, canvas)
   const viewMemory = useRef<RasterView | null>(null)
   const region = useRef<HTMLDivElement>(null)
@@ -409,6 +412,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
         if (page.area.y0 <= middle) best = index
       })
       setCurrent((previous) => (previous === best ? previous : best))
+      keepFitRef.current(view)
     },
     [pages],
   )
@@ -475,19 +479,37 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     if (match && jump) goTo(match.page - 1, match.rects[0] ?? null)
   }, [doc, session.change.revision, goTo, selection.clear])
 
-  const zoomTo = (to: Fit) => {
+  const zoomTo = (to: Fit, { keepPlace = false } = {}) => {
     const page = pages[current]?.area
+    fitKept.current = to === 'actual' ? null : { to, zoom: null, width: 0, height: 0 }
     if (to === 'actual') canvas.current?.zoomTo(1)
     else if (page && to === 'width') {
       // The page's width and a 24 pt margin each side fill the view's width, whatever its height;
-      // the page's top (and its margin) at the view's top.
+      // the page's top (and its margin) at the view's top, or, when the view changed size, the
+      // place in view kept.
       const handle = canvas.current
       const view = handle?.view()
       if (!handle || !view || !(view.width > 0)) return
       handle.zoomTo(clampZoom(view.width / (page.x1 - page.x0 + 48)))
-      handle.panTo(page.x0 - 24, page.y0 - 24)
+      handle.panTo(page.x0 - 24, keepPlace ? view.y : page.y0 - 24)
     } else if (page) canvas.current?.show(wholePageArea(page)!)
+    // The zoom the fit came to, once the canvas has drawn it: another zoom ends the fit.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const kept = fitKept.current
+      const view = canvas.current?.view()
+      if (kept && kept.zoom == null && view) Object.assign(kept, { zoom: view.zoom, width: view.width, height: view.height })
+    }))
   }
+  // A fit stays while the view changes size (R-A10): the window, a panel, the tool bar. It ends
+  // with any other zoom (the keys, the status bar, the wheel, a pinch).
+  const keepFit = (view: KitCanvasView) => {
+    const kept = fitKept.current
+    if (!kept || kept.zoom == null || readingRef.current) return
+    const resized = view.width !== kept.width || (kept.to === 'page' && view.height !== kept.height)
+    if (resized) zoomTo(kept.to, { keepPlace: true })
+    else if (Math.abs(view.zoom - kept.zoom) > kept.zoom * 1e-4) fitKept.current = null
+  }
+  keepFitRef.current = keepFit
   const setZoomLevel = (value: number) => canvas.current?.zoomTo(clampZoom(value))
   /** Cmd+0 and Fit: the current page whole in view. */
   const fitPage = () => zoomTo('page')

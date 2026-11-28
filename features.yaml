@@ -93,7 +93,8 @@ features:
     priority: P0
     status: has
     commands: [comment.list, comment.add, comment.reply, comment.setStatus, comment.mark, comment.lock, comment.edit, comment.previewImage, comment.delete, comment.hide]
-    paths: [bindings/wasm/src/collab.rs]
+    paths: [bindings/wasm/src/collab.rs, web/tests/hand/annotation-tools.mjs, web/tests/hand/annotations.mjs, web/tests/hand/markup.mjs]
+    gap: "In the editor comments are drawn with the rail's tools, chosen, moved, resized, recoloured and deleted on the page, and edited, replied to, given a status and deleted in the Comments panel (web/tests/hand/annotation-tools.mjs, annotations.mjs, markup.mjs); marking, locking and hiding a comment go only through the parameters dialog."
     target: "Adobe Acrobat Pro 26.002.21931"
     cases: [pdf.comments/incremental-save-reopen, pdf.comments/save-reopen, regressions/issue-2, regressions/issue-4, regressions/issue-pdf-random-ids]
     since: "2026-11-17"
@@ -103,7 +104,8 @@ features:
     priority: P0
     status: has
     commands: [page.insertBlank, page.duplicate, page.rotate, page.move, page.setBox, page.number]
-    paths: [bindings/wasm/tests/round_trip.rs, bindings/wasm/tests/duplicate_regression.rs]
+    paths: [bindings/wasm/tests/round_trip.rs, bindings/wasm/tests/duplicate_regression.rs, web/tests/hand/pages.mjs]
+    gap: "In the editor pages are inserted, duplicated, turned, moved and deleted in the thumbnails (web/tests/hand/pages.mjs); crop boxes and page labels go only through the parameters dialog."
     target: "Adobe Acrobat Pro 26.002.21931"
     cases: [pdf.pages.organize/save-reopen, regressions/issue-c8-pdf-4-duplicate]
     since: "2026-11-17"
@@ -113,7 +115,8 @@ features:
     priority: P0
     status: has
     commands: [bookmark.add, bookmark.list]
-    paths: [bindings/wasm/tests/round_trip.rs]
+    paths: [bindings/wasm/tests/round_trip.rs, web/tests/hand/pages.mjs]
+    gap: "In the editor bookmarks are added (Cmd+B), renamed and deleted in place in the panel (web/tests/hand/pages.mjs); a bookmark goes to the top of its page (no position or zoom), and moving one goes only through the parameters dialog."
     target: "Adobe Acrobat Pro 26.002.21931"
     cases: [pdf.bookmarks.edit/save-reopen]
     since: "2026-11-17"
@@ -123,7 +126,8 @@ features:
     priority: P0
     status: has
     commands: [form.addField, form.fill, form.listFields]
-    paths: [bindings/wasm/tests/round_trip.rs]
+    paths: [bindings/wasm/tests/round_trip.rs, web/tests/hand/forms.mjs, web/tests/hand/fields-panel.mjs]
+    gap: "In the editor text, check box, radio and drop-down fields are filled on the page and in the Fields panel (web/tests/hand/forms.mjs, fields-panel.mjs); adding a field (form.addField) goes only through the parameters dialog, its rectangle dragged on the page."
     target: "Adobe Acrobat Pro 26.002.21931"
     cases: [pdf.forms.fill/save-reopen]
     since: "2026-11-17"
@@ -133,7 +137,8 @@ features:
     priority: P0
     status: has
     commands: [link.add, link.list]
-    paths: [bindings/wasm/tests/round_trip.rs]
+    paths: [bindings/wasm/tests/round_trip.rs, web/tests/hand/annotations.mjs, web/tests/hand/pick.mjs]
+    gap: "In the editor a link is followed with a click (web/tests/hand/annotations.mjs); adding one goes through the parameters dialog with its rectangle dragged on the page (web/tests/hand/pick.mjs): there is no link tool."
     target: "Adobe Acrobat Pro 26.002.21931"
     cases: [pdf.links.edit/save-reopen]
     since: "2026-11-17"
@@ -143,7 +148,8 @@ features:
     priority: P0
     status: has
     commands: [page.addText, text.edit, text.extract]
-    paths: [bindings/wasm/tests/round_trip.rs]
+    paths: [bindings/wasm/tests/round_trip.rs, web/tests/hand/annotation-tools.mjs]
+    gap: "In the editor new page text is put where the page is clicked with the Add text tool (web/tests/hand/annotation-tools.mjs); text already on a page is changed only through the text.edit parameters dialog, not in place."
     target: "Adobe Acrobat Pro 26.002.21931"
     cases: [pdf.text.edit/save-reopen]
     since: "2026-11-17"
@@ -153,7 +159,8 @@ features:
     priority: P0
     status: has
     commands: [redaction.mark, redaction.apply]
-    paths: [bindings/wasm/tests/round_trip.rs]
+    paths: [bindings/wasm/tests/round_trip.rs, web/tests/hand/pick.mjs]
+    gap: "In the editor selected text is marked from the selection bar or its menu and Apply redactions asks first (web/tests/hand/pick.mjs); a box is marked only through the parameters dialog, its rectangle dragged on the page."
     target: "Adobe Acrobat Pro 26.002.21931"
     cases: [pdf.redact.apply/save-reopen]
     since: "2026-11-17"
@@ -229,13 +236,13 @@ features:
     cases: [pdf.editor.page-scroll/scrollbars-and-bounds]
     since: "2026-11-17"
   - id: pdf.editor.keyboard-and-view
-    title: "The editor's keyboard and view: the keys work as soon as a PDF opens and after a dialog, a field's Enter or the page field; the arrows, Space, PageDown, Home, End and Cmd+arrows scroll as a reader's do; Cmd+0 and the status bar's Fit fit the current page, Cmd+1 is 100 %, Cmd+2 fits the width, Cmd+= and Cmd+- step a 10-3200 % ladder; a mouse wheel's notch with Cmd zooms 1.2 times; the status bar's zoom takes a typed percentage and lists its steps; Cmd+A selects all text and Cmd+C copies it from anywhere in the editor; with the find bar open an edit keeps the current match and the view, Cmd+G steps, Escape closes it and Cmd+F looks for the selected text"
+    title: "The editor's keyboard and view: the keys work as soon as a PDF opens and after a dialog, a field's Enter or the page field; the arrows, Space, PageDown, Home, End and Cmd+arrows scroll as a reader's do; Cmd+0 and the status bar's Fit fit the current page, Cmd+1 is 100 %, Cmd+2 fits the width, and a fit stays while the window or the panels change the view's size (any other zoom ends it); Cmd+= and Cmd+- step a 10-3200 % ladder; a mouse wheel's notch with Cmd zooms 1.2 times; the status bar's zoom takes a typed percentage and lists its steps; Cmd+A selects all text and Cmd+C copies it from anywhere in the editor; with the find bar open an edit keeps the current match and the view, Cmd+G steps, Escape closes it and Cmd+F looks for the selected text"
     dimension: [function]
     priority: P0
     status: has
-    paths: [web/src/App.tsx, web/src/focus.ts, web/src/view.ts, web/src/view.test.mjs, web/src/ZoomBar.tsx, web/src/FindBar.tsx, web/src/ribbon/HomeTab.tsx, web/src/SidePanel.tsx, web/src/useTextSelection.ts, web/src/textSelection.ts, web/src/devHost.ts, web/src/app.css, web/tests/hand/harness.mjs, web/tests/hand/fixture.mjs, web/tests/hand/keys.mjs, web/tests/hand/zoom.mjs]
+    paths: [web/src/App.tsx, web/src/focus.ts, web/src/view.ts, web/src/view.test.mjs, web/src/ZoomBar.tsx, web/src/FindBar.tsx, web/src/ribbon/HomeTab.tsx, web/src/SidePanel.tsx, web/src/useTextSelection.ts, web/src/textSelection.ts, web/src/devHost.ts, web/src/app.css, web/tests/hand/harness.mjs, web/tests/hand/fixture.mjs, web/tests/hand/keys.mjs, web/tests/hand/zoom.mjs, web/tests/hand/first-ten-minutes.mjs]
     gap: "Measured in dev.html only (whether Kition Desktop gives the editor's frame the keyboard on open is not checked here). Select All takes every page up to 64 (the engine's text.select span) and the current page beyond. A mouse wheel's notch is told from a trackpad by its delta (whole 100 px or lines); real wheels and trackpads are not measured. Cmd+1 and Cmd+2 may be taken by a browser's own tab keys outside Kition."
-    cases: [regressions/issue-hand-k1-first-key, regressions/issue-hand-k2-focus-after-dialog, regressions/issue-hand-b7-page-down, regressions/issue-hand-a3-wheel-zoom-step, regressions/issue-hand-a10-fit-page, regressions/issue-hand-d4-find-jump]
+    cases: [regressions/issue-hand-k1-first-key, regressions/issue-hand-k2-focus-after-dialog, regressions/issue-hand-b7-page-down, regressions/issue-hand-a3-wheel-zoom-step, regressions/issue-hand-a10-fit-page, regressions/issue-hand-d4-find-jump, regressions/issue-hand-n8-fit-kept]
     since: "2026-11-27"
   - id: pdf.editor.markup-and-comments
     title: "Marking text and working with comments without a dialog: with text selected (each page of a selection across pages) or the find bar on a match, Highlight, Underline and Strikethrough mark it at once; a bar beside a released selection highlights, underlines, strikes out, adds a highlight with a note and copies; the Comments panel shows each comment's author, time, status and replies, goes to a comment and frames it, edits its text, replies, sets its status and deletes it; the Comments tab's commands that act on a comment act on the chosen one and are off with none, as the Delete key does"
@@ -361,6 +368,15 @@ features:
     paths: [web/src/ribbon/FillSignGroup.tsx, web/src/page/useFillTool.ts, web/src/App.tsx, web/src/strings.ts, web/tests/hand/pick.mjs]
     gap: "Only text, check and cross have buttons: dot, line, date, signature and initials go through Fill & Sign's dialog (with its point picked on the page); the text is typed in a card beside the click, not in a box on the page that grows as it is typed; what is put is a comment that moves like one, not resized as a whole with its text. The reference's tools are on its rail; these are on the Forms tab and are not tools of the rail. Measured in dev.html only."
     cases: [regressions/issue-hand-s4-fill-sign]
+    since: "2026-11-28"
+  - id: pdf.editor.acceptance
+    title: "The first ten minutes by hand: what a person used to PDF readers does first (open, scroll, page, go to a page, zoom and fit, pan, select and copy, find, thumbnails, bookmarks, links, highlight, the highlighter, a sticky note, shapes, a drawing, move, recolour and delete a comment, fill a field and Tab on, tick and choose, undo and redo, turn, delete and move a page, save), and six more (add a line of text, write and tick on a page without fields, full screen, the right-click menus), each with real pointer and keys, its steps counted against the reference's; and one counted task (find, highlight three matches, a Chinese sticky note where it was clicked, move a page by its thumbnail, turn a page, fill a field on the page, undo two steps, save) in 30 actions or fewer with no stuck step"
+    dimension: [function]
+    priority: P1
+    status: has
+    paths: [web/tests/hand/first-ten-minutes.mjs, web/tests/hand/counted-task.mjs, web/tests/hand/harness.mjs, web/tests/hand/fixture.mjs, web/package.json]
+    gap: "Not done, as the plan cut them: two-page and single-page layouts, turning the view, editing text already on a page, moving and scaling an image (the test lists them as skipped by the plan). Differences the test prints as gaps: a new highlight does not open the Comments panel with its note to type in; the Undo button does not name the step; the page's right-click menu has 8 items where the reference has about 21; undoing back to the saved state still shows unsaved changes (the engine marks every undo as a change). Also: no Shift+Cmd+N (the page field is a click away); a drag held at the thumbnail list's edge does not scroll it; a moved comment shows a dashed frame, not its pixels; a bookmark or a link goes to the top of its page; full screen has no black background; asking to save on close is the host's. Measured in dev.html only, with synthetic events (no real input method, trackpad or wheel)."
+    cases: [pdf.editor.acceptance/first-ten-minutes, pdf.editor.acceptance/counted-task]
     since: "2026-11-28"
   - id: pdf.view
     title: "Render pages and previews; list and move page objects"

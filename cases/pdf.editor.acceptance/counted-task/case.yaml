@@ -1,0 +1,25 @@
+format: 1
+id: pdf.editor.acceptance/counted-task
+feature: pdf.editor.acceptance
+intent: >-
+  One whole task by hand (find, highlight three matches with the highlighter, a Chinese sticky note where it was clicked, page 3 dragged to the front in the thumbnails, page 2 turned, a field filled on the page, two undos, save) takes 30 actions or fewer with no stuck step, in Chromium and WebKit; the comments, page order, field and saved file are read back.
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/counted-task.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/counted-task.mjs, chromium]
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/counted-task.mjs, webkit]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium, webkit]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-28"

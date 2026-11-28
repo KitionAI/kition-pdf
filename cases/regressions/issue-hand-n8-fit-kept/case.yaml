@@ -1,0 +1,26 @@
+format: 1
+id: regressions/issue-hand-n8-fit-kept
+feature: pdf.editor.keyboard-and-view
+intent: >-
+  A fit stays while the view changes size (R-A10): after Cmd+2 a narrower window still fits the page
+  width, after Cmd+0 a shorter window still fits the page, and 100 % stays 100 %; any other zoom ends
+  the fit. Before, the width fitted once and the page then overflowed a narrower window.
+  web/tests/hand/first-ten-minutes.mjs (thing 8) resizes the browser's viewport and reads the zoom.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF stage 9 acceptance (first ten minutes, thing 8), 2026-11-28
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/first-ten-minutes.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-28"

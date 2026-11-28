@@ -1,0 +1,25 @@
+format: 1
+id: pdf.editor.acceptance/first-ten-minutes
+feature: pdf.editor.acceptance
+intent: >-
+  The thirty things and six more of the first ten minutes, done with real pointer and keys in Chromium and WebKit: each that the plan did not cut does what the reference's does (read back with inspect and the read commands), the cut ones are listed as skipped by the plan, and a table of results and steps against the reference's is printed.
+layer: gate
+dimension: function
+source:
+  kind: probe
+  from: web/tests/hand/first-ten-minutes.mjs
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/first-ten-minutes.mjs, chromium]
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/first-ten-minutes.mjs, webkit]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium, webkit]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-28"
