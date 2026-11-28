@@ -680,7 +680,14 @@ input.pdf-form-control[type='radio'][data-focused] {
 }
 
 .pdf-pick-bar {
+  height: auto;
+  min-height: 36px;
+  padding-block: 4px;
   border-color: var(--kit-primary);
+}
+
+.pdf-pick-bar > span {
+  min-width: 0;
 }
 
 .pdf-pick-marks {
