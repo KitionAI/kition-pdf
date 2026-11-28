@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react'
-import type { KitPointer, KitTool } from '@kition/sdk/editor'
+import { useMemo, useRef } from 'react'
+import type { KitGesture, KitPointer, KitTool, KitToolContext } from '@kition/sdk/editor'
 import {
   CLICK_PX,
   asRect,
@@ -19,9 +19,6 @@ import {
   type PageObjects,
   type Rect,
 } from './geometry'
-
-type KitToolContext = Parameters<KitTool['begin']>[1]
-type KitGesture = Exclude<ReturnType<KitTool['begin']>, void>
 
 /** A comment being dragged: where its frame is drawn until the release (and until the change shows). */
 export type Dragging = { page: number; index: number; id: string | null; rect: Rect; kind: 'move' | 'resize' }
@@ -65,15 +62,8 @@ const travelled = (a: KitPointer, b: KitPointer) => Math.hypot(b.clientX - a.cli
 export function usePageTool(options: Options): KitTool {
   const live = useRef(options)
   live.current = options
-  const [cursor, setCursor] = useState('text')
-  const cursorRef = useRef(cursor)
-  const showCursor = (next: string) => {
-    if (cursorRef.current === next) return
-    cursorRef.current = next
-    setCursor(next)
-  }
 
-  const base = useMemo(() => {
+  return useMemo(() => {
     const where = (pointer: KitPointer) => {
       const { pages, objects, chosen, zoom } = live.current
       const at = pageAt(pages, pointer.x, pointer.y)
@@ -101,8 +91,9 @@ export function usePageTool(options: Options): KitTool {
       const area = live.current.pages[page - 1]?.area
       return area ? [area.x1 - area.x0, area.y1 - area.y0] : [Infinity, Infinity]
     }
-    const tool: Omit<KitTool, 'cursor'> = {
+    const tool: KitTool = {
       id: 'pdf-page',
+      cursor: 'text',
       begin(start, context) {
         const { hit } = where(start)
         const o = live.current
@@ -169,8 +160,9 @@ export function usePageTool(options: Options): KitTool {
       hover(pointer) {
         const { at, hit } = where(pointer)
         const o = live.current
-        showCursor(cursorFor(hit, at && hit.kind === 'page' ? o.lines(at.page) : null, at?.point ?? null))
         o.onHover(hit.kind === 'comment' || hit.kind === 'markup' ? { comment: hit.comment, clientX: pointer.clientX, clientY: pointer.clientY } : null)
+        // The canvas shows the cursor the hover answers until the next hover or the pointer leaving.
+        return cursorFor(hit, at && hit.kind === 'page' ? o.lines(at.page) : null, at?.point ?? null)
       },
       leave() {
         live.current.onHover(null)
@@ -182,5 +174,4 @@ export function usePageTool(options: Options): KitTool {
     }
     return tool
   }, [])
-  return useMemo(() => ({ ...base, cursor }) as KitTool, [base, cursor])
 }

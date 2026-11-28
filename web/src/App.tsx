@@ -47,7 +47,7 @@ import { useTextSelection } from './useTextSelection'
 import { selectionPoint, type SelectionRequest, type SelectionResult } from './textSelection'
 import { withRewriteLease } from './rewriteLease'
 import { newlyDropped } from './droppedEdits'
-import { focusPages, keyboardFallback, keyboardLost, returnKeyboardLater } from './focus'
+import { focusPages, keyboardLost, pagesRegion, returnKeyboardLater } from './focus'
 import { isTextControl } from './textSelection'
 import { KEY_LINE, WHEEL_NOTCH_ZOOM, clampZoom, ladderStep, screenStep, scrollView, wheelNotches, zoomAround } from './view'
 import { ZoomBar, type Fit } from './ZoomBar'
@@ -149,6 +149,16 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
             returnKeyboardLater()
           }
         },
+        // A shortcut the SDK asks the engine about (Cmd+Z right after an edit) runs under its
+        // lease too: an undo that crosses a rewrite takes the whole document's.
+        runWhenEnabled: (id: string) =>
+          editor.session.inOrder(async () => {
+            const open = editor.session.doc
+            if (!open) return null
+            const off = await open.disabledCommands().catch(() => null)
+            if (off == null || off.includes(id) || !editor.enabledByEngine(id)) return null
+            return runLeased(id, () => editor.run(id, {}, { inOrder: true }))
+          }),
       }
     },
     // `chosen`: the commands that act on a comment turn on and off with it.
@@ -390,6 +400,8 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     } else if (page) canvas.current?.show(wholePageArea(page)!)
   }
   const setZoomLevel = (value: number) => canvas.current?.zoomTo(clampZoom(value))
+  /** Cmd+0 and Fit: the current page whole in view. */
+  const fitPage = () => zoomTo('page')
 
   // The keyboard is the pages' as soon as a document opens, before anything is clicked (K1).
   const focusedDoc = useRef<unknown>(null)
@@ -398,11 +410,6 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     if (!doc || !ready || focusedDoc.current === doc) return
     if (keyboardLost() && focusPages()) focusedDoc.current = doc
   }, [doc, ready])
-  // A key that still finds the body holding the keyboard goes to the pages (K2's safety net).
-  useEffect(() => {
-    document.addEventListener('keydown', keyboardFallback, true)
-    return () => document.removeEventListener('keydown', keyboardFallback, true)
-  }, [])
   // A parameters dialog closed with Escape or Cancel gives the keyboard back too.
   const dialogOpen = !!asking
   const wasDialogOpen = useRef(false)
@@ -412,13 +419,14 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   }, [dialogOpen])
 
   // A mouse wheel's notch with Cmd (Ctrl) zooms one step around the pointer; a trackpad's small
-  // steps and a pinch keep the canvas's own zoom. Heard before the canvas, in the capture phase.
+  // steps and a pinch keep the canvas's own zoom. Heard before the canvas, in the capture phase,
+  // over its whole region (a form field on the page too, as the canvas hears its wheel).
   useEffect(() => {
     const element = region.current
     if (!element) return undefined
     const wheel = (event: WheelEvent) => {
       if (!event.ctrlKey && !event.metaKey) return
-      const surface = event.target instanceof Element ? event.target.closest('[data-testid="kit-canvas-surface"]') : null
+      const surface = event.target instanceof Element ? event.target.closest('.kui-canvas')?.querySelector('[data-testid="kit-canvas-surface"]') ?? null : null
       const notches = wheelNotches(event, window.devicePixelRatio)
       const handle = canvas.current
       const view = handle?.view()
@@ -591,7 +599,6 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const [formBarClosed, setFormBarClosed] = useState<unknown>(null)
   const fieldCount = fillableCount(objects.fields)
   const fillField = useCallback((name: string, value: unknown) => leased.run('form.fill', { values: { [name]: value } }), [leased])
-  const canvasSurface = useCallback(() => region.current?.querySelector('[data-testid="kit-canvas-surface"]') ?? null, [])
   /** Brings a document rectangle into view when it is not all in it: a little below the view's top. */
   const reveal = useCallback((rect: Rect) => {
     const handle = canvas.current
@@ -832,18 +839,6 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       chooseTool(key === 'v' ? 'select' : 'hand')
       return true
     }
-    // Undo and Redo right after an edit: the list of what can run may not have caught up with the
-    // edit yet (the SDK's shortcut then does nothing), so the engine is asked, as the SDK does for
-    // its keys without Cmd. When the list already allows it, the SDK's own shortcut runs it.
-    if (command && !event.altKey && key === 'z') {
-      const id = event.shiftKey ? 'edit.redo' : 'edit.undo'
-      if (editor.enabled(id) || !editor.enabledByEngine(id) || !doc) return false
-      const open = doc
-      void open.disabledCommands().then((off) => {
-        if (!off.includes(id)) void leased.run(id, {})
-      }).catch(() => undefined)
-      return true
-    }
     // Copy with the keyboard off the pages (a button, the frame): some engines (WebKit on Linux)
     // send no copy event there without a page selection, so the editor asks for one itself.
     if (command && !event.altKey && !event.shiftKey && key === 'c' && selection.selected?.text && !(event.target instanceof Node && region.current?.contains(event.target))) {
@@ -882,9 +877,10 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       selection.selectAll(current)
       return true
     }
-    // Zoom: Cmd+0 fits the current page, Cmd+1 is 100 %, Cmd+2 fits its width; Cmd+= and Cmd+- step the ladder.
-    if (command && !event.altKey && (key === '0' || key === '1' || key === '2')) {
-      zoomTo(key === '0' ? 'page' : key === '1' ? 'actual' : 'width')
+    // Zoom: Cmd+1 is 100 %, Cmd+2 fits the current page's width (Cmd+0 fits the page: the
+    // shell's `onFit`); Cmd+= and Cmd+- step the ladder.
+    if (command && !event.altKey && (key === '1' || key === '2')) {
+      zoomTo(key === '1' ? 'actual' : 'width')
       return true
     }
     if (command && !event.altKey && (key === '=' || key === '+' || key === '-')) {
@@ -981,6 +977,8 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
         onTab={setTab}
         canvas={canvas}
         onKeyDown={keyDown}
+        onFit={fitPage}
+        keyboardHome={pagesRegion}
         focusTool={toolId === 'select' ? selectTool : { label: t(TOOL_LABELS[toolId]), icon: toolIcon(toolId) }}
         rail={state ? <ToolRail tools={rail} active={toolId} onSelect={(id) => { if (isToolId(id)) chooseTool(id) }} /> : null}
         options={state ? (
@@ -1032,7 +1030,6 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
                 }}
                 onReadOnly={(field) => toast('info', t('fieldReadOnly', { name: field.tooltip || field.name }))}
                 reveal={reveal}
-                surface={canvasSurface}
                 handle={formFields}
               />
               {chosen?.rect ? <SelectionFrame comment={chosen} area={pages[chosen.page - 1]?.area} view={canvasView} drag={drag} /> : null}

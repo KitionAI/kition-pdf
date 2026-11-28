@@ -1,10 +1,8 @@
-import { useMemo, useRef, useState } from 'react'
-import type { KitPointer, KitTool } from '@kition/sdk/editor'
+import { useMemo, useRef } from 'react'
+import type { KitPointer, KitTool, KitToolContext } from '@kition/sdk/editor'
 import { HANDLE_CURSOR, hitTest, onText, pageAt, type Area, type PageComment, type PageObjects, type Rect } from './geometry'
 import { AREA_MIN_PX, PLACE_DRAG_PX, lineEnd, lineLongEnough, onPage, rectQuadOf, round2, shapeBigEnough, shapeRect, strokePoints, toolDef, type ToolId, type ToolStyle } from './tools'
 
-type KitToolContext = Parameters<KitTool['begin']>[1]
-type ToScreen = (x: number, y: number) => { x: number; y: number }
 
 type Options = {
   tool: ToolId
@@ -45,15 +43,6 @@ export function useDrawTool(options: Options): KitTool {
   live.current = options
   const kind = toolDef(options.tool).kind
   const resting = kind === 'markup' ? 'text' : 'crosshair'
-  // A shape tool's cursor turns into a resize cursor over the selected comment's handle.
-  const [cursor, setCursor] = useState('crosshair')
-  const cursorRef = useRef(cursor)
-  const showCursor = (next: string) => {
-    if (cursorRef.current === next) return
-    cursorRef.current = next
-    setCursor(next)
-  }
-  const shown = kind === 'shape' ? cursor : resting
 
   const base = useMemo(() => {
     const local = (page: number, pointer: KitPointer): [number, number] => {
@@ -197,7 +186,7 @@ export function useDrawTool(options: Options): KitTool {
         }
         const preview = (pointer: KitPointer, ctx: KitToolContext) => {
           const shape = geometry(pointer)
-          ctx.overlay.draw((paint, toScreen: ToScreen) => {
+          ctx.overlay.draw((paint, toScreen) => {
             paintStyle(paint, live.current.style(), zoom())
             if (shape.line) {
               const a = toScreen(...toDocument(page, shape.line[0]))
@@ -248,14 +237,14 @@ export function useDrawTool(options: Options): KitTool {
           cancel: clear,
         }
       },
+      // A shape tool's cursor turns into a resize cursor over the selected comment's handle.
       hover(pointer) {
-        const o = live.current
-        if (toolDef(o.tool).kind !== 'shape') return
+        if (toolDef(live.current.tool).kind !== 'shape') return undefined
         const hit = handleHit(pointer)
-        showCursor(hit ? HANDLE_CURSOR[hit.handle] : 'crosshair')
+        return hit ? HANDLE_CURSOR[hit.handle] : undefined
       },
     }
     return tool
   }, [])
-  return useMemo(() => ({ ...base, id: `pdf-draw-${options.tool}`, cursor: shown }) as KitTool, [base, shown, options.tool])
+  return useMemo(() => ({ ...base, id: `pdf-draw-${options.tool}`, cursor: resting }) as KitTool, [base, resting, options.tool])
 }

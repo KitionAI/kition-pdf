@@ -82,12 +82,10 @@ type Props = {
   onReadOnly: (field: PageField) => void
   /** Brings a document rectangle into view. */
   reveal: (rect: Rect) => void
-  /** The canvas's surface, to hand a wheel turned over a field on to. */
-  surface: () => Element | null
   handle?: Ref<FormFieldsHandle>
 }
 
-export function FormFields({ fields, pages, view, active, highlight, canFill, fill, onEnter, onReadOnly, reveal, surface, handle }: Props) {
+export function FormFields({ fields, pages, view, active, highlight, canFill, fill, onEnter, onReadOnly, reveal, handle }: Props) {
   const { t } = useKitEditor()
   const slots = useMemo(() => fieldSlots(fields), [fields])
   const layer = useRef<HTMLDivElement>(null)
@@ -137,25 +135,14 @@ export function FormFields({ fields, pages, view, active, highlight, canFill, fi
   // Whether the layer is there: a view to place the controls in and a field to place.
   const drawn = !!view && slots.length > 0
   // The layer never scrolls (a focused control near its edge would scroll it away from the view).
+  // A wheel over a field turns the pages: the canvas hears the wheel over its whole region.
   useEffect(() => {
     const element = layer.current
     if (!element) return undefined
     const back = () => { if (element.scrollTop || element.scrollLeft) element.scrollTo(0, 0) }
-    // A wheel over a field turns the pages, as it does anywhere else on them.
-    const wheel = (event: WheelEvent) => {
-      const target = surface()
-      if (!target) return
-      event.preventDefault()
-      event.stopPropagation()
-      target.dispatchEvent(new WheelEvent('wheel', event))
-    }
     element.addEventListener('scroll', back)
-    element.addEventListener('wheel', wheel, { passive: false })
-    return () => {
-      element.removeEventListener('scroll', back)
-      element.removeEventListener('wheel', wheel)
-    }
-  }, [surface, drawn])
+    return () => element.removeEventListener('scroll', back)
+  }, [drawn])
 
   if (!drawn) return null
   // The controls of the pages in view (and a little round them), and the one with the keyboard.

@@ -148,14 +148,11 @@ export function HomeTab({ info, current, targets, onPage, onZoom, selectionAvail
         <RibbonStack>
           <RibbonButton icon={Underline} label={t('underline')} pressed={tool === 'underline'} disabled={!editable || !enabled('comment.add')} onClick={() => (tool === 'underline' ? onTool('select') : markup('underline'))} data-testid="pdf-underline" />
           <RibbonButton icon={Strikethrough} label={t('strikethrough')} pressed={tool === 'strikeout'} disabled={!editable || !enabled('comment.add')} onClick={() => (tool === 'strikeout' ? onTool('select') : markup('strikeout'))} data-testid="pdf-strikeout" />
-          {/* In a RibbonItem: in Single line a menu's own rows are drawn only under a primary item. */}
-          <RibbonItem primary>
-            <RibbonMenu icon={More} label={t('commentMore')} disabled={!editable} testId="pdf-comment-more" primary>
-              <MenuItem icon={MessageSquarePlus} label={t('noteDialog')} disabled={!enabled('comment.add')} onSelect={() => ask('comment.add')} testId="pdf-note-dialog" />
-              <MenuItem icon={Highlighter} label={t('highlightDialog')} disabled={!enabled('comment.add')} onSelect={() => ask('comment.add', { type: 'highlight', find: '' })} testId="pdf-highlight-dialog" />
-              <MenuItem icon={Type} label={t('addTextDialog')} disabled={!enabled('page.addText')} onSelect={() => ask('page.addText')} testId="pdf-add-text-dialog" />
-            </RibbonMenu>
-          </RibbonItem>
+          <RibbonMenu icon={More} label={t('commentMore')} disabled={!editable} testId="pdf-comment-more" primary>
+            <MenuItem icon={MessageSquarePlus} label={t('noteDialog')} disabled={!enabled('comment.add')} onSelect={() => ask('comment.add')} testId="pdf-note-dialog" />
+            <MenuItem icon={Highlighter} label={t('highlightDialog')} disabled={!enabled('comment.add')} onSelect={() => ask('comment.add', { type: 'highlight', find: '' })} testId="pdf-highlight-dialog" />
+            <MenuItem icon={Type} label={t('addTextDialog')} disabled={!enabled('page.addText')} onSelect={() => ask('page.addText')} testId="pdf-add-text-dialog" />
+          </RibbonMenu>
         </RibbonStack>
       </RibbonGroup>
       <RibbonGroup label={p('Select text')} icon={SelectTool}>

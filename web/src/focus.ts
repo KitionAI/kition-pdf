@@ -3,11 +3,11 @@
  * undo) are heard on kit-editor's frame (`.kui-app`) and only while the focus is inside it. A page
  * just opened, a parameters dialog that ran or closed, a field's Enter and the page field's Enter
  * all used to leave the focus on the page's `<body>`, and then no key worked until the pages were
- * clicked. Here the pages (`.pdf-pages`) take the keyboard back instead, and a key that still finds
- * the body holding it is given to the pages once (`keyboardFallback`).
+ * clicked. Here the pages (`.pdf-pages`) take the keyboard back instead; a key that still finds
+ * the body holding it goes to them once through the shell's `keyboardHome` (`pagesRegion`).
  */
 
-/** The pages' region, which holds the keyboard when no control does. */
+/** The pages' region, which holds the keyboard when no control does (the shell's `keyboardHome`). */
 export function pagesRegion(): HTMLElement | null {
   return document.querySelector<HTMLElement>('.pdf-pages')
 }
@@ -54,39 +54,4 @@ export const selectOnFocus = {
     delete event.currentTarget.dataset.selecting
     event.preventDefault()
   },
-}
-
-/** Copy, cut and paste keep their own default (the clipboard event), so the fallback only moves the focus for them. */
-const CLIPBOARD_KEYS = new Set(['c', 'x', 'v'])
-
-/**
- * The safety net, for a `document` keydown listener in the capture phase: a key pressed while the
- * body has the keyboard gives the pages the keyboard and the key itself, once, so a way of losing
- * the focus nobody thought of never leaves the keys dead. Answers whether it sent the key again
- * (the original is then stopped).
- */
-export function keyboardFallback(event: KeyboardEvent) {
-  if (event.defaultPrevented || event.isComposing || !keyboardLost()) return false
-  if (event.target !== document.body && event.target !== document.documentElement) return false
-  if (!focusPages()) return false
-  // The copy event follows this key and goes to the pages, which now have the focus.
-  if ((event.metaKey || event.ctrlKey) && CLIPBOARD_KEYS.has(event.key.toLowerCase())) return false
-  const region = pagesRegion()
-  if (!region) return false
-  event.preventDefault()
-  event.stopImmediatePropagation()
-  region.dispatchEvent(new KeyboardEvent('keydown', {
-    key: event.key,
-    code: event.code,
-    location: event.location,
-    repeat: event.repeat,
-    shiftKey: event.shiftKey,
-    altKey: event.altKey,
-    ctrlKey: event.ctrlKey,
-    metaKey: event.metaKey,
-    bubbles: true,
-    cancelable: true,
-    composed: true,
-  }))
-  return true
 }
