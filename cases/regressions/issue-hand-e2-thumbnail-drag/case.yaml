@@ -1,0 +1,28 @@
+format: 1
+id: regressions/issue-hand-e2-thumbnail-drag
+feature: pdf.editor.organize
+intent: >-
+  Dragging the third thumbnail above the first did nothing: pages moved only through the Move
+  pages dialog. Now a press on a thumbnail that moves becomes a drag of the selected pages (or the
+  one grabbed), a line shows where they go, and the release is one page.move, one undo step; the
+  moved pages stay selected and the keyboard stays on the thumbnails; Escape during the drag or a
+  release outside the list moves nothing. web/tests/hand/pages.mjs reads the page order back with
+  text.extract.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings E2
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/pages.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

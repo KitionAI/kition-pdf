@@ -13,8 +13,9 @@ mod file_param_tests {
 
     use super::*;
 
-    /// Parameters whose names read like files but are not.
-    const NOT_FILES: &[(&str, &str)] = &[];
+    /// Parameters whose names read like files but are not: the bookmark tools' `path` (the
+    /// binding's own list, which lets those tools into the web engine).
+    const NOT_FILES: &[(&str, &str)] = crate::NOT_FILES;
 
     #[test]
     fn every_file_parameter_is_declared() {

@@ -292,6 +292,26 @@ features:
     gap: "A link goes to the top of its page at the current zoom: link.list answers the page only, not the destination's place and zoom. Only links go into the view history (bookmarks, thumbnails, find and the page field do not). Links to other files and scripts only say what they are. Measured in dev.html only (opening web addresses in Kition Desktop is not checked here)."
     cases: [regressions/issue-hand-f5-link]
     since: "2026-11-27"
+  - id: pdf.editor.organize
+    title: "Organizing pages from the thumbnails: a click goes to a page, Shift+click selects a run, Cmd+click adds or takes out a page (Cmd+A all, Escape none), the arrows with Shift grow the selection; a drag moves the selected pages (or the one grabbed) where a line between thumbnails shows, scrolling near the list's edges, one page.move, one undo step, the moved pages kept selected; Escape or a release outside the list moves nothing; Delete and Backspace delete the selected pages (else the current one), never every page, the keyboard kept on the thumbnails; a right-click (or the menu key) offers Rotate left and right, Insert a blank page after, Duplicate and Delete for the selected pages; the Home and Pages tabs' page commands act on the selected pages, else the current one; the Pages tab's buttons each have their own icon and name themselves with the kit's tooltip in Single line"
+    dimension: [function]
+    priority: P0
+    status: has
+    commands: [page.move, page.delete, page.rotate, page.insertBlank, page.duplicate]
+    paths: [web/src/Thumbnails.tsx, web/src/organize.ts, web/src/organize.test.mjs, web/src/ribbon/PagesTab.tsx, web/src/ribbon/HomeTab.tsx, web/src/SidePanel.tsx, web/src/App.tsx, web/src/pdf.ts, web/src/strings.ts, web/src/app.css, web/tests/hand/pages.mjs, web/tests/hand/fixture.mjs]
+    gap: "No hover buttons on a thumbnail (the reference has them only in its page grid), no page grid (Organize mode), no thumbnail size, no Cmd+[ / Cmd+] to move the selection a place, no cut, copy and paste of pages, no files dropped between thumbnails, no Extract, Split or Replace in the menu (the web editor leaves out tools that write files). After a move or a delete the view goes to the top of the page that was current. A thumbnail's selection is the session's and goes with any change of the page count. Measured in dev.html only."
+    cases: [regressions/issue-hand-e2-thumbnail-drag, regressions/issue-hand-e5-delete-key]
+    since: "2026-11-27"
+  - id: pdf.editor.bookmarks
+    title: "Bookmarks in the panel: a file that asks for its bookmarks (/PageMode /UseOutlines) opens with them shown; the tree folds and unfolds as the file says at first, then as left this session (the file is not changed); a click or Enter goes to the page; the arrows walk the rows, Right unfolds, Left folds or goes to the parent; a double-click or F2 renames in place (Enter or a click elsewhere keeps the title, Escape drops it), Delete deletes a bookmark and those under it, a right-click offers Rename, Add a bookmark under it and Delete; New bookmark (Cmd+B, the panel's button, the Pages tab, the page's menu) writes its title in place for the current page, adds nothing on Escape; each edit one command, one undo step"
+    dimension: [function]
+    priority: P1
+    status: has
+    commands: [bookmark.list, bookmark.add, bookmark_rename, bookmark_delete]
+    paths: [web/src/Bookmarks.tsx, web/src/SidePanel.tsx, web/src/App.tsx, web/src/pdf.ts, web/src/strings.ts, web/src/app.css, web/tests/hand/pages.mjs, web/tests/hand/fixture.mjs, bindings/wasm/src/lib.rs, bindings/wasm/tests/bookmark_tools.rs, bindings/wasm/tests/opening_panel.rs]
+    gap: "A new bookmark goes to the top of the current page (the page in the middle of the view), not the place on it, and a bookmark goes to the top of its page: bookmark.add and bookmark.list carry no position or zoom. No drag to reorder and no current bookmark marked (as the reference); no Move up, Move down, Indent, Outdent, Set to current page, style, colour, cut, copy or paste in the menu (bookmark_move and bookmark_set_page exist), no search box, no Expand all. Only the bookmarks panel follows /PageMode (not thumbnails' own, attachments or layers; a document with comments does not open the Comments panel). A landscape page in Fit Width is not refitted page by page. The bookmark tools rest on the whole document for an agent's premises. Measured in dev.html only."
+    cases: [regressions/issue-hand-f3-bookmark-rename, regressions/issue-hand-f3-bookmark-tools, regressions/issue-hand-a2-opening-panel]
+    since: "2026-11-27"
   - id: pdf.view
     title: "Render pages and previews; list and move page objects"
     dimension: [function, fidelity]

@@ -1,0 +1,21 @@
+format: 1
+id: regressions/issue-hand-f3-bookmark-tools
+feature: pdf.editor.bookmarks
+intent: >-
+  The web engine left out bookmark_rename, bookmark_delete, bookmark_move and bookmark_set_page:
+  their required `path` (a bookmark's place in the outline) was taken for a file argument. Now
+  they are offered with `path` in their parameters and rename, repoint, move and delete
+  bookmarks, one undo step each, while tools whose `path` is a file stay left out.
+layer: unit
+tags: [guard]
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings F3 (stage 7)
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, test: bookmark_tools }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-27"

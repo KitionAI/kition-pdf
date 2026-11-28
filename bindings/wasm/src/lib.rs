@@ -95,6 +95,17 @@ const MENUS: &[(&str, &str)] = &[
     ("ocr", "Tools"),
 ];
 
+/// The panel a document asks to open with, as `inspect()` names it.
+fn navigation_name(navigation: kition_pdf_engine::Navigation) -> &'static str {
+    match navigation {
+        kition_pdf_engine::Navigation::PageOnly => "page",
+        kition_pdf_engine::Navigation::Bookmarks => "bookmarks",
+        kition_pdf_engine::Navigation::Pages => "pages",
+        kition_pdf_engine::Navigation::Attachments => "attachments",
+        kition_pdf_engine::Navigation::Layers => "layers",
+    }
+}
+
 /// The menu of a tool ([`MENUS`]). `file.render` is in no menu: it draws the preview an agent
 /// looks at.
 fn menu_of(tool: &str) -> Option<&'static str> {
@@ -171,15 +182,20 @@ const FILE_PARAMS: &[&str] = &["path", "paths", "out", "output", "file", "files"
 /// `image_export` an `image` is a number.
 const FILE_ARGS: &[(&str, &str)] = &[("content.set", "image")];
 
-/// Whether `key` of `tool`'s arguments names a file ([`FILE_PARAMS`], [`FILE_ARGS`]).
+/// Parameters named like files that are none: a bookmark's `path` is its place in the outline
+/// (from 1 at each level), so the bookmark tools are the document's own.
+const NOT_FILES: &[(&str, &str)] =
+    &[("bookmark_rename", "path"), ("bookmark_delete", "path"), ("bookmark_move", "path"), ("bookmark_set_page", "path")];
+
+/// Whether `key` of `tool`'s arguments names a file ([`FILE_PARAMS`] but [`NOT_FILES`], [`FILE_ARGS`]).
 fn names_a_file(tool: &str, key: &str) -> bool {
-    FILE_PARAMS.contains(&key) || FILE_ARGS.contains(&(tool, key))
+    (FILE_PARAMS.contains(&key) && !NOT_FILES.contains(&(tool, key))) || FILE_ARGS.contains(&(tool, key))
 }
 
 /// A tool's parameter schema as the kit offers it: [`parameter_schema`] without the tool's
 /// [`FILE_ARGS`].
 fn tool_schema(tool: &ToolDef) -> Value {
-    let mut schema = parameter_schema(&tool.input_schema);
+    let mut schema = parameter_schema(tool.name, &tool.input_schema);
     if let Some(properties) = schema.as_object_mut() {
         properties.retain(|key, _| !FILE_ARGS.contains(&(tool.name, key.as_str())));
     }
@@ -196,18 +212,19 @@ fn usable(tool: &ToolDef) -> bool {
         return false;
     }
     let required = tool.input_schema.get("required").and_then(Value::as_array);
-    !required.is_some_and(|list| list.iter().filter_map(Value::as_str).any(|key| FILE_PARAMS.contains(&key)))
+    !required
+        .is_some_and(|list| list.iter().filter_map(Value::as_str).any(|key| FILE_PARAMS.contains(&key) && !NOT_FILES.contains(&(tool.name, key))))
 }
 
 /// A tool's JSON Schema (draft 2020-12 subset) as the standard's parameter schema, without the
-/// `doc` argument, which the document fills in.
-fn parameter_schema(input: &Value) -> Value {
+/// `doc` argument, which the document fills in, and the arguments that name files.
+fn parameter_schema(tool: &str, input: &Value) -> Value {
     let required: Vec<&str> =
         input.get("required").and_then(Value::as_array).map(|list| list.iter().filter_map(Value::as_str).collect()).unwrap_or_default();
     let mut out = Map::new();
     if let Some(properties) = input.get("properties").and_then(Value::as_object) {
         for (key, node) in properties {
-            if key == "doc" || FILE_PARAMS.contains(&key.as_str()) {
+            if key == "doc" || (FILE_PARAMS.contains(&key.as_str()) && !NOT_FILES.contains(&(tool, key.as_str()))) {
                 continue;
             }
             let mut converted = value_node(node);
@@ -256,7 +273,7 @@ fn value_node(node: &Value) -> Value {
                 out.insert(key.clone(), value_node(value));
             }
             "properties" if kind == "object" => {
-                let inner = parameter_schema(node);
+                let inner = parameter_schema("", node);
                 out.insert(key.clone(), inner);
             }
             "minimum" | "maximum" | "minItems" | "maxItems" | "maxLength" | "minLength" | "pattern" | "format" => {
@@ -579,7 +596,7 @@ impl KitDocument for PdfDocument {
         // `doc` is not a published parameter: refuse it like any unknown key rather than replace it,
         // so a caller that meant another document is told instead of editing this one.
         if args.contains_key("doc") {
-            let schema = parameter_schema(&tool.input_schema);
+            let schema = parameter_schema(tool.name, &tool.input_schema);
             let known: Vec<&str> = schema.as_object().map(|names| names.keys().map(String::as_str).collect()).unwrap_or_default();
             return Err(format!(
                 "{command}: unknown argument \"doc\": a command runs on the document it is called on, not one a parameter names; leave `doc` out (expected: {})",
@@ -601,8 +618,9 @@ impl KitDocument for PdfDocument {
         Ok(if out.len() == 1 { out.remove(0) } else { Value::Array(out) })
     }
 
-    /// The document: its pages (with where each lies on the canvas), and whether it can be
-    /// edited, undone, and redone.
+    /// The document: its pages (with where each lies on the canvas), whether it can be edited,
+    /// undone, and redone, and the panel it asks to open with (`/PageMode`: `bookmarks`, `pages`,
+    /// `attachments`, `layers`, or `page` for none).
     fn inspect(&self) -> Result<Value, String> {
         let doc = self.doc().ok_or("the document is not open")?;
         let pages: Vec<Value> = self
@@ -618,6 +636,7 @@ impl KitDocument for PdfDocument {
             "editable": doc.editable(),
             "readOnlyReason": doc.read_only_reason,
             "formFields": doc.form.len(),
+            "navigation": navigation_name(doc.initial_view().navigation),
             "canUndo": doc.can_undo().is_some(),
             "canRedo": doc.can_redo().is_some(),
         }))

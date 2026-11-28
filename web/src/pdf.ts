@@ -6,12 +6,14 @@ export type PdfInfo = {
   editable: boolean
   readOnlyReason: string | null
   formFields: number
+  /** The panel the document asks to open with (`/PageMode`): `bookmarks`, `pages`, `attachments`, `layers` or `page`. */
+  navigation: string
 }
 
 type Area = { x: number; y: number; width: number; height: number }
 
 export function describe(info: KitEngineInfo): PdfInfo {
-  const inspected = info.inspected as { pages?: Array<{ area?: Area; label?: string }>; editable?: boolean; readOnlyReason?: string | null; formFields?: number }
+  const inspected = info.inspected as { pages?: Array<{ area?: Area; label?: string }>; editable?: boolean; readOnlyReason?: string | null; formFields?: number; navigation?: string }
   return {
     pages: (inspected.pages ?? []).map((page, index) => ({
       area: page.area ? { x0: page.area.x, y0: page.area.y, x1: page.area.x + page.area.width, y1: page.area.y + page.area.height } : { x0: 0, y0: 0, x1: 0, y1: 0 },
@@ -20,6 +22,7 @@ export function describe(info: KitEngineInfo): PdfInfo {
     editable: inspected.editable !== false,
     readOnlyReason: inspected.readOnlyReason ?? null,
     formFields: inspected.formFields ?? 0,
+    navigation: inspected.navigation ?? 'page',
   }
 }
 
@@ -57,23 +60,25 @@ export type Where = {
   click: { page: number; point: [number, number] } | null
   /** A text selection on one page: its page, the rectangle round it and its text. */
   selection: { page: number; rect: number[]; text: string } | null
+  /** The pages selected in the thumbnails (1-based), when any are. */
+  pages?: number[]
 }
 
 const round = (value: number) => Math.round(value)
 
 /**
  * Where the person is, as a command's dialog starts: the selection's page, else the current page
- * (1-based), for `page` and `pages`; the last press on that page for a point (`at`), else a point
+ * (1-based), for `page` and `pages` (the pages selected in the thumbnails for `pages`); the last press on that page for a point (`at`), else a point
  * near the page's top-left; the selection's rectangle for `rect` and its text for `find`; a blank
  * page goes after the current one.
  */
-export function commandDefaults({ current, click, selection }: Where) {
+export function commandDefaults({ current, click, selection, pages }: Where) {
   return (command: KitCommand): Record<string, unknown> => {
     const schema = command.schema ?? {}
     const values: Record<string, unknown> = {}
     const page = selection?.page ?? current + 1
     if ('page' in schema) values.page = page
-    if ('pages' in schema) values.pages = [page]
+    if ('pages' in schema) values.pages = pages?.length ? [...pages] : [page]
     if ('from' in schema && command.id === 'page.number') values.from = 1
     if ('at' in schema) values.at = command.id === 'page.insertBlank' ? current + 2 : click && click.page === page ? click.point.map(round) : [72, 72]
     if ('rect' in schema && selection) values.rect = selection.rect.map(round)

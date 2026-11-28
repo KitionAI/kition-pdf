@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { TesseraIcons } from '@kition/sdk/editor'
 import { Button, IconButton, useEngineQuery, useKitEditor } from '@kition/sdk/editor'
 import type { PdfInfo } from './pdf'
-import { Thumbnails } from './Thumbnails'
+import { Thumbnails, type PageActions } from './Thumbnails'
+import { Bookmarks, type BookmarkDraft } from './Bookmarks'
 import { focusPages } from './focus'
 import { STATUSES, commentRef, sameComment, shownDate, statusOf, type CommentItem } from './comments'
 
@@ -14,8 +15,7 @@ const TextCursorInput = TesseraIcons.TextCursorInputIcon
 const Pencil = TesseraIcons.PencilIcon
 const Trash = TesseraIcons.TrashIcon
 
-type Panel = 'pages' | 'bookmarks' | 'comments' | 'fields'
-type BookmarkItem = { title: string; page: number | null; children: BookmarkItem[] }
+export type Panel = 'pages' | 'bookmarks' | 'comments' | 'fields'
 type FieldOption = string | { value: string; label: string }
 type FieldItem = {
   name: string
@@ -32,7 +32,7 @@ type FieldItem = {
 }
 
 /** The panels beside the pages (Kition PDF's right rail): thumbnails, bookmarks, comments, fields. */
-export function SidePanel({ info, current, onPage, chosen, onChoose, reply }: {
+export function SidePanel({ info, current, onPage, chosen, onChoose, reply, panel, onPanel, selectedPages, onSelectPages, pageActions, bookmarkDraft, onBookmarkDraftTaken }: {
   info: PdfInfo
   current: number
   onPage: (index: number) => void
@@ -41,12 +41,21 @@ export function SidePanel({ info, current, onPage, chosen, onChoose, reply }: {
   onChoose: (item: CommentItem | null) => void
   /** Moves each time a comment's menu asks to reply to the chosen one: the Comments panel shows and its reply box takes the keyboard. */
   reply?: number
+  /** The panel shown, and showing another (the editor opens the one a document asks for). */
+  panel: Panel
+  onPanel: (panel: Panel) => void
+  /** The pages selected in the thumbnails (0-based), choosing them, and what the thumbnails do to pages. */
+  selectedPages: readonly number[]
+  onSelectPages: (pages: number[]) => void
+  pageActions: PageActions
+  /** A new bookmark asked for (the panel is the bookmarks' then), and its being taken. */
+  bookmarkDraft: BookmarkDraft | null
+  onBookmarkDraftTaken: () => void
 }) {
-  const { phrase: p } = useKitEditor()
-  const [panel, setPanel] = useState<Panel>('pages')
+  const { phrase: p, t } = useKitEditor()
   useEffect(() => {
-    if (reply) setPanel('comments')
-  }, [reply])
+    if (reply) onPanel('comments')
+  }, [reply, onPanel])
   // A reply asked for is taken once, by the Comments panel showing it.
   const replied = useRef(0)
   const panels: Array<{ id: Panel; icon: typeof Files; label: string }> = [
@@ -55,38 +64,26 @@ export function SidePanel({ info, current, onPage, chosen, onChoose, reply }: {
     { id: 'comments', icon: MessageSquareText, label: p('Comments') },
     { id: 'fields', icon: TextCursorInput, label: p('Form fields') },
   ]
+  const header = panels.find((item) => item.id === panel)?.label
   return (
     <aside className="kui-panel pdf-side" data-side="right" data-testid="pdf-side">
       <div className="pdf-side-tabs" role="tablist">
         {panels.map((item) => (
-          <IconButton key={item.id} icon={item.icon} label={item.label} pressed={panel === item.id} onClick={() => setPanel(item.id)} data-testid={`pdf-panel-${item.id}`} />
+          <IconButton key={item.id} icon={item.icon} label={item.label} pressed={panel === item.id} onClick={() => onPanel(item.id)} data-testid={`pdf-panel-${item.id}`} />
         ))}
       </div>
-      <div className="kui-panel-header">{panels.find((item) => item.id === panel)?.label}</div>
+      <div className="kui-panel-header" data-testid="pdf-panel-header">
+        {header}
+        {panel === 'pages' && selectedPages.length > 1 ? <span className="kui-muted pdf-panel-note" data-testid="pdf-pages-selected"> · {t('pagesSelected', { count: String(selectedPages.length) })}</span> : null}
+      </div>
       <div className={`kui-panel-body${panel === 'pages' ? ' pdf-thumbs-body' : ''}`}>
-        {panel === 'pages' ? <Thumbnails info={info} current={current} onPage={onPage} /> : null}
-        {panel === 'bookmarks' ? <Bookmarks onPage={onPage} /> : null}
+        {panel === 'pages' ? <Thumbnails info={info} current={current} onPage={onPage} selected={selectedPages} onSelect={onSelectPages} actions={pageActions} /> : null}
+        {panel === 'bookmarks' ? <Bookmarks onPage={onPage} current={current} draft={bookmarkDraft} onDraftTaken={onBookmarkDraftTaken} /> : null}
         {panel === 'comments' ? <Comments chosen={chosen} onChoose={onChoose} reply={reply && reply !== replied.current ? reply : 0} onReplying={() => { replied.current = reply ?? 0 }} /> : null}
         {panel === 'fields' ? <Fields onPage={onPage} /> : null}
       </div>
     </aside>
   )
-}
-
-function Bookmarks({ onPage }: { onPage: (index: number) => void }) {
-  const { t } = useKitEditor()
-  const items = useEngineQuery<{ bookmarks: BookmarkItem[] }>('bookmark.list', { limit: 1000 })?.bookmarks ?? []
-  if (!items.length) return <p className="pdf-empty kui-muted">{t('noBookmarks')}</p>
-  const tree = (list: BookmarkItem[], depth: number): React.ReactNode =>
-    list.map((item, index) => (
-      <div key={`${depth}-${index}`}>
-        <button type="button" className="pdf-list-item" style={{ paddingLeft: 12 + depth * 14 }} disabled={item.page == null} onClick={() => item.page != null && onPage(item.page - 1)} data-testid="pdf-bookmark">
-          {item.title}
-        </button>
-        {tree(item.children ?? [], depth + 1)}
-      </div>
-    ))
-  return <div>{tree(items, 0)}</div>
 }
 
 /**

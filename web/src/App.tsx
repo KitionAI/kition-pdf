@@ -30,7 +30,11 @@ import { useEngineBackdrop } from './backdrop'
 import { CATALOGS } from './strings'
 import { TABS, commandDefaults, describe, pageWidthArea, pagesPanBounds, wholePageArea, type Where } from './pdf'
 import { HomeTab, SelectTool } from './ribbon/HomeTab'
-import { SidePanel } from './SidePanel'
+import { SidePanel, type Panel } from './SidePanel'
+import { PagesTab } from './ribbon/PagesTab'
+import type { PageActions } from './Thumbnails'
+import type { BookmarkDraft } from './Bookmarks'
+import { currentAfterDelete, moveParams, orderAfterDrop, pageTargets, placeAfterMove } from './organize'
 import { commentRef, sameComment, type CommentItem } from './comments'
 import { ParamsDialog, type Asking } from './ParamsDialog'
 import { SelectionBar } from './SelectionBar'
@@ -203,6 +207,29 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   const [searchMatch, setSearchMatch] = useState<{ doc: typeof doc; revision: number; match: Match } | null>(null)
   const selectedMatch = finding && searchMatch?.doc === doc && searchMatch.revision === session.change.revision ? searchMatch.match : null
   const pages = state?.pages ?? []
+  // The side panel shown (session state), and the one a document asks to open with (/PageMode).
+  const [panel, setPanel] = useState<Panel>('pages')
+  const panelFor = useRef<unknown>(null)
+  useEffect(() => {
+    if (!doc || !state || panelFor.current === doc) return
+    panelFor.current = doc
+    if (state.navigation === 'bookmarks') setPanel('bookmarks')
+    else if (state.navigation === 'pages') setPanel('pages')
+  }, [doc, state])
+  // The pages selected in the thumbnails (stage 7), for this document and page count: a change of
+  // either lets them go. With none selected the current page is the one page commands act on.
+  const [pageSelection, setPageSelection] = useState<{ doc: unknown; count: number; pages: number[] }>({ doc: null, count: 0, pages: [] })
+  const selectedPages = pageSelection.doc === doc && pageSelection.count === pages.length ? pageSelection.pages : NO_PAGES
+  const selectPages = useCallback((list: number[]) => setPageSelection({ doc, count: pages.length, pages: list }), [doc, pages.length])
+  const pageTargetList = pageTargets(selectedPages, current)
+  // A new bookmark asked for (Cmd+B, a menu, the Pages tab): the Bookmarks panel writes its title.
+  const [bookmarkDraft, setBookmarkDraft] = useState<BookmarkDraft | null>(null)
+  const draftCount = useRef(0)
+  const newBookmark = (page?: number) => {
+    setPanel('bookmarks')
+    draftCount.current += 1
+    setBookmarkDraft({ key: draftCount.current, parent: null, ...(page != null ? { page } : {}) })
+  }
   const panBounds = useMemo(() => pagesPanBounds((state?.pages ?? []).map((page) => page.area)), [state?.pages])
   const selectText = useCallback(async (request: SelectionRequest) => doc ? JSON.parse(await doc.execute('text.select', request)) as SelectionResult : null, [doc])
   const selection = useTextSelection({ document: doc, revision: session.change.revision, pages, execute: selectText, t,
@@ -220,6 +247,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
   // A parameters dialog starts from what is in front of the person (`commandDefaults`).
   const bounds = selectionBounds(selection.selected)
   where.current.current = current
+  where.current.pages = selectedPages.length ? selectedPages.map((index) => index + 1) : undefined
   where.current.selection = bounds && selection.selected ? { ...bounds, text: selection.selected.text } : null
   // A new document starts with no comment chosen and no press remembered.
   useEffect(() => {
@@ -302,6 +330,43 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     },
     [pages],
   )
+
+  // The page to show once a page edit has been read back (a move or a delete changes which page
+  // is where): the page that was current follows its page.
+  const [pendingPage, setPendingPage] = useState<{ index: number; before: unknown } | null>(null)
+  useEffect(() => {
+    if (!pendingPage || state?.pages === pendingPage.before) return
+    setPendingPage(null)
+    goTo(pendingPage.index)
+  }, [pendingPage, state?.pages, goTo])
+  const pageActions: PageActions = {
+    rotate: (list, degrees) => void leased.run('page.rotate', { pages: list.map((index) => index + 1), degrees }),
+    remove: (list) => {
+      if (!list.length || list.length >= pages.length) return
+      const before = state?.pages
+      const next = currentAfterDelete(current, list, pages.length)
+      void leased.run('page.delete', { pages: list.map((index) => index + 1) }).then((done) => {
+        if (done != null && next !== current) setPendingPage({ index: next, before })
+      })
+    },
+    insertAfter: (page) => void leased.run('page.insertBlank', { at: page + 2 }),
+    duplicate: (list) => void leased.run('page.duplicate', { pages: list.map((index) => index + 1) }),
+    move: (list, gap) => {
+      const count = pages.length
+      const params = moveParams(list, gap, count)
+      if (!params) return
+      const order = orderAfterDrop(list, gap, count)
+      const before = state?.pages
+      const was = current
+      void leased.run('page.move', params).then((done) => {
+        if (done == null) return
+        // The moved pages stay selected where they went; the current page follows its page.
+        setPageSelection({ doc, count, pages: params.pages.map((page) => placeAfterMove(order, page - 1)).sort((a, b) => a - b) })
+        const next = placeAfterMove(order, was)
+        if (next !== was) setPendingPage({ index: next, before })
+      })
+    },
+  }
 
   // A match the person asked for (a new query, Next, Previous) is brought into view; one a
   // document change only refreshed (an edit while the find bar is open) leaves the view alone.
@@ -663,7 +728,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
       leased.ask('comment.edit')
     },
     addNote: (page, point) => setCard({ kind: 'new', tool: 'note', page, point, rect: null }),
-    addBookmark: (page) => leased.ask('bookmark.add', { page }),
+    addBookmark: (page) => newBookmark(page - 1),
     rotatePage: (page) => void leased.run('page.rotate', { pages: [page], degrees: 90 }),
     deletePage: (page) => void leased.run('page.delete', { pages: [page] }),
     fit: (to) => zoomTo(to),
@@ -756,6 +821,11 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     // Tab from the pages goes to the form's first field (Shift+Tab its last) from the current page on.
     if (key === 'Tab' && !command && !event.altKey && toolId === 'select' && event.target instanceof Element && (event.target === region.current || event.target.classList.contains('kui-app'))) {
       if (formFields.current?.enter(event.shiftKey, current + 1)) return true
+    }
+    // Cmd+B: a new bookmark at the current page, its title written in the Bookmarks panel.
+    if (command && !event.altKey && !event.shiftKey && key === 'b' && !isTextControl(event.target)) {
+      if (state?.editable && editor.enabled('bookmark.add')) newBookmark()
+      return true
     }
     // V and H: Select and the hand (the only tools with a key of their own).
     if (plain && (key === 'v' || key === 'h') && !isTextControl(event.target) && !(event.target instanceof Element && event.target.closest('[role="menu"], [role="listbox"], [role="dialog"]'))) {
@@ -890,7 +960,9 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     view: item.id === 'home' || item.id === 'comment',
     ribbon:
       item.id === 'home' ? (
-        state ? <HomeTab info={state} current={current} onPage={goTo} onZoom={zoomTo} selectionAvailable={!!selection.selected?.text} onCopySelection={selection.copy} onMark={mark} tool={toolId} onTool={chooseTool} /> : null
+        state ? <HomeTab info={state} current={current} targets={pageTargetList} onPage={goTo} onZoom={zoomTo} selectionAvailable={!!selection.selected?.text} onCopySelection={selection.copy} onMark={mark} tool={toolId} onTool={chooseTool} /> : null
+      ) : item.id === 'pages' ? (
+        state ? <PagesTab info={state} targets={pageTargetList} onNewBookmark={() => newBookmark()} /> : null
       ) : (
         <>
           {item.menus.map((menu) => (
@@ -933,7 +1005,7 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
           ) : null
         }
         statusEnd={canvasView ? <ZoomBar zoom={zoom} onZoom={setZoomLevel} onFit={zoomTo} /> : null}
-        panels={state ? <SidePanel info={state} current={current} onPage={goTo} chosen={chosen} onChoose={chooseComment} reply={replyAsk} /> : null}
+        panels={state ? <SidePanel info={state} current={current} onPage={goTo} chosen={chosen} onChoose={chooseComment} reply={replyAsk} panel={panel} onPanel={setPanel} selectedPages={selectedPages} onSelectPages={selectPages} pageActions={pageActions} bookmarkDraft={bookmarkDraft} onBookmarkDraftTaken={() => setBookmarkDraft(null)} /> : null}
       >
         {finding ? (
           <FrameChrome>
@@ -1005,6 +1077,9 @@ export function App({ host, phrase }: { host: HostConnection; phrase: Phrases })
     </KitEditorProvider>
   )
 }
+
+/** No pages selected (one array, so the selection keeps its identity between renders). */
+const NO_PAGES: number[] = []
 
 /** A point value as a command takes it: to 1/100 pt. */
 const round2 = (value: number) => Math.round(value * 100) / 100

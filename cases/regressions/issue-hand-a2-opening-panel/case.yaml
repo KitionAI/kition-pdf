@@ -1,0 +1,22 @@
+format: 1
+id: regressions/issue-hand-a2-opening-panel
+feature: pdf.editor.bookmarks
+intent: >-
+  A file that says /PageMode /UseOutlines opened with the thumbnails, not its bookmarks: the
+  editor could not read what the file asks for. Now the engine's inspect() names the panel the
+  document opens with (bookmarks, pages, attachments, layers, or page for none), following the
+  file as it changes and is undone and as it is saved, and the editor opens that panel
+  (web/tests/hand/pages.mjs, A2).
+layer: unit
+tags: [guard]
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings A2
+  license: owned
+input: []
+steps:
+  - cargo-test: { package: kition-pdf-kit, test: opening_panel }
+expected:
+  - actual: out:exit
+    compare: exit
+since: "2026-11-27"

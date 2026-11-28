@@ -1223,11 +1223,11 @@ title = "Page thumbnails panel"
 area = "B"
 tier = "P0"
 milestone = "M3"
-status = "planned"
+status = "partial"
 commands = []
 tools = []
 evidence = []
-notes = ""
+notes = "Editor (web/, web/tests/hand/pages.mjs): thumbnails of every page beside the pages, drawn as they come into view; a click goes to the page, the current one framed, the arrows, Home and End walk them. No thumbnail size."
 
 [[feature]]
 id = "view.thumbnail-context-ops"
@@ -1235,11 +1235,11 @@ title = "Page operations from the thumbnails panel (drag reorder, context menu)"
 area = "B"
 tier = "P1"
 milestone = "M4"
-status = "planned"
+status = "partial"
 commands = []
 tools = []
 evidence = []
-notes = "Drag the selection (or the page grabbed) to reorder, with a drop bar and edge scrolling; right-click offers Extract pages, Cut, Copy, Paste after and Delete pages (also the Delete key over the panel). Not yet: Rotate, Insert and Page labels in the menu, dragging pages between documents, or dropping files onto the panel."
+notes = "Editor (web/, web/tests/hand/pages.mjs): a drag moves the selected pages (or the one grabbed) where a line between thumbnails shows, scrolling near the edges, one page.move; a right-click offers Rotate left and right, Insert a blank page after, Duplicate and Delete; Delete and Backspace delete the selected pages, never every page. No Extract, Cut, Copy or Paste in the menu yet. Drag the selection (or the page grabbed) to reorder, with a drop bar and edge scrolling; right-click offers Extract pages, Cut, Copy, Paste after and Delete pages (also the Delete key over the panel). Not yet: Rotate, Insert and Page labels in the menu, dragging pages between documents, or dropping files onto the panel."
 
 [[feature]]
 id = "view.bookmarks-panel"
@@ -1251,7 +1251,7 @@ status = "partial"
 commands = []
 tools = ["file.getInfo"]
 evidence = []
-notes = "A bookmark goes to its destination's position and zoom, not just its page. The panel shows the first 10,000 bookmarks, nested 33 levels deep at most, and says so; bookmark_list pages through every bookmark in the file (up to 33 levels deep)."
+notes = "Editor (web/, web/tests/hand/pages.mjs): a tree that folds and unfolds (as the file says at first); a click or Enter goes to the top of the page; the arrows walk it; opens on its own when the file says /PageMode /UseOutlines. A bookmark goes to its destination's position and zoom, not just its page. The panel shows the first 10,000 bookmarks, nested 33 levels deep at most, and says so; bookmark_list pages through every bookmark in the file (up to 33 levels deep)."
 
 [[feature]]
 id = "view.highlight-current-bookmark"
@@ -2579,7 +2579,7 @@ status = "partial"
 commands = ["page.organize"]
 tools = []
 evidence = []
-notes = "Ctrl+A / ⌘A selects every page in the Organize grid, preserving the current page; text inputs and dialogs keep their own keyboard input."
+notes = "Editor (web/, web/tests/hand/pages.mjs): in the thumbnails, click goes to a page, Shift+click selects a run, Cmd+click adds or takes out a page, Cmd+A selects all, Escape none; the page commands of the ribbon act on the selection. Ctrl+A / ⌘A selects every page in the Organize grid, preserving the current page; text inputs and dialogs keep their own keyboard input."
 
 [[feature]]
 id = "organize.rotate-pages"
@@ -2635,11 +2635,11 @@ title = "Reorder pages by drag and drop"
 area = "D"
 tier = "P0"
 milestone = "M4"
-status = "planned"
+status = "partial"
 commands = []
 tools = []
 evidence = []
-notes = "drag thumbnails (or the selection) in the page grid; an insertion bar shows where they go; move earlier/later buttons too"
+notes = "Editor (web/, web/tests/hand/pages.mjs): in the thumbnails beside the pages (no page grid yet): the selection or the page grabbed, an insertion line, one undo step; no move earlier/later buttons. drag thumbnails (or the selection) in the page grid; an insertion bar shows where they go; move earlier/later buttons too"
 
 [[feature]]
 id = "organize.insert-blank"
@@ -3191,7 +3191,7 @@ status = "shipped"
 commands = ["bookmark.add"]
 tools = ["bookmark.add"]
 evidence = ["crates/engine/organize/src/tests.rs::bookmarks_add_rename_move_delete", "crates/engine/engine/src/tests.rs::bookmark_edits_show_in_the_viewer_undo_and_save", "crates/engine/automation/tests/automation.rs::bookmarks_through_tools"]
-notes = ""
+notes = "Editor (web/, web/tests/hand/pages.mjs): Cmd+B, the panel's New bookmark, the Pages tab or the page's menu write the title in place for the current page (its top); Escape adds nothing."
 
 [[feature]]
 id = "organize.bookmark-rename"
@@ -3203,7 +3203,7 @@ status = "shipped"
 commands = []
 tools = ["bookmark_rename"]
 evidence = ["crates/engine/organize/src/tests.rs::bookmarks_add_rename_move_delete", "crates/engine/organize/src/tests.rs::bookmark_edits_keep_unknown_keys_and_touch_few_objects"]
-notes = ""
+notes = "Editor (web/, web/tests/hand/pages.mjs): a double-click or F2 renames in place; Enter or a click elsewhere keeps the title, Escape drops it."
 
 [[feature]]
 id = "organize.bookmark-delete"
@@ -3215,7 +3215,7 @@ status = "shipped"
 commands = []
 tools = ["bookmark_delete"]
 evidence = ["crates/engine/organize/src/tests.rs::bookmarks_add_rename_move_delete", "crates/engine/engine/src/tests.rs::bookmark_edits_show_in_the_viewer_undo_and_save"]
-notes = ""
+notes = "Editor (web/, web/tests/hand/pages.mjs): Delete or the bookmark's menu deletes it and those under it."
 
 [[feature]]
 id = "organize.bookmark-move"
@@ -3419,7 +3419,7 @@ status = "shipped"
 commands = ["file.properties"]
 tools = ["file.setInitialView"]
 evidence = ["crates/engine/organize/src/tests.rs::initial_view_round_trips_and_keeps_scripts", "crates/engine/automation/tests/automation.rs::initial_view_through_tools"]
-notes = "navigation panel, layout, magnification, page, window and interface options; honoured on open; script open actions kept"
+notes = "Editor (web/, web/tests/hand/pages.mjs): opens with the bookmarks panel when the file asks for it (inspect's navigation); the other panels, layout and magnification are not followed yet. navigation panel, layout, magnification, page, window and interface options; honoured on open; script open actions kept"
 
 [[feature]]
 id = "organize.custom-properties"

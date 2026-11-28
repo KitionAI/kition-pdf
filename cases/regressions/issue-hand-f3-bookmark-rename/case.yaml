@@ -1,0 +1,28 @@
+format: 1
+id: regressions/issue-hand-f3-bookmark-rename
+feature: pdf.editor.bookmarks
+intent: >-
+  A bookmark could not be renamed or deleted in the panel (no double-click, no Delete, no menu),
+  and the web engine did not even offer bookmark_rename and bookmark_delete: their `path`, a
+  bookmark's place in the outline, was taken for a file. Now a double-click (or F2) writes the
+  title in place, Enter keeps it as one bookmark_rename, Escape drops it, one undo brings the old
+  title back; Delete deletes a bookmark. web/tests/hand/pages.mjs reads bookmark.list back, and
+  bindings/wasm/tests/bookmark_tools.rs runs the four bookmark tools in the web engine.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings F3
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/pages.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

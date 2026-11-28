@@ -155,6 +155,14 @@ fn readings(doc: &mut PdfDocument) -> Vec<Row> {
         ),
         // bookmark.addFromStructure: the structure tree's headings and their text on every page.
         row("bookmark.addFromStructure", json!({}), &[], &[], &["headings"]),
+        // Renaming, deleting, moving a bookmark and pointing it at another page (organize outline,
+        // by its path): offered to the web editor since stage 7 of the hand plan (its `path` had
+        // been taken for a file), declared on the whole document until their own premises are
+        // written.
+        row("bookmark_rename", json!({ "path": [1], "title": "Renamed" }), &[], &[], &["all"]),
+        row("bookmark_delete", json!({ "path": [2] }), &[], &[], &["all"]),
+        row("bookmark_move", json!({ "path": [3], "position": 1 }), &[], &[], &["all"]),
+        row("bookmark_set_page", json!({ "path": [1], "page": 2 }), &[], &[], &["all"]),
         // ---- Comments (comments.rs comment_target: `index` is the place in /Annots).
         row("comment.add", json!({ "page": 2, "type": "note", "at": [300, 300], "contents": "n" }), &[("page:2", G)], &[("pdf", "pages")], &[]),
         row("comment.add", json!({ "page": 1, "type": "highlight", "find": "Page" }), &[("page:1", G)], &[("pdf", "pages")], &["text"]),

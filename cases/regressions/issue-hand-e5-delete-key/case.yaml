@@ -1,0 +1,27 @@
+format: 1
+id: regressions/issue-hand-e5-delete-key
+feature: pdf.editor.organize
+intent: >-
+  Delete and Backspace on a thumbnail did nothing, and a thumbnail could not be added to a
+  selection. Now Shift+click selects a run of pages and Cmd+click adds one, and Delete or
+  Backspace deletes the selected pages (else the current one) in one step, never every page, with
+  the keyboard kept on the thumbnails; one undo brings them back. web/tests/hand/pages.mjs counts
+  the pages with inspect.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings E3, E5
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/pages.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"

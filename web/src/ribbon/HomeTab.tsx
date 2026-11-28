@@ -30,9 +30,11 @@ export const SelectTool = TesseraIcons.TextCursorIcon
 const FileIcon = TesseraIcons.FileIcon
 const More = TesseraIcons.EllipsisIcon
 
-export function HomeTab({ info, current, onPage, onZoom, selectionAvailable, onCopySelection, onMark, tool, onTool }: {
+export function HomeTab({ info, current, targets, onPage, onZoom, selectionAvailable, onCopySelection, onMark, tool, onTool }: {
   info: PdfInfo
   current: number
+  /** The pages the Page group acts on (0-based): those selected in the thumbnails, else the current one. */
+  targets: readonly number[]
   onPage: (index: number) => void
   onZoom: (to: 'width' | 'page' | 'actual') => void
   selectionAvailable: boolean
@@ -46,6 +48,7 @@ export function HomeTab({ info, current, onPage, onZoom, selectionAvailable, onC
   const { run, ask, enabled, phrase: p, t } = useKitEditor()
   const count = info.pages.length
   const page = [current + 1]
+  const pages = targets.map((index) => index + 1)
   const editable = info.editable
   const label = info.pages[current]?.label ?? String(current + 1)
 
@@ -125,13 +128,13 @@ export function HomeTab({ info, current, onPage, onZoom, selectionAvailable, onC
 
       <RibbonGroup label={p('Page')} icon={FileIcon}>
         <RibbonStack>
-          <RibbonButton icon={RotateCcw} label={t('rotateLeft')} disabled={!editable || !enabled('page.rotate')} onClick={() => void run('page.rotate', { degrees: -90, pages: page })} data-testid="pdf-rotate-left" primary />
-          <RibbonButton icon={RotateCw} label={t('rotateRight')} disabled={!editable || !enabled('page.rotate')} onClick={() => void run('page.rotate', { degrees: 90, pages: page })} data-testid="pdf-rotate-right" primary />
+          <RibbonButton icon={RotateCcw} label={t('rotateLeft')} disabled={!editable || !enabled('page.rotate')} onClick={() => void run('page.rotate', { degrees: -90, pages })} data-testid="pdf-rotate-left" primary />
+          <RibbonButton icon={RotateCw} label={t('rotateRight')} disabled={!editable || !enabled('page.rotate')} onClick={() => void run('page.rotate', { degrees: 90, pages })} data-testid="pdf-rotate-right" primary />
         </RibbonStack>
         <RibbonStack>
-          <RibbonButton icon={FilePlus2} label={t('insertPage')} disabled={!editable || !enabled('page.insertBlank')} onClick={() => void run('page.insertBlank', { at: current + 2 })} data-testid="pdf-insert-page" primary />
-          <RibbonButton icon={CopyPlus} label={t('duplicatePage')} disabled={!editable || !enabled('page.duplicate')} onClick={() => void run('page.duplicate', { pages: page })} data-testid="pdf-duplicate-page" />
-          <RibbonButton icon={Trash2} label={t('deletePage')} disabled={!editable || count < 2 || !enabled('page.delete')} onClick={() => void run('page.delete', { pages: page })} data-testid="pdf-delete-page" primary />
+          <RibbonButton icon={FilePlus2} label={t('insertPage')} disabled={!editable || !enabled('page.insertBlank')} onClick={() => void run('page.insertBlank', { at: Math.max(...targets) + 2 })} data-testid="pdf-insert-page" primary />
+          <RibbonButton icon={CopyPlus} label={t('duplicatePage')} disabled={!editable || !enabled('page.duplicate')} onClick={() => void run('page.duplicate', { pages })} data-testid="pdf-duplicate-page" />
+          <RibbonButton icon={Trash2} label={t('deletePage')} disabled={!editable || pages.length >= count || !enabled('page.delete')} onClick={() => void run('page.delete', { pages })} data-testid="pdf-delete-page" primary />
         </RibbonStack>
       </RibbonGroup>
 

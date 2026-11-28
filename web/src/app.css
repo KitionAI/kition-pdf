@@ -143,6 +143,109 @@
   color: var(--kit-text);
 }
 
+.pdf-thumbs {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Selected thumbnails (stage 7): a frame in the theme's primary colour; the pages dragged fade. */
+.pdf-thumb[data-selected='true'] canvas {
+  border-color: var(--kit-primary);
+  box-shadow: 0 0 0 3px var(--kit-primary);
+}
+
+.pdf-thumb[data-selected='true'] {
+  color: var(--kit-primary);
+}
+
+.pdf-thumb[data-dragged='true'] {
+  opacity: 0.5;
+}
+
+/* Where dragged pages go: a line between two thumbnails. */
+.pdf-thumb-drop {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  height: 3px;
+  margin-top: -2px;
+  border-radius: 2px;
+  background: var(--kit-primary);
+  pointer-events: none;
+}
+
+.pdf-thumb-drag-count {
+  position: fixed;
+  z-index: 10;
+  padding: 2px 6px;
+  border-radius: var(--kit-radius-card);
+  background: var(--kit-primary);
+  color: var(--kit-surface);
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.pdf-panel-note {
+  font-weight: normal;
+}
+
+/* The bookmarks (stage 7): a tree with fold buttons, a title and its page, edited in place. */
+.pdf-bookmarks-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 2px 8px;
+}
+
+.pdf-bookmark-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.pdf-bookmark-toggle {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--kit-text-muted);
+  cursor: pointer;
+}
+
+.pdf-bookmark-title {
+  min-width: 0;
+  padding-left: 2px;
+  color: var(--kit-text);
+}
+
+.pdf-bookmark-title:focus-visible {
+  outline: 2px solid var(--kit-primary);
+  outline-offset: -2px;
+}
+
+.pdf-bookmark-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-bookmark-page {
+  flex: none;
+  font-size: 11px;
+}
+
+.pdf-bookmark-field {
+  flex: 1;
+  min-width: 0;
+  margin: 2px 8px 2px 0;
+}
+
 .pdf-list-item {
   display: flex;
   gap: 8px;
