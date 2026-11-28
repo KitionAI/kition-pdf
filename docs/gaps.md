@@ -34,6 +34,13 @@ land work, then this list. The comparison with the target application is in
 
 ## Differences on features that work
 
+- `pdf.comments` (P0, has): In the editor comments are drawn with the rail's tools, chosen, moved, resized, recoloured and deleted on the page, and edited, replied to, given a status and deleted in the Comments panel (web/tests/hand/annotation-tools.mjs, annotations.mjs, markup.mjs); marking, locking and hiding a comment go only through the parameters dialog.
+- `pdf.pages.organize` (P0, has): In the editor pages are inserted, duplicated, turned, moved and deleted in the thumbnails (web/tests/hand/pages.mjs); crop boxes and page labels go only through the parameters dialog.
+- `pdf.bookmarks.edit` (P0, has): In the editor bookmarks are added (Cmd+B), renamed and deleted in place in the panel (web/tests/hand/pages.mjs); a bookmark goes to the top of its page (no position or zoom), and moving one goes only through the parameters dialog.
+- `pdf.forms.fill` (P0, has): In the editor text, check box, radio and drop-down fields are filled on the page and in the Fields panel (web/tests/hand/forms.mjs, fields-panel.mjs); adding a field (form.addField) goes only through the parameters dialog, its rectangle dragged on the page.
+- `pdf.links.edit` (P0, has): In the editor a link is followed with a click (web/tests/hand/annotations.mjs); adding one goes through the parameters dialog with its rectangle dragged on the page (web/tests/hand/pick.mjs): there is no link tool.
+- `pdf.text.edit` (P0, has): In the editor new page text is put where the page is clicked with the Add text tool (web/tests/hand/annotation-tools.mjs); text already on a page is changed only through the text.edit parameters dialog, not in place.
+- `pdf.redact.apply` (P0, has): In the editor selected text is marked from the selection bar or its menu and Apply redactions asks first (web/tests/hand/pick.mjs); a box is marked only through the parameters dialog, its rectangle dragged on the page.
 - `pdf.editor.keyboard-and-view` (P0, has): Measured in dev.html only (whether Kition Desktop gives the editor's frame the keyboard on open is not checked here). Select All takes every page up to 64 (the engine's text.select span) and the current page beyond. A mouse wheel's notch is told from a trackpad by its delta (whole 100 px or lines); real wheels and trackpads are not measured. Cmd+1 and Cmd+2 may be taken by a browser's own tab keys outside Kition.
 - `pdf.editor.markup-and-comments` (P0, has): Comments are made from text selections, the find bar and the Comments panel (and a note from the page's menu): the tools that draw on the page are pdf.editor.annotation-tools; choosing, moving and resizing on the page is pdf.editor.annotation-select. A selection across pages makes one comment per page, each its own undo step (the engine has no batch of edits for the editor). Measured in dev.html only.
 - `pdf.editor.params-and-fields` (P0, has): Points, rectangles and lists of points can be picked on the page (pdf.editor.pick-on-page) or typed. Lists of points of points (ink strokes) and objects (form values) are still JSON. Fields are filled in the panel and on the page (pdf.editor.forms-on-page). Measured in dev.html only.
@@ -48,7 +55,32 @@ land work, then this list. The comparison with the target application is in
 - `pdf.editor.pick-on-page` (P1, has): The dialog still opens first: there is no link, redaction box, measuring or image tool on the rail, so these take a dialog, a pick and Run. No snapping while picking, no live reading of a distance, no moving or resizing what was picked. An image cannot be placed in the editor at all (page_add_image takes a file). Points are picked on one page. Measured in dev.html only.
 - `pdf.editor.redact-selection` (P1, has): No Redact tool that marks text or a box with one drag (text is selected first, a box goes through the dialog), no double-click to mark a word, no redaction properties by hand, no list of the marks to step through before applying. A selection across pages makes one mark per page, each its own undo step. Measured in dev.html only.
 - `pdf.editor.fill-sign` (P1, has): Only text, check and cross have buttons (dot, line, date, signature and initials go through the dialog, with the point picked on the page); the text is typed in a card beside the click, not in a box on the page; the buttons are on the Forms tab, not tools of the rail. Measured in dev.html only.
+- `pdf.editor.host-theme` (P1, has): Export, print and previews never take the host's canvas color by design. Page thumbnails and the side panels are not checked in the dark scheme yet.
+- `pdf.editor.acceptance` (P1, has): Not done, as the plan cut them: two-page and single-page layouts, turning the view, editing text already on a page, moving and scaling an image (the test lists them as skipped by the plan). Differences the test prints as gaps: a new highlight does not open the Comments panel with its note to type in; the Undo button does not name the step; the page's right-click menu has 8 items where the reference has about 21; undoing back to the saved state still shows unsaved changes (the engine marks every undo as a change). Also: no Shift+Cmd+N (the page field is a click away); a drag held at the thumbnail list's edge does not scroll it; a moved comment shows a dashed frame, not its pixels; a bookmark or a link goes to the top of its page; full screen has no black background; asking to save on close is the host's. Measured in dev.html only, with synthetic events (no real input method, trackpad or wheel).
+
+## What the editor still lacks by hand
+
+The editor's gestures were measured against a reference PDF editor's first ten minutes
+(`web/tests/hand/first-ten-minutes.mjs`, `test:hand-accept`): 28 of its 30 things work (3 with the
+differences below), and 4 of the 6 that come next; the counted task takes 30 actions with no stuck
+step (`web/tests/hand/counted-task.mjs`). What is not there, by hand:
+
+- **Left out for now:** two-page and single-page (not continuous) layouts; turning the view (not
+  the page); editing text already on a page in place (the text.edit dialog only); selecting, moving
+  and scaling images; making forms on the page (field tools, Prepare Form mode, field properties);
+  drawn or image signatures and digital signing; stamps; callout, squiggly, insert and replace text,
+  polygon, cloud, eraser and freehand highlight tools; link, redaction-box and measuring tools (the
+  dialog with a point or box picked on the page instead); printing, Save As and export (the host's).
+- **Differences on what works:** a new highlight does not open its note for typing; Undo and Redo
+  do not name the step; undoing back to the saved state still shows unsaved changes; the page's
+  right-click menu is short (8 items); a moved comment shows a dashed frame, not its pixels; lines and
+  arrows have no point handles; links, bookmarks and new bookmarks go to the top of a page (no place or
+  zoom); a drag held at the thumbnail list's edge does not scroll it; full screen has no black
+  background; four quick clicks do not select the page; starting a text selection closes the find bar.
+- **Not checked here:** Kition Desktop (the keyboard on open, web links, full screen), real input
+  methods, trackpads and mouse wheels, and a 1x external display: the tests use `dev.html` and
+  synthetic events.
 
 ## Catalogue
 
-The catalogue has 53 features: 31 `has`, 22 not yet.
+The catalogue has 54 features: 32 `has`, 22 not yet.

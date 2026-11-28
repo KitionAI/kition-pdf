@@ -52,16 +52,21 @@ The PDF object graph *is* the model (`crates/engine/engine/README.md` §The edit
    revision); the view is refreshed from those bytes, so what you see is what Save writes.
 4. Saves are incremental and atomic. A full rewrite happens only where it must: redaction, PDF/A
    conversion, print imposition, a changed password, Save As with garbage collection.
-5. Autosave and crash recovery keep encrypted documents encrypted. Signed documents are protected
-   from rewrites.
+5. Saving is the host's: the editor hands the saved bytes to the host (`host/write`), and the
+   host decides when (the SDK's save machine can save on a timer). There is no autosave or crash
+   recovery of the kit's own. A save keeps an encrypted document encrypted; signed documents are
+   protected from rewrites.
 
 ## Rendering and text
 
 - Pages are rasterized on the CPU by the vendored `hayro` family (`hayro`, `hayro-interpret`,
   `hayro-syntax`, `hayro-jbig2`), with local patches for appearance states, layers, resource
-  limits, cancellation, tiles and `/UserUnit` (`vendor/README.md`). A render pool renders visible
-  pages first, then neighbours and thumbnails; tiles keep deep zoom sharp; a watchdog skips
-  pathological pages.
+  limits, cancellation, tiles and `/UserUnit` (`vendor/README.md`). In the editor one renderer
+  runs in a Web Worker, a request at a time: the SDK's canvas asks for the view (in slices for its
+  margins) and the editor's thumbnails queue behind it (`web/src/thumbnailQueue.ts`); there is no
+  pool and no rendering of neighbouring pages ahead. Zoomed tiles are kept by each page's content
+  stamp (`bindings/wasm/src/tile_cache.rs`), so an edit draws again only the pages it changed; a
+  watchdog skips pathological pages.
 - The kit's editor (`web/`) shows the rasters; the headless executable returns them as PNG
   previews.
 - Text extraction (reading order, columns, vertical CJK, rotated text) feeds find, select, copy,
@@ -84,10 +89,14 @@ The PDF object graph *is* the model (`crates/engine/engine/README.md` §The edit
 
 Every user-facing feature is reachable headlessly (`AGENTS.md` §3):
 
-- the **command registry** (`crates/engine/engine/src/commands.rs`) is what the editor's menus and
-  shortcuts are built from;
-- the **automation tool table** (`crates/engine/automation`) is what the SDK (`bindings/wasm`)
-  offers agents as commands, which reach them as the KHP `pdf_*` tools on `kition-pdf`.
+- the **automation tool table** (`crates/engine/automation`) is what the engine (`bindings/wasm`)
+  offers as commands: the editor's ribbon tabs and parameters dialogs are built from it, and the
+  same commands reach agents as the KHP `pdf_*` tools on `kition-pdf`;
+- the **command registry** (`crates/engine/engine/src/commands.rs`) says when a command can run
+  (it is enabled) and names its menu; the editor does not build its menus or keys from it. The
+  editor's keys are its own (`web/src/App.tsx`, the panels and the page layer in `web/src/page/`)
+  and the SDK's (Cmd+S, Cmd+Z, Shift+Cmd+Z, Cmd+0, Cmd+=, Cmd+-), and are tested by hand in
+  `web/tests/hand/`.
 
 ## Safety
 

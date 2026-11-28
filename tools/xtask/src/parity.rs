@@ -5,7 +5,10 @@
 //! - for `shipped` and `partial` features, every listed command exists in the engine registry and
 //!   every tool exists in the automation table (so the claim is reachable from the UI and
 //!   headlessly);
-//! - `shipped` features cite at least one test, and every cited `path::fn` exists.
+//! - `shipped` features cite at least one test, and every cited `path::fn` exists;
+//! - `editor` names the browser tests that do the feature by hand in the kit's editor
+//!   (`web/tests/<file>.mjs::<part>`), and each names a file under `web/tests/` with that
+//!   `part('<part>'`. A feature whose notes describe a gesture, panel or dialog cites one there.
 //!
 //! The report gives the shipped share per tier and per area (partial counts half in the
 //! weighted figure). `--json` prints the numbers for STATUS.md; `--partial` lists partial
@@ -65,6 +68,9 @@ pub struct Feature {
     pub tools: Vec<String>,
     #[serde(default)]
     pub evidence: Vec<String>,
+    /// Browser tests of the kit's editor that do the feature by hand: `web/tests/<file>.mjs::<part>`.
+    #[serde(default)]
+    pub editor: Vec<String>,
     #[serde(default)]
     pub notes: String,
 }
@@ -151,6 +157,17 @@ pub fn validate(features: &[Feature], commands: &HashSet<String>, tools: &HashSe
                 Ok(src) if src.contains(&format!("fn {func}(")) => {}
                 Ok(_) => errors.push(e(format!("evidence: no `fn {func}` in {path}"))),
                 Err(_) => errors.push(e(format!("evidence: {path} does not exist"))),
+            }
+        }
+        for ev in &f.editor {
+            let Some((path, part)) = ev.split_once("::").filter(|(path, _)| path.starts_with("web/tests/") && path.ends_with(".mjs")) else {
+                errors.push(e(format!("editor {ev:?} must be `web/tests/<file>.mjs::<part>`")));
+                continue;
+            };
+            match std::fs::read_to_string(repo.join(path)) {
+                Ok(src) if src.contains(&format!("part('{part}'")) => {}
+                Ok(_) => errors.push(e(format!("editor: no `part('{part}'` in {path}"))),
+                Err(_) => errors.push(e(format!("editor: {path} does not exist"))),
             }
         }
     }
@@ -247,6 +264,7 @@ mod tests {
             commands: vec![],
             tools: vec![],
             evidence: vec![],
+            editor: vec![],
             notes: String::new(),
         }
     }
@@ -279,5 +297,20 @@ mod tests {
             assert!(all.contains(needle), "missing {needle:?} in:\n{all}");
         }
         assert!(validate(&[f("organize.y", "shipped")], &cmds, &tools, &repo)[0].contains("at least one test"));
+    }
+
+    #[test]
+    fn editor_citations_name_a_part_of_a_browser_test() {
+        let repo = root();
+        let none = HashSet::new();
+        let mut ok = f("view.zoom", "partial");
+        ok.editor = vec!["web/tests/hand/zoom.mjs::A10".into()];
+        assert!(validate(&[ok], &none, &none, &repo).is_empty());
+        let mut bad = f("view.zoom2", "partial");
+        bad.editor = vec!["web/tests/hand/zoom.mjs::No such part".into(), "web/tests/hand/nothing.mjs::A10".into(), "crates/x.rs::A10".into()];
+        let all = validate(&[bad], &none, &none, &repo).join("\n");
+        for needle in ["no `part('No such part'`", "nothing.mjs does not exist", "must be `web/tests/<file>.mjs::<part>`"] {
+            assert!(all.contains(needle), "missing {needle:?} in:\n{all}");
+        }
     }
 }

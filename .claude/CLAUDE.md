@@ -30,7 +30,7 @@ Kition PDF is a clean-room, open-source, Rust-native PDF kit targeting Adobe Acr
   - Never copy GPL/AGPL code. MuPDF, Ghostscript, Poppler, veraPDF and DSS run only as external oracle processes.
   - See `plan/README.md` §Clean-room and `plan/adr/0001`.
 - **Privacy.** When observing Acrobat, use synthetic fixtures only. Never capture the Home view, recent files or account info. Capture by window id (`plan/acrobat/tools/`). Never commit Acrobat outputs, corpus files or personal data.
-- **Layering.** Nothing below L7 depends on egui/winit/eframe/rfd (`plan/architecture.md` §3). `cos`/`filters`/`crypt`/`arlington` stay standalone.
+- **Layering.** The engine crates depend on no UI toolkit: the only user interface is the kit's editor in `web/`, which reaches the engine through `bindings/wasm` (`plan/architecture.md` §3). `cos`/`filters`/`crypt`/`arlington` stay standalone.
 - **Fidelity.** The PDF object graph is the model. Preserve unknown data. Saves are incremental unless a full rewrite is required. Never silently drop or repair data without recording it.
 - **Never panic.** Every PDF, script, MCP call, settings file and keystroke is untrusted input, and none of it may crash the app or lose the user's work. This outranks feature work. Return `Result` (the crate's error enum) and propagate with `?`, or fall back leniently and record it. In non-test code:
   - No `unwrap`/`expect`/`panic!`/`unreachable!`/`todo!` unless it is provably infallible, with a comment saying why.
@@ -40,7 +40,7 @@ Kition PDF is a clean-room, open-source, Rust-native PDF kit targeting Adobe Acr
   - Handle lock poisoning.
   - No `unsafe` (`unsafe_code = "forbid"`).
   - Every crash fix gets a synthetic regression test. See `AGENTS.md` §4.
-- **Rust only** in the product and build (`xtask`). No handwritten JS/TS.
+- **Languages.** The engine, its bindings and the build (`xtask`) are Rust. The kit's editor (`web/`) is handwritten TypeScript and React on `@kition/sdk/editor`, and its browser tests (`web/tests/`) are JavaScript; nothing else is JS/TS.
 - **Checks and CI:** the full checks run in the kit's CI run on GitHub, not on this machine. Locally, run only the fast checks: `cargo fmt --all -- --check`, `cargo check -p <touched crates> --all-targets`, the wasm `cargo check` (`cargo check --target wasm32-unknown-unknown -p kition-pdf-kit`) and `pnpm typecheck` in `web/`. The full checks (`cargo fmt --check`, `cargo clippy --workspace -- -D warnings`, `cargo test --workspace`, the wasm check — `cargo xtask ci` runs them all — and every `test:*` script of `web/`) run in the CI run that `.github/workflows/ci.yml` starts through Kition's reusable kit CI; add no other workflow, and never start the Package workflow (releasing is the owner's step). A task is done when the CI run of HEAD is green and HEAD is on `origin/main` (Kition's `scripts/kit-ci.sh push`, `wait`, `land`).
 - **Commits:** one task id per commit (e.g. `M1.4: xref stream reader`). Commit only states that pass the fast checks; a commit lands on `origin/main` only after its CI run is green. End messages with the attribution line required by the environment.
 

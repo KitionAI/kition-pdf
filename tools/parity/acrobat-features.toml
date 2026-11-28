@@ -3,6 +3,9 @@
 # Status rules: `shipped` = usable today with at least one cited test; `partial` = part exists (notes say what is
 # missing); `planned` = not started; `na` = Adobe-cloud-only (notes name the local or pluggable alternative).
 # `commands` lists registry ids from crates/engine/engine/src/commands.rs only; `tools` lists crates/engine/automation/src/tools.rs names.
+# `evidence` cites Rust tests (`path.rs::fn`); `editor` cites the browser tests that do the feature by hand in the kit's editor
+# (`web/tests/<file>.mjs::<part>`, a `part('<part>'` of that file). Notes that describe a desktop menu or panel describe the
+# engine feature's reference, not the editor: the editor reaches a feature without an `editor` citation through its parameters dialog.
 [schema]
 version = 1
 statuses = ["planned", "partial", "shipped", "na"]
@@ -467,6 +470,7 @@ status = "shipped"
 commands = ["edit.undo", "edit.redo"]
 tools = ["edit_undo", "edit_redo"]
 evidence = ["crates/engine/engine/src/tests.rs::undo_and_redo_restore_exact_states"]
+editor = ["web/tests/hand/annotations.mjs::G2 move", "web/tests/hand/pages.mjs::E2 drag"]
 notes = ""
 
 [[feature]]
@@ -915,6 +919,7 @@ status = "partial"
 commands = []
 tools = []
 evidence = []
+editor = ["web/tests/hand/zoom.mjs::A2 ladder", "web/tests/hand/zoom.mjs::A3"]
 notes = "Editor (web/, web/tests/hand/zoom.mjs): Cmd+= and Cmd+- and the status bar's buttons step the ladder 10, 25, 33, 50, 66, 75, 100, 125, 150, 200, 300, 400, 600, 800, 1200, 1600, 3200 % about the view's centre; a mouse wheel's notch with Cmd zooms 1.2 times about the pointer; a trackpad's pinch zooms smoothly about the pointer."
 
 [[feature]]
@@ -927,6 +932,7 @@ status = "partial"
 commands = []
 tools = []
 evidence = []
+editor = ["web/tests/hand/zoom.mjs::A9"]
 notes = "Editor (web/, web/tests/hand/zoom.mjs): the status bar's percentage takes a typed value (150, 150%, 62.5 %), kept to 10-3200 %, and its list offers the ladder's steps; the editor's 100 % is one PDF point per CSS pixel (72 dpi), not the 96-dpi basis below. Kition PDF draws a percentage on its fixed 96-dpi basis: 96/72 logical pixels per PDF point at 100%. Acrobat draws it at its Page Display resolution, with logical pixels per PDF point = ppi / 72 × zoom (checked black-box with Custom resolutions of 96, 110 and 120 ppi on one display), so the same percentage can differ in size. Acrobat's Use System Setting resolution is not reproduced. Tracked with misc.prefs-page-display"
 
 [[feature]]
@@ -939,6 +945,7 @@ status = "partial"
 commands = []
 tools = []
 evidence = []
+editor = ["web/tests/hand/zoom.mjs::A7", "web/tests/hand/zoom.mjs::A10"]
 notes = "Editor (web/, web/tests/hand/zoom.mjs): Cmd+1, the Home tab's Actual Size and the status bar's list set 100 % (one PDF point per CSS pixel). Actual size is 100% on Kition PDF's fixed 96-dpi basis: 96/72 logical pixels per PDF point. Acrobat's Actual Size uses its Page Display resolution (ppi / 72 logical pixels per PDF point at 100%), which Kition PDF does not offer yet, so the two can draw a page at different sizes. Tracked with misc.prefs-page-display"
 
 [[feature]]
@@ -951,6 +958,7 @@ status = "partial"
 commands = ["view.fit_one_page"]
 tools = []
 evidence = []
+editor = ["web/tests/hand/zoom.mjs::A10"]
 notes = "Editor (web/, web/tests/hand/zoom.mjs): Cmd+0, the status bar's Fit and the Home tab's Fit Page fit the current page. View ▸ Zoom to page level (⌘0) and the rail's Page display menu, which also offers Fit one full page (single-page view at Fit page). Scrolling views fit their largest page so mixed sizes never jump the zoom; single-page view fits the shown page"
 
 [[feature]]
@@ -963,6 +971,7 @@ status = "partial"
 commands = ["view.fit_width_scrolling"]
 tools = []
 evidence = []
+editor = ["web/tests/hand/zoom.mjs::A10"]
 notes = "Editor (web/, web/tests/hand/zoom.mjs): Cmd+2 and the Home tab's Fit Width fit the current page's width. View ▸ Fit to width (⌘2) and the rail's Page display menu's Fit to width scrolling (continuous scrolling at Fit width)"
 
 [[feature]]
@@ -1047,6 +1056,7 @@ status = "planned"
 commands = []
 tools = []
 evidence = []
+editor = ["web/tests/hand/annotation-tools.mjs::K5 rail and keys"]
 notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the hand on the tool rail, H turns it on and V back to Select; a drag pans. drag to pan; Grab/Grabbing cursors; H picks it, V goes back to Select, Space held pans temporarily"
 
 [[feature]]
@@ -1083,6 +1093,7 @@ status = "partial"
 commands = ["view.full_screen"]
 tools = []
 evidence = []
+editor = ["web/tests/hand/reading.mjs::A15 full screen"]
 notes = "Editor (web/, web/tests/hand/reading.mjs): Full Screen (Cmd+L, the Home tab's Zoom group) enters Focus with the page whole in view and the browser's full screen where the host allows it (dev.html does); the arrows and Page Up/Down turn a page, Home and End go to the first and last; Escape or Cmd+L again goes back to the zoom from before, at the page reached. No black background, no hiding pointer, no click to turn the page."
 
 [[feature]]
@@ -1119,6 +1130,7 @@ status = "partial"
 commands = []
 tools = []
 evidence = []
+editor = ["web/tests/hand/keys.mjs::B6", "web/tests/hand/keys.mjs::B7", "web/tests/hand/keys.mjs::K2 page field"]
 notes = "Editor (web/, web/tests/hand/keys.mjs): the Home tab's first, previous, next and last buttons and page field (a label or a number; text that names no page shows the current one again), ↓ / ↑ scroll 40 px, Space, Shift+Space, Page Down and Page Up a screen less a line, Home / End and Cmd+↑ / Cmd+↓ the first page's top and the last page's bottom, → / ← scroll sideways while the page is wider than the view and turn the page otherwise, Cmd+→ / Cmd+← and Cmd+Page Down / Up turn it. Continuous single-page layout only. in two-page view, next and previous page move a whole spread (with or without a cover page); → / ← turn pages in every layout, ↓ / ↑ scroll a line and Page Down / Page Up a screen (the page in single-page view), as in Acrobat; in single-page view ↓ / ↑ turn the page once there is nothing left to scroll that way, like the wheel"
 
 [[feature]]
@@ -1143,6 +1155,7 @@ status = "planned"
 commands = []
 tools = []
 evidence = []
+editor = ["web/tests/hand/annotations.mjs::F5 links"]
 notes = "Editor (web/, web/tests/hand/annotations.mjs): Alt+Left / Alt+Right and Cmd+[ / Cmd+] go back and forward through the views links left; bookmarks, thumbnails, find and the page field do not record yet. ⌘[ / ⌘] and View ▸ Page navigation"
 
 [[feature]]
@@ -1155,6 +1168,7 @@ status = "shipped"
 commands = []
 tools = []
 evidence = ["crates/render/render/src/inspect.rs::bookmarks_and_links_keep_their_destination_view"]
+editor = ["web/tests/hand/annotations.mjs::F5 links", "web/tests/hand/annotations.mjs::C11 cursor"]
 notes = "Editor (web/, web/tests/hand/annotations.mjs): a click on a link to a page goes to that page (its top, at the current zoom: link.list answers no destination place or zoom yet); a web address is asked about and opened by the host; a hand cursor over links. GoTo and URI links; other action types (JavaScript, Launch, named actions) arrive with M6. Destinations keep their position and zoom (/XYZ, /Fit, /FitH, /FitV, /FitR, named); the /FitB* content box is read as the whole page"
 
 [[feature]]
@@ -1167,6 +1181,7 @@ status = "planned"
 commands = []
 tools = []
 evidence = []
+editor = ["web/tests/hand/annotations.mjs::G1 select"]
 notes = "Editor (web/, web/tests/hand/annotations.mjs): hovering a comment shows its author and text. a popup with the author and the comment text, as Acrobat shows"
 
 [[feature]]
@@ -1227,6 +1242,7 @@ status = "partial"
 commands = []
 tools = []
 evidence = []
+editor = ["web/tests/hand/pages.mjs::E2 drag"]
 notes = "Editor (web/, web/tests/hand/pages.mjs): thumbnails of every page beside the pages, drawn as they come into view; a click goes to the page, the current one framed, the arrows, Home and End walk them. After an edit only the thumbnails of the pages it changed draw again (by the engine's page stamps), each keeping its old picture until the new one arrives (web/tests/hand/repaint.mjs); after a save every page draws once again. No thumbnail size."
 
 [[feature]]
@@ -1251,6 +1267,7 @@ status = "partial"
 commands = []
 tools = ["file.getInfo"]
 evidence = []
+editor = ["web/tests/hand/pages.mjs::F2 folding", "web/tests/hand/pages.mjs::F3 keys", "web/tests/hand/pages.mjs::A2 opens with the bookmarks"]
 notes = "Editor (web/, web/tests/hand/pages.mjs): a tree that folds and unfolds (as the file says at first); a click or Enter goes to the top of the page; the arrows walk it; opens on its own when the file says /PageMode /UseOutlines. A bookmark goes to its destination's position and zoom, not just its page. The panel shows the first 10,000 bookmarks, nested 33 levels deep at most, and says so; bookmark_list pages through every bookmark in the file (up to 33 levels deep)."
 
 [[feature]]
@@ -1359,6 +1376,7 @@ status = "shipped"
 commands = ["edit.find"]
 tools = ["text.find"]
 evidence = ["crates/engine/automation/tests/automation.rs::open_inspect_render_and_find", "crates/render/render/src/text.rs::identity_v_columns_are_searchable_in_reading_order"]
+editor = ["web/tests/hand/keys.mjs::K1", "web/tests/hand/reading.mjs::D5 D7"]
 notes = "Horizontal and WMode 1 vertical text are grouped independently, including a horizontal heading above right-to-left vertical columns. Complex interleaved flows still use a geometric reading-order heuristic."
 
 [[feature]]
@@ -1371,6 +1389,7 @@ status = "partial"
 commands = ["edit.find"]
 tools = []
 evidence = []
+editor = ["web/tests/hand/keys.mjs::D4", "web/tests/hand/reading.mjs::D5 D7"]
 notes = "Editor (web/, web/tests/hand/keys.mjs, web/tests/hand/reading.mjs): Enter and Shift+Enter in the find field, Cmd+G and Shift+Cmd+G (F3) anywhere while the bar is open, and its arrows step through every match, wrapping; every match on the pages in view is marked faintly and the current one stronger; a click off the text keeps the bar. A press that starts selecting text closes it."
 
 [[feature]]
@@ -1383,6 +1402,7 @@ status = "shipped"
 commands = ["edit.find"]
 tools = ["text.find"]
 evidence = ["crates/engine/automation/tests/automation.rs::find_matches_case_and_whole_words_when_asked"]
+editor = ["web/tests/hand/reading.mjs::D8"]
 notes = "Editor (web/, web/tests/hand/reading.mjs): Match case and Whole words only buttons on the find bar search again at once and last the session; text_find takes caseSensitive and wholeWords. Whole words only treats Chinese and Japanese characters as letters, so a word inside a longer run of them is not found."
 
 [[feature]]
@@ -1479,6 +1499,7 @@ status = "shipped"
 commands = []
 tools = ["text.select"]
 evidence = ["crates/engine/automation/tests/text_selection.rs::inclusive_full_partial_reverse_and_single_glyph_ranges_follow_rotations_and_crops", "crates/engine/automation/tests/text_selection.rs::units_widen_both_ends_and_answer_where_the_ends_are", "crates/engine/automation/tests/text_selection.rs::a_step_moves_the_focus_end_on_its_page_and_stops_at_its_edges"]
+editor = ["web/tests/hand/reading.mjs::C6", "web/tests/hand/reading.mjs::C7", "web/tests/hand/reading.mjs::C10"]
 notes = "Editor (web/, web/tests/hand/reading.mjs): a double click selects a word and a triple click its line (dragging on takes whole words or lines); Shift+click runs the selection on from its anchor, across pages; Shift with the arrows moves its end a character (Alt: a word, up and down: a line); a drag held near the top or bottom of the view scrolls; text_select takes glyph ends, unit and step for these. Four clicks do not select the page in the editor (its canvas counts to three). Drag to select; ⇧-click extends the selection to the click, keeping its anchor (same page only); with the Select tool, quick clicks select a word (two), the line (three) or all the text on the page (four). The markup and Redact tools mark a double-clicked word and stop there. Missing: selection across pages (dragging or ⇧-clicking onto another page), paragraph selection, and ⌘A across the whole document (it selects the current page). In the kit, mouse drag selects inclusive glyph ranges across up to 64 pages through read-only text_select, with live rotation/crop/zoom highlights, cancellation and revision cleanup. The browser harness is web/tests/selection.mjs. Touch/pen and real-font fidelity are not covered; preceding notes describe the historical native UI."
 
 [[feature]]
@@ -1503,6 +1524,7 @@ status = "shipped"
 commands = []
 tools = ["text.select"]
 evidence = ["crates/engine/automation/tests/text_selection.rs::selection_is_read_only_in_tool_metadata_bytes_history_and_document_summary"]
+editor = ["web/tests/hand/keys.mjs::C8", "web/tests/hand/markup.mjs::G6 bar"]
 notes = "Copy selection writes current selected plain text inside the click activation; native copy events from the canvas supply text/plain without intercepting input fields. web/tests/selection.mjs verifies trusted keyboard events and separately classifies system clipboard reads. Native evidence covers read-only selection text; clipboard behavior requires browser evidence. Rich HTML/layout clipboard formats are not implemented."
 
 [[feature]]
@@ -1515,6 +1537,7 @@ status = "planned"
 commands = []
 tools = []
 evidence = []
+editor = ["web/tests/hand/keys.mjs::C8"]
 notes = "⌘A on the current page"
 
 [[feature]]
@@ -1671,6 +1694,7 @@ status = "shipped"
 commands = []
 tools = []
 evidence = ["crates/engine/engine/src/commands.rs::shortcut_labels_follow_platform_conventions"]
+editor = ["web/tests/hand/keys.mjs::K1", "web/tests/hand/keys.mjs::B6", "web/tests/hand/zoom.mjs::A10"]
 notes = ""
 
 [[feature]]
@@ -1963,6 +1987,7 @@ status = "shipped"
 commands = ["edit.text"]
 tools = ["page.addText", "content.set"]
 evidence = ["crates/engine/automation/tests/automation.rs::adding_content_through_tools", "crates/engine/edit/src/tests.rs::added_text_and_images_are_page_content_that_stays_editable", "crates/engine/engine/src/tests.rs::added_text_and_images_render_and_stay_editable", "crates/engine/edit/src/tests.rs::added_arabic_text_is_shaped_in_display_order_and_stays_searchable", "bindings/wasm/tests/document_fonts.rs::added_text_uses_the_hosts_fonts"]
+editor = ["web/tests/hand/annotation-tools.mjs::G7 text", "web/tests/hand/annotation-tools.mjs::ribbon"]
 notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): Add Text on the Home tab (or the rail) is a tool: a click opens a card there and its text goes on the page with page.addText, then Select is back. page content, editable later (retype, move, restyle); standard fonts, Windows-1252 text, or a document font (kition-fonts, or one the host added) by family; characters the standard fonts lack (Chinese, Japanese) come from a document font that has them, and the standard families from Arimo, Tinos and Cousine when present, all as Type 3 outlines with ToUnicode, so the page embeds what it shows. Arabic text is shaped with the kition-fonts Arab face (Type 3 outlines with ToUnicode) and laid out in bidirectional display order; it is drawn regular whatever the bold/italic setting, Hebrew and other right-to-left scripts are not covered, and typing in the box is still left to right (misc.rtl-ui). Each click on the page keeps the box being typed and starts a new one; Done and Discard beside the box"
 
 [[feature]]
@@ -2167,6 +2192,7 @@ status = "shipped"
 commands = ["edit.link"]
 tools = ["link.add"]
 evidence = ["crates/engine/automation/tests/automation.rs::links_through_tools", "crates/engine/annot/src/tests.rs::links_are_added_edited_listed_and_removed"]
+editor = ["web/tests/hand/pick.mjs::L4 rectangle"]
 notes = "Editor (web/, web/tests/hand/pick.mjs): Edit ▸ Add a link's Drag on the page puts the dialog away, the box dragged on a page comes back in Rectangle with its page, and Run makes the link there; there is no link tool on the rail (a dialog, a pick and Run). drag a rectangle; go to a page or open a web page"
 
 [[feature]]
@@ -2227,6 +2253,7 @@ status = "shipped"
 commands = ["edit.link"]
 tools = ["link.add"]
 evidence = ["crates/engine/annot/src/tests.rs::links_are_added_edited_listed_and_removed", "crates/engine/automation/tests/automation.rs::links_through_tools"]
+editor = ["web/tests/hand/annotations.mjs::F5 links"]
 notes = "Opening a document's link or button URI asks first; only http, https and mailto addresses are offered, and an email address that asks the email app to attach or insert a local file is refused. The prompt shows the host as the browser receives it: international hosts in punycode, lookalikes that mix alphabets flagged, numeric hosts in their usual form."
 
 [[feature]]
@@ -2579,6 +2606,7 @@ status = "partial"
 commands = ["page.organize"]
 tools = []
 evidence = []
+editor = ["web/tests/hand/pages.mjs::E3 E5 selection and Delete"]
 notes = "Editor (web/, web/tests/hand/pages.mjs): in the thumbnails, click goes to a page, Shift+click selects a run, Cmd+click adds or takes out a page, Cmd+A selects all, Escape none; the page commands of the ribbon act on the selection. Ctrl+A / ⌘A selects every page in the Organize grid, preserving the current page; text inputs and dialogs keep their own keyboard input."
 
 [[feature]]
@@ -2639,6 +2667,7 @@ status = "partial"
 commands = []
 tools = []
 evidence = []
+editor = ["web/tests/hand/pages.mjs::E2 drag"]
 notes = "Editor (web/, web/tests/hand/pages.mjs): in the thumbnails beside the pages (no page grid yet): the selection or the page grabbed, an insertion line, one undo step; no move earlier/later buttons. drag thumbnails (or the selection) in the page grid; an insertion bar shows where they go; move earlier/later buttons too"
 
 [[feature]]
@@ -3191,6 +3220,7 @@ status = "shipped"
 commands = ["bookmark.add"]
 tools = ["bookmark.add"]
 evidence = ["crates/engine/organize/src/tests.rs::bookmarks_add_rename_move_delete", "crates/engine/engine/src/tests.rs::bookmark_edits_show_in_the_viewer_undo_and_save", "crates/engine/automation/tests/automation.rs::bookmarks_through_tools"]
+editor = ["web/tests/hand/pages.mjs::F4 new bookmark", "web/tests/hand/pages.mjs::F3 delete and menu"]
 notes = "Editor (web/, web/tests/hand/pages.mjs): Cmd+B, the panel's New bookmark, the Pages tab or the page's menu write the title in place for the current page (its top); Escape adds nothing."
 
 [[feature]]
@@ -3203,6 +3233,7 @@ status = "shipped"
 commands = []
 tools = ["bookmark_rename"]
 evidence = ["crates/engine/organize/src/tests.rs::bookmarks_add_rename_move_delete", "crates/engine/organize/src/tests.rs::bookmark_edits_keep_unknown_keys_and_touch_few_objects"]
+editor = ["web/tests/hand/pages.mjs::F3 rename"]
 notes = "Editor (web/, web/tests/hand/pages.mjs): a double-click or F2 renames in place; Enter or a click elsewhere keeps the title, Escape drops it."
 
 [[feature]]
@@ -3215,6 +3246,7 @@ status = "shipped"
 commands = []
 tools = ["bookmark_delete"]
 evidence = ["crates/engine/organize/src/tests.rs::bookmarks_add_rename_move_delete", "crates/engine/engine/src/tests.rs::bookmark_edits_show_in_the_viewer_undo_and_save"]
+editor = ["web/tests/hand/pages.mjs::F3 delete and menu"]
 notes = "Editor (web/, web/tests/hand/pages.mjs): Delete or the bookmark's menu deletes it and those under it."
 
 [[feature]]
@@ -3495,6 +3527,7 @@ status = "partial"
 commands = ["comment.list"]
 tools = ["comment.list"]
 evidence = []
+editor = ["web/tests/hand/markup.mjs::G4 G8 panel"]
 notes = "Editor (web/, web/tests/hand/markup.mjs): the Comments panel lists each comment's type, page, author, time, status, text and replies; a click goes to the comment and frames it on the page; the chosen one is edited in place, replied to, given a status and deleted. cards grouped by page with replies, status badges, selection, reply box and an Add a comment box"
 
 [[feature]]
@@ -3519,6 +3552,7 @@ status = "shipped"
 commands = ["comment.note"]
 tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
+editor = ["web/tests/hand/annotation-tools.mjs::G5 sticky note"]
 notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the sticky note tool (Sticky Note on the Home tab, or the rail): a click opens a card where the pointer is, written at once (Chinese too); Post makes the note there and selects it, Escape makes nothing; then Select is back unless the tool is kept. our own Comment/Note icon drawings, with a pop-up"
 
 [[feature]]
@@ -3531,6 +3565,7 @@ status = "shipped"
 commands = ["comment.highlight"]
 tools = ["comment.add"]
 evidence = ["crates/engine/engine/src/tests.rs::highlight_multiplies_over_text"]
+editor = ["web/tests/hand/annotation-tools.mjs::G6 highlighter", "web/tests/hand/markup.mjs::C9 ribbon", "web/tests/hand/markup.mjs::C9 find"]
 notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the highlighter marks the text it is dragged over at the release, line by line, one undo step, and stays on to mark the next; chosen with text selected it marks that at once. Editor (web/, web/tests/hand/markup.mjs): with text selected (each page of a selection across pages) or the find bar on a match, Highlight marks it at once; the bar beside a released selection highlights, underlines, strikes out and adds a highlight with a note. drag over text, or pick the tool with text selected; a new highlight opens its note for typing in the Comments panel; agents can highlight by text search"
 
 [[feature]]
@@ -3543,6 +3578,7 @@ status = "shipped"
 commands = ["comment.underline"]
 tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
+editor = ["web/tests/hand/markup.mjs::G6 bar"]
 notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the underline tool marks the text dragged over, and stays on. Editor (web/, web/tests/hand/markup.mjs): Underline on the Home tab or the selection's bar marks the selected text at once. "
 
 [[feature]]
@@ -3555,6 +3591,7 @@ status = "shipped"
 commands = ["comment.strikeout"]
 tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
+editor = ["web/tests/hand/markup.mjs::G6 bar"]
 notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the strikethrough tool marks the text dragged over, and stays on. Editor (web/, web/tests/hand/markup.mjs): Strikethrough on the Home tab or the selection's bar marks the selected text at once. "
 
 [[feature]]
@@ -3639,6 +3676,7 @@ status = "shipped"
 commands = ["comment.ink"]
 tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::ink_strokes_are_smooth_curves_through_their_points", "crates/engine/annot/src/tests.rs::drawings_resize_by_scaling_their_strokes"]
+editor = ["web/tests/hand/annotation-tools.mjs::G7 shapes"]
 notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the drawing tool: one stroke per drag, previewed as it is drawn, not selected after (the tool stays on). Editor (web/, web/tests/hand/annotations.mjs): a drawing is selected, moved and resized with its eight handles on the page. one ink annotation per stroke; strokes are drawn as smooth curves through their points, as in Acrobat; resize with the 8 handles (the strokes scale into the new box)"
 
 [[feature]]
@@ -3663,6 +3701,7 @@ status = "shipped"
 commands = ["comment.line"]
 tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
+editor = ["web/tests/hand/annotation-tools.mjs::G7 shapes"]
 notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the line tool: a drag from the press to the release, Shift level or plumb; selected after, the tool stays on. "
 
 [[feature]]
@@ -3675,6 +3714,7 @@ status = "partial"
 commands = ["comment.arrow"]
 tools = ["comment.add"]
 evidence = []
+editor = ["web/tests/hand/annotation-tools.mjs::G7 shapes"]
 notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the arrow tool: as the line, with an open arrowhead at the release. "
 
 [[feature]]
@@ -3687,6 +3727,7 @@ status = "shipped"
 commands = ["comment.square"]
 tools = ["comment.add", "comment.edit"]
 evidence = ["crates/engine/annot/src/tests.rs::restyle_and_resize_redraw_the_appearance", "crates/engine/annot/src/tests.rs::shapes_can_be_filled_and_unfilled"]
+editor = ["web/tests/hand/annotation-tools.mjs::G7 shapes", "web/tests/hand/annotations.mjs::G2 resize"]
 notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the rectangle tool: a drag, previewed, Shift a square; selected with its handles after (a press on a handle resizes it while the tool is on). Editor (web/, web/tests/hand/annotations.mjs): a click selects a rectangle (eight handles); a drag moves it, a handle resizes it (Shift keeps the ratio), one undo step each. resize with the 8 handles; fill colour or no fill from the quick bar, Properties and comment_edit `fill`; fill swatches are the comment palette only (no custom colour picker yet)"
 
 [[feature]]
@@ -3699,6 +3740,7 @@ status = "shipped"
 commands = ["comment.circle"]
 tools = ["comment.add"]
 evidence = ["crates/engine/annot/src/tests.rs::every_tool_creates_a_drawable_comment"]
+editor = ["web/tests/hand/annotation-tools.mjs::G7 shapes"]
 notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the oval tool: a drag, Shift a circle; selected after. "
 
 [[feature]]
@@ -3819,6 +3861,7 @@ status = "shipped"
 commands = ["comment.note"]
 tools = ["comment.edit"]
 evidence = ["crates/engine/annot/src/tests.rs::restyle_and_resize_redraw_the_appearance"]
+editor = ["web/tests/hand/annotation-tools.mjs::L5 options bar"]
 notes = "Editor (web/, web/tests/hand/annotation-tools.mjs): the options bar under the ribbon: colour swatches, opacity and line width for what the tool on makes next (a colour also goes to the selected comment of that tool's kind); with Select on, they change the selected comment (one undo step each). No fill colour or font size yet; a comment's own opacity and width show only once the editor set them (comment.list does not answer them). Editor (web/, web/tests/hand/annotations.mjs): a selected comment's colour from its right-click menu too. quick-bar colour swatches, fill colour (rectangle, oval, polygon, cloud), opacity (10–100 %) and line thickness per tool; colour from the context menu"
 
 [[feature]]
@@ -3867,6 +3910,7 @@ status = "shipped"
 commands = ["comment.list"]
 tools = ["comment.reply"]
 evidence = ["crates/engine/annot/src/tests.rs::replies_and_status_thread_onto_the_parent"]
+editor = ["web/tests/hand/markup.mjs::G4 G8 panel"]
 notes = "Editor (web/, web/tests/hand/markup.mjs): the chosen comment's reply box in the Comments panel; replies show under it. "
 
 [[feature]]
@@ -3903,6 +3947,7 @@ status = "shipped"
 commands = ["comment.list"]
 tools = ["comment.delete"]
 evidence = ["crates/engine/annot/src/tests.rs::delete_takes_popup_and_reply_chain"]
+editor = ["web/tests/hand/annotations.mjs::G3 Delete", "web/tests/hand/annotations.mjs::L1 menus", "web/tests/hand/markup.mjs::G4 G8 panel"]
 notes = "Editor (web/, web/tests/hand/annotations.mjs): Delete deletes the comment selected on the page; its right-click menu's Delete too. Editor (web/, web/tests/hand/markup.mjs): the Comments panel's Delete, the Comments tab's Delete a comment and the Delete key act on the comment chosen in the panel. deletes the pop-up and the reply thread"
 
 [[feature]]
@@ -3915,6 +3960,7 @@ status = "shipped"
 commands = ["comment.list"]
 tools = ["comment.edit"]
 evidence = ["crates/engine/annot/src/tests.rs::text_box_text_and_colour_changes_are_drawn", "crates/engine/annot/src/tests.rs::editing_a_text_box_refits_its_rectangle", "crates/engine/automation/tests/automation.rs::comments_through_tools"]
+editor = ["web/tests/hand/annotations.mjs::fields and notes", "web/tests/hand/markup.mjs::G4 G8 panel"]
 notes = "Editor (web/, web/tests/hand/annotations.mjs): a double-click on a comment, or Edit text in its right-click menu, edits its text in a card on the page. Editor (web/, web/tests/hand/markup.mjs): Edit (or a double-click) on a card of the Comments panel edits its text in place; not on the page yet. double-click a comment or card, or Edit in the menus; a text box's rectangle follows the new text (wrap width and top edge stay, the height fits the wrapped lines)"
 
 [[feature]]
@@ -4327,6 +4373,7 @@ status = "shipped"
 commands = ["form.fields"]
 tools = ["file.getInfo"]
 evidence = ["crates/render/render/src/inspect.rs::fields_listed_only_on_the_pages_are_listed"]
+editor = ["web/tests/hand/fields-panel.mjs::H4"]
 notes = "list with jump-to-field; in Prepare a form, Shift/Ctrl/Command-click selects several fields and Properties edits their shared properties; double-click opens field properties; fields a file lists only as page widgets (empty /Fields) are adopted too"
 
 [[feature]]
@@ -4339,6 +4386,7 @@ status = "planned"
 commands = []
 tools = []
 evidence = []
+editor = ["web/tests/hand/forms.mjs::H2 bar", "web/tests/hand/forms.mjs::H2 fields show"]
 notes = "Editor (web/, web/tests/hand/forms.mjs): a document with a form opens with a bar that counts its fields, with Highlight fields / Hide field highlights, on at first and kept for the next document of the session (not across sessions); a highlighted field is tinted in the theme's primary colour, a required one framed in its danger colour. remembered for the next document and session; required fields get a red border (round for radio buttons); the tint is drawn over the field, where Acrobat paints the highlight colour behind it"
 
 [[feature]]
@@ -4363,6 +4411,7 @@ status = "shipped"
 commands = ["form.fields"]
 tools = ["form.fill", "form.listFields"]
 evidence = ["crates/engine/forms/src/tests.rs::text_fields_get_new_appearances", "crates/engine/engine/src/tests.rs::filling_a_form_shows_saves_and_undoes", "crates/engine/automation/tests/automation.rs::orphan_form_fields_through_tools", "crates/engine/forms/tests/cjk_value.rs::chinese_values_are_drawn_from_a_document_face"]
+editor = ["web/tests/hand/forms.mjs::H1 type and Tab", "web/tests/hand/forms.mjs::H5 Chinese", "web/tests/hand/fields-panel.mjs::H4"]
 notes = "Editor (web/, web/tests/hand/forms.mjs, web/tests/hand/fields-panel.mjs): on the page, a text box over the field (a text area for several lines) filled as it lets go or on Enter, Escape keeps the field's value; and in the form fields panel; both show the value an undo brings back. A value the field's font can't draw (Chinese in a Helvetica field) is drawn from a document face as Type 3 glyphs. in-place editor; Enter or clicking away commits, Escape cancels; no format/keystroke JavaScript yet (M6.4) in-place editor; Enter or clicking away commits, Escape cancels; no format/keystroke JavaScript yet (M6.4)"
 
 [[feature]]
@@ -4375,6 +4424,7 @@ status = "shipped"
 commands = ["form.fields"]
 tools = ["form.fill"]
 evidence = ["crates/engine/forms/src/tests.rs::check_boxes_and_radios_switch_states", "crates/engine/automation/tests/automation.rs::listing_fields_gives_every_widget"]
+editor = ["web/tests/hand/forms.mjs::check box and radio buttons"]
 notes = "Editor (web/, web/tests/hand/forms.mjs, web/tests/hand/fields-panel.mjs): on the page, a click on a check box or on any radio button of a group fills at once (form.listFields gives every widget with its export value and state), Space and Enter turn a check box, the arrows go round a radio group; the form fields panel draws a check box and a group of radio buttons. A click on the chosen radio button does not clear the group. NoToggleToOff honoured; widgets without appearances get our own"
 
 [[feature]]
@@ -4387,6 +4437,7 @@ status = "shipped"
 commands = ["form.fields"]
 tools = ["form.fill"]
 evidence = ["crates/engine/forms/src/tests.rs::choices_accept_exports_or_display_text"]
+editor = ["web/tests/hand/forms.mjs::H1 type and Tab", "web/tests/hand/fields-panel.mjs::H4"]
 notes = "Editor (web/, web/tests/hand/forms.mjs, web/tests/hand/fields-panel.mjs): on the page a drop-down (a text box with its options when editable) or a list over the field fills as it is chosen; the form fields panel draws a drop-down's options by name (free text for an editable one) and a list. combo and list boxes, multi-select lists; editable combo boxes accept free text"
 
 [[feature]]
@@ -4411,6 +4462,7 @@ status = "partial"
 commands = ["form.fields"]
 tools = []
 evidence = []
+editor = ["web/tests/hand/forms.mjs::H1 type and Tab", "web/tests/hand/forms.mjs::Tab across pages"]
 notes = "Editor (web/, web/tests/hand/forms.mjs): on the page Tab and Shift+Tab go through the document's tab order (each widget's tab from form.listFields), across pages and round, bringing the next field into view; Tab from the pages comes into the form on the current page; read-only fields are passed. Tab / Shift+Tab move between text and choice fields in field order; entering with Tab selects the value"
 
 [[feature]]
@@ -4591,6 +4643,7 @@ status = "partial"
 commands = []
 tools = ["form.setProps"]
 evidence = []
+editor = ["web/tests/hand/forms.mjs::H2 fields show"]
 notes = "Editor (web/, web/tests/hand/forms.mjs): a required field is framed in the theme's danger colour while fields are highlighted. required fields get a red border when fields are highlighted"
 
 [[feature]]
@@ -5215,6 +5268,7 @@ status = "shipped"
 commands = ["sign.fill.text"]
 tools = ["fillSign.add"]
 evidence = ["crates/engine/annot/src/tests.rs::fill_and_sign_items_are_drawn", "crates/engine/automation/tests/automation.rs::fill_and_sign_through_tools"]
+editor = ["web/tests/hand/pick.mjs::N S4 Fill & Sign"]
 notes = "Editor (web/, web/tests/hand/pick.mjs): the Forms tab's Fill & Sign Text stays on; a click on a page opens a card at it and the text typed goes there (10 pt); the text is typed in the card, not in a box on the page. typewriter FreeText, 10 pt Helvetica"
 
 [[feature]]
@@ -5227,6 +5281,7 @@ status = "shipped"
 commands = ["sign.fill.check", "sign.fill.cross", "sign.fill.dot", "sign.fill.line"]
 tools = ["fillSign.add"]
 evidence = ["crates/engine/annot/src/tests.rs::fill_and_sign_items_are_drawn"]
+editor = ["web/tests/hand/pick.mjs::N S4 Fill & Sign", "web/tests/hand/pick.mjs::N S4 check mark"]
 notes = "Editor (web/, web/tests/hand/pick.mjs): the Forms tab's Check Mark and Cross Mark stay on; each click on a page puts a 12 pt mark centred on it, a drag puts nothing. Dot and line go through Fill & Sign's dialog, with Click on the page for the position. Kition PDF-drawn stamps"
 
 [[feature]]
@@ -5495,6 +5550,7 @@ status = "shipped"
 commands = ["redact.mark"]
 tools = ["redaction.mark"]
 evidence = ["crates/engine/automation/tests/automation.rs::redacting_through_tools", "crates/engine/redact/src/tests.rs::glyphs_under_a_mark_go_and_the_rest_stays_put", "crates/engine/automation/tests/automation.rs::redacting_selected_text_through_quads"]
+editor = ["web/tests/hand/pick.mjs::redact selection"]
 notes = "Editor (web/, web/tests/hand/pick.mjs): text dragged over is marked from the selection bar's Mark for Redaction or its right-click menu, one redaction.mark with quads over its lines on each page, outlined on the page; no Redact tool that marks with one drag or a double-clicked word. drag across text (or select first) with the Redact tool"
 
 [[feature]]
@@ -5627,6 +5683,7 @@ status = "shipped"
 commands = ["redact.apply"]
 tools = ["redaction.apply"]
 evidence = ["crates/engine/engine/src/tests.rs::redaction_marks_apply_for_good_and_undo", "crates/engine/automation/tests/automation.rs::redacting_through_tools"]
+editor = ["web/tests/hand/pick.mjs::redact selection"]
 notes = "Editor (web/, web/tests/hand/pick.mjs): Protect ▸ Apply redactions asks first, naming how many marks and what goes; Cancel keeps them. confirmation; one undo step; next save is a full rewrite"
 
 [[feature]]
