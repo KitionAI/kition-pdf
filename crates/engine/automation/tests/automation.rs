@@ -1814,7 +1814,7 @@ fn redacting_selected_text_through_quads() {
     assert_eq!(marks.len(), 1);
     let at: Vec<f64> = marks[0]["rect"].as_array().unwrap().iter().map(|n| n.as_f64().unwrap()).collect();
     assert!(at.iter().zip(&rect).all(|(x, y)| (x - y).abs() < 1.5), "{at:?} vs {rect:?}");
-    assert_eq!(ok(&mut a, "edit_undo", json!({ "doc": doc }))["undone"], "Mark for redaction", "one undo step");
+    assert_eq!(ok(&mut a, "edit_undo", json!({ "doc": doc }))["undone"], "Add redaction mark", "one undo step");
     ok(&mut a, "edit_redo", json!({ "doc": doc }));
     ok(&mut a, "redaction.apply", json!({ "doc": doc }));
     let text = page_text(&mut a, doc)[0].clone();
