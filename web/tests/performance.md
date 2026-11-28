@@ -24,6 +24,15 @@ text are never copied into the report. A short harness validation can specify
 There are also three zoom operations and one unsaved comment refresh through
 the host command protocol. Corpus files are never saved or modified.
 
+## Scroll at device pixel ratio 2
+
+`--scroll-pages 20` measures scrolling instead of the navigation samples: each case opens at
+device pixel ratio 2, clicks Fit Width, and wheels down (one 60-pixel event every 16 ms) until the
+status passes page 21, then back up to page 1 over pages already drawn. The report's `scroll`
+records, for each direction, the repaints of the live page canvas per second, wheel event to next
+repaint (p50, p95), and the worker render requests it cost. Numbers only: nothing passes or fails
+on a duration.
+
 ## Completion definition
 
 The browser init script runs before the editor and observes real engine worker

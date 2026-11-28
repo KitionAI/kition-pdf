@@ -3,6 +3,10 @@
 use super::*;
 
 const TILE_SIDE: u32 = 1024;
+/// A zoomed page up to this side (the renderer's limit) and [`MAX_WHOLE_PIXELS`] is drawn whole
+/// and cut into tiles.
+const WHOLE_SIDE: u32 = 4096;
+const MAX_WHOLE_PIXELS: u64 = 16 * 1024 * 1024;
 const SOURCE_SIDE: u32 = 512;
 const REDUCTION_ROWS: u32 = 16;
 // These cap work for one entire SDK call, including all pages and reduction chunks.
@@ -45,13 +49,18 @@ fn filled_frame(width: u32, height: u32, color: [u8; 4]) -> Result<Vec<u8>, Stri
 }
 
 fn render_tile(renderer: &mut Renderer, index: usize, scale: f32, tile: Tile, work: &mut Work) -> Result<RenderedPage, String> {
+    work.charge(tile.w, tile.h)?;
+    render_tile_uncharged(renderer, index, scale, tile)
+}
+
+/// A tile whose work the caller charged.
+fn render_tile_uncharged(renderer: &mut Renderer, index: usize, scale: f32, tile: Tile) -> Result<RenderedPage, String> {
     if u64::from(tile.x) + u64::from(tile.w) > MAX_EXACT_OFFSET || u64::from(tile.y) + u64::from(tile.h) > MAX_EXACT_OFFSET {
         return Err(format!(
             "PDF page {} tile coordinates exceed exact renderer precision. Retry at a lower zoom or nearer the page origin.",
             index + 1
         ));
     }
-    work.charge(tile.w, tile.h)?;
     #[cfg(feature = "cache-diagnostics")]
     diagnostics::tile_request();
     let page = renderer.pages.render(RenderRequest { page: index, kind: RequestKind::Pixels, tile: Some(tile), scale, tag: 0 });
@@ -62,15 +71,34 @@ fn render_tile(renderer: &mut Renderer, index: usize, scale: f32, tile: Tile, wo
     Ok(page)
 }
 
+/// Copies the `w` × `h` part at (`sx`, `sy`) of a premultiplied tile over `out` (`width` wide) at
+/// (`x`, `y`).
+#[allow(clippy::too_many_arguments)]
+fn blit_part(out: &mut [u8], width: u32, tile: &PageImage, sx: u32, sy: u32, w: u32, h: u32, x: u32, y: u32) {
+    let len = w as usize * 4;
+    for row in 0..h as usize {
+        let from = ((sy as usize + row) * tile.width as usize + sx as usize) * 4;
+        let to = ((y as usize + row) * width as usize + x as usize) * 4;
+        if let (Some(source), Some(target)) = (tile.pixels.get(from..from + len), out.get_mut(to..to + len)) {
+            over(target, source);
+        }
+    }
+}
+
 impl PdfDocument {
-    /// Premultiplied canvas at vector scale. Subdivide the output intersection so the
-    /// renderer never silently clamps a tile's dimensions to its 4096-pixel limit.
+    /// Premultiplied canvas at vector scale. Each page is drawn from tiles on a fixed grid of its
+    /// own pixels at this scale ([`TILE_SIDE`] square, clipped to the page), kept by the page's
+    /// stamp ([`crate::tile_cache`]): scrolling back, or repainting after another page changed,
+    /// takes them from the cache. A tile never exceeds the renderer's 4096-pixel limit.
     pub(super) fn compose(&self, x: f64, y: f64, scale: f64, width: u32, height: u32) -> Result<Vec<u8>, String> {
         if !scale.is_finite() || !(0.01..=400.0).contains(&scale) {
             return Err("PDF zoom exceeds renderer limits. Retry at a zoom between 0.01 and 400.".into());
         }
         let mut out = filled_frame(width, height, self.pasteboard)?;
         let mut work = Work::default();
+        let stamps = self.stamps();
+        let mut tiles = self.paints.tiles.borrow_mut();
+        tiles.follow_fonts();
         for (index, area) in self.areas().iter().enumerate() {
             let px0 = ((area.x - x) * scale).floor().max(0.0);
             let py0 = ((area.y - y) * scale).floor().max(0.0);
@@ -84,13 +112,78 @@ impl PdfDocument {
             if origin_x > MAX_EXACT_OFFSET as f64 || origin_y > MAX_EXACT_OFFSET as f64 {
                 return Err(format!("PDF page {} tile coordinates exceed exact renderer precision. Retry at a lower zoom.", index + 1));
             }
+            // The page's pixels this frame shows: `w` × `h` from (`ox`, `oy`), drawn at (`px0`, `py0`).
+            let (ox, oy) = (origin_x as u32, origin_y as u32);
             let (w, h) = ((px1 - px0) as u32, (py1 - py0) as u32);
+            // The grid ends where the page's pixels can reach at this scale; a window past it (which
+            // only float noise makes) draws its tiles directly.
+            let extent = |side: f64| (side * scale).ceil().min(MAX_EXACT_OFFSET as f64) as u32 + 2;
+            let (extent_w, extent_h) = (extent(area.w), extent(area.h));
+            let stamp = stamps.get(index).copied();
             self.with_renderer(|renderer| -> Result<(), String> {
-                for ty in (0..h).step_by(TILE_SIDE as usize) {
-                    for tx in (0..w).step_by(TILE_SIDE as usize) {
-                        let tile = Tile { x: origin_x as u32 + tx, y: origin_y as u32 + ty, w: (w - tx).min(TILE_SIDE), h: (h - ty).min(TILE_SIDE) };
-                        let page = render_tile(renderer, index, scale as f32, tile, &mut work)?;
-                        blit(&mut out, width, page.rgba.as_ref(), page.width, page.height, px0 as u32 + tx, py0 as u32 + ty);
+                let (Some(stamp), true) = (stamp, ox + w <= extent_w && oy + h <= extent_h) else {
+                    for ty in (0..h).step_by(TILE_SIDE as usize) {
+                        for tx in (0..w).step_by(TILE_SIDE as usize) {
+                            let tile = Tile { x: ox + tx, y: oy + ty, w: (w - tx).min(TILE_SIDE), h: (h - ty).min(TILE_SIDE) };
+                            let page = render_tile(renderer, index, scale as f32, tile, &mut work)?;
+                            blit(&mut out, width, page.rgba.as_ref(), page.width, page.height, px0 as u32 + tx, py0 as u32 + ty);
+                        }
+                    }
+                    return Ok(());
+                };
+                let key = |column, row| crate::tile_cache::TileKey { stamp, scale: (scale as f32).to_bits(), column, row };
+                let (rows, columns) = (oy / TILE_SIDE..=(oy + h - 1) / TILE_SIDE, ox / TILE_SIDE..=(ox + w - 1) / TILE_SIDE);
+                // A page that fits one renderer call is drawn whole, once, and cut into its tiles:
+                // one interpretation of its content instead of one per tile (kept for this frame
+                // even when the cache cannot keep them).
+                let mut cut = Vec::new();
+                let missing = rows.clone().any(|row| columns.clone().any(|column| !tiles.contains(key(column, row))));
+                if missing && extent_w <= WHOLE_SIDE && extent_h <= WHOLE_SIDE && u64::from(extent_w) * u64::from(extent_h) <= MAX_WHOLE_PIXELS {
+                    let page = render_tile(renderer, index, scale as f32, Tile { x: 0, y: 0, w: extent_w, h: extent_h }, &mut work)?;
+                    let words = page.rgba.into_words();
+                    for row in 0..extent_h.div_ceil(TILE_SIDE) {
+                        for column in 0..extent_w.div_ceil(TILE_SIDE) {
+                            let (tx, ty) = (column * TILE_SIDE, row * TILE_SIDE);
+                            let (tw, th) = ((extent_w - tx).min(TILE_SIDE), (extent_h - ty).min(TILE_SIDE));
+                            let mut part = Vec::new();
+                            part.try_reserve_exact(tw as usize * th as usize)
+                                .map_err(|_| "Could not allocate the PDF view. Retry with a smaller area.".to_owned())?;
+                            for line in ty..ty + th {
+                                let from = line as usize * extent_w as usize + tx as usize;
+                                part.extend_from_slice(
+                                    words.get(from..from + tw as usize).ok_or("PDF renderer returned an incomplete page. Retry the view.")?,
+                                );
+                            }
+                            let image = Arc::new(PageImage::new(part.into(), tw, th));
+                            tiles.insert(key(column, row), image.clone());
+                            if rows.contains(&row) && columns.contains(&column) {
+                                cut.push((key(column, row), image));
+                            }
+                        }
+                    }
+                }
+                for row in rows.clone() {
+                    for column in columns.clone() {
+                        let (tx, ty) = (column * TILE_SIDE, row * TILE_SIDE);
+                        let tile = Tile { x: tx, y: ty, w: (extent_w - tx).min(TILE_SIDE), h: (extent_h - ty).min(TILE_SIDE) };
+                        // The part of the tile this frame shows.
+                        let (x0, y0) = (tx.max(ox), ty.max(oy));
+                        let (x1, y1) = ((tx + tile.w).min(ox + w), (ty + tile.h).min(oy + h));
+                        if x1 <= x0 || y1 <= y0 {
+                            continue;
+                        }
+                        let key = key(column, row);
+                        let image = match cut.iter().find(|(made, _)| *made == key).map(|(_, image)| image.clone()).or_else(|| tiles.get(key)) {
+                            Some(image) => image,
+                            None => {
+                                work.charge(x1 - x0, y1 - y0)?;
+                                let page = render_tile_uncharged(renderer, index, scale as f32, tile)?;
+                                let image = Arc::new(PageImage::new(page.rgba, page.width, page.height));
+                                tiles.insert(key, image.clone());
+                                image
+                            }
+                        };
+                        blit_part(&mut out, width, &image, x0 - tx, y0 - ty, x1 - x0, y1 - y0, px0 as u32 + (x0 - ox), py0 as u32 + (y0 - oy));
                     }
                 }
                 Ok(())

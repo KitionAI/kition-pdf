@@ -105,3 +105,69 @@ test('an obsolete revision rejection does not replace the new revision state', a
   await Promise.resolve(); await Promise.resolve()
   assert.equal(queue.size, 0)
 })
+
+// Stage 3 (issue-hand-e10-thumbnails-blank): an edit redraws only the pages whose stamp changed.
+const stamped = (index, stamp) => ({ ...request(index), stamp })
+const settle = async (t, rounds = 6) => { for (let i = 0; i < rounds; i++) await advance(t) }
+
+test('after an edit only pages with a new stamp draw again, each over its old thumbnail', async (t) => {
+  const queue = setup(t)
+  const engine = { revision: 1, stamps: ['a', 'b', 'c'] }
+  const calls = []
+  const source = {
+    render: async (...args) => { calls.push(args[1] / 600); return new Uint8Array(args[3] * args[4] * 4).fill(engine.revision) },
+    stamps: async () => ({ revision: engine.revision, stamps: [...engine.stamps] }),
+  }
+  queue.update(source, 1, [0, 1, 2].map((index) => stamped(index, engine.stamps[index])))
+  await settle(t)
+  assert.deepEqual(calls.sort(), [0, 1, 2])
+  assert.equal(queue.renders, 3)
+  const old = queue.get(1, source)
+  // Page 2 changes; the editor's change counter moves.
+  engine.revision = 2
+  engine.stamps = ['a', 'B', 'c']
+  calls.length = 0
+  queue.update(source, 2, [0, 1, 2].map((index) => stamped(index, engine.stamps[index])))
+  assert.equal(queue.get(1, source), old, 'the old thumbnail shows until the new one arrives')
+  assert.ok('pixels' in queue.get(0, source) && 'pixels' in queue.get(2, source))
+  await settle(t)
+  assert.deepEqual(calls, [1], 'only the changed page drew again')
+  assert.notEqual(queue.get(1, source), old)
+  assert.equal(queue.get(1, source).pixels[0], 2)
+  // Undo: the stamp is the old one again, which the thumbnail drawn for it no longer is.
+  engine.revision = 3
+  engine.stamps = ['a', 'b', 'c']
+  queue.update(source, 3, [0, 1, 2].map((index) => stamped(index, engine.stamps[index])))
+  await settle(t)
+  assert.deepEqual(calls, [1, 1])
+  assert.equal(queue.renders, 5)
+})
+
+test('a thumbnail drawn while the engine moved on is not kept for the stamp it was asked for', async (t) => {
+  const queue = setup(t)
+  const engine = { revision: 1 }
+  let reads = 0
+  const source = {
+    render: async (...args) => new Uint8Array(args[3] * args[4] * 4),
+    // The second read (after the first render) sees another revision.
+    stamps: async () => { reads += 1; if (reads === 2) engine.revision = 2; return { revision: engine.revision, stamps: ['a'] } },
+  }
+  queue.update(source, 1, [stamped(0, 'a')])
+  await advance(t); await Promise.resolve(); await Promise.resolve()
+  assert.equal(queue.get(0, source), undefined, 'not settled: dropped')
+  await settle(t)
+  assert.ok('pixels' in queue.get(0, source), 'drawn again once the revision held still')
+})
+
+test('without stamps a new revision draws every page again, the old thumbnails shown meanwhile', async (t) => {
+  const queue = setup(t)
+  const source = { render: pixels }
+  queue.update(source, 1, [request(0), request(1)])
+  await settle(t)
+  const old = queue.get(0, source)
+  queue.update(source, 2, [request(0), request(1)])
+  assert.equal(queue.get(0, source), old)
+  await settle(t)
+  assert.notEqual(queue.get(0, source), old)
+  assert.equal(queue.renders, 4)
+})

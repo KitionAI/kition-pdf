@@ -31,3 +31,8 @@ test('CLI defaults and invalid inputs cannot silently reduce the benchmark', () 
     assert.throws(() => parsePerformanceOptions(['--manifest', 'cases.json', '--out', 'out.json', ...args]))
   }
 })
+test('the scroll measurement is off by default and takes a page count', () => {
+  assert.equal(parsePerformanceOptions(['--manifest', 'cases.json', '--out', 'out.json']).scrollPages, 0)
+  assert.equal(parsePerformanceOptions(['--manifest', 'cases.json', '--out', 'out.json', '--scroll-pages', '20']).scrollPages, 20)
+  for (const value of ['-1', '2.5', 'many']) assert.throws(() => parsePerformanceOptions(['--manifest', 'cases.json', '--out', 'out.json', '--scroll-pages', value]))
+})

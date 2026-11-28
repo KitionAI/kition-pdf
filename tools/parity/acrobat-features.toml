@@ -1227,7 +1227,7 @@ status = "partial"
 commands = []
 tools = []
 evidence = []
-notes = "Editor (web/, web/tests/hand/pages.mjs): thumbnails of every page beside the pages, drawn as they come into view; a click goes to the page, the current one framed, the arrows, Home and End walk them. No thumbnail size."
+notes = "Editor (web/, web/tests/hand/pages.mjs): thumbnails of every page beside the pages, drawn as they come into view; a click goes to the page, the current one framed, the arrows, Home and End walk them. After an edit only the thumbnails of the pages it changed draw again (by the engine's page stamps), each keeping its old picture until the new one arrives (web/tests/hand/repaint.mjs); after a save every page draws once again. No thumbnail size."
 
 [[feature]]
 id = "view.thumbnail-context-ops"

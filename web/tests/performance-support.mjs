@@ -34,8 +34,8 @@ export function planSamples(pages, cycles = 100, windowPages = 40) {
 }
 
 export function parsePerformanceOptions(args) {
-  const options = { browser: 'chromium', cycles: 100, windowPages: 40, timeoutMs: 120000 }
-  const keys = new Map([['--manifest', 'manifest'], ['--out', 'out'], ['--browser', 'browser'], ['--cycles', 'cycles'], ['--window-pages', 'windowPages'], ['--timeout-ms', 'timeoutMs']])
+  const options = { browser: 'chromium', cycles: 100, windowPages: 40, timeoutMs: 120000, scrollPages: 0 }
+  const keys = new Map([['--manifest', 'manifest'], ['--out', 'out'], ['--browser', 'browser'], ['--cycles', 'cycles'], ['--window-pages', 'windowPages'], ['--timeout-ms', 'timeoutMs'], ['--scroll-pages', 'scrollPages']])
   const seen = new Set()
   for (let index = 0; index < args.length; index++) {
     if (args[index] === '--help') { options.help = true; continue }
@@ -44,10 +44,11 @@ export function parsePerformanceOptions(args) {
     seen.add(key)
     const value = args[++index]
     if (!value || value.startsWith('--')) throw new Error('missing option value')
-    options[key] = ['cycles', 'windowPages', 'timeoutMs'].includes(key) ? Number(value) : value
+    options[key] = ['cycles', 'windowPages', 'timeoutMs', 'scrollPages'].includes(key) ? Number(value) : value
   }
   if (!options.help && (!options.manifest || !options.out)) throw new Error('--manifest and --out are required')
   if (!['chromium', 'webkit', 'firefox'].includes(options.browser)) throw new Error('unsupported browser')
   if (![options.cycles, options.windowPages, options.timeoutMs].every(value => Number.isSafeInteger(value) && value > 0)) throw new Error('numeric options must be positive integers')
+  if (!Number.isSafeInteger(options.scrollPages) || options.scrollPages < 0) throw new Error('--scroll-pages must be a nonnegative integer')
   return options
 }

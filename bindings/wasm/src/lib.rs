@@ -22,8 +22,10 @@ pub mod hosting;
 mod page_cache;
 pub mod premises;
 mod rendering;
+mod tile_cache;
 
 use std::cell::{Cell, RefCell};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, LazyLock};
 
 use kition_kit::{KitCommand, KitDocument, MAX_RENDER_SIDE};
@@ -33,6 +35,7 @@ use kition_pdf_render::{PageRenderer, RenderConfig, RenderRequest, RenderedPage,
 use serde_json::{Map, Value, json};
 
 use page_cache::{PageCache, PageImage};
+use tile_cache::TileCache;
 
 /// Canvas around the pages, in points.
 pub const MARGIN: f64 = 40.0;
@@ -334,6 +337,46 @@ pub struct PdfDocument {
     /// The object model's scratch replica (`modelDescribe`, `modelBatch`), caught up with the
     /// engine's on every call.
     exchange: kition_kit::session::model::Exchange,
+    /// What lets a repaint keep the pixels of pages an edit did not touch.
+    paints: Paints,
+}
+
+/// A display's bytes and the stamps of its pages.
+type DisplayStamps = (Arc<Vec<u8>>, Arc<[u64]>);
+
+/// Page stamps and the zoomed tiles kept by them ([`tile_cache`]).
+#[derive(Default)]
+struct Paints {
+    tiles: RefCell<TileCache>,
+    /// The stamps of the display they were computed for.
+    stamps: RefCell<Option<DisplayStamps>>,
+    /// The source the engine's stamps were last comparable within, and the epoch mixed into
+    /// stamps of that source: a new source (a save rebases the document) starts a new epoch, so no
+    /// stamp of it matches one from before.
+    source: RefCell<Option<(kition_pdf_cos::SourceIdentity, u64)>>,
+    epochs: Cell<u64>,
+}
+
+impl Paints {
+    fn next_epoch(&self) -> u64 {
+        let epoch = self.epochs.get().wrapping_add(1);
+        self.epochs.set(epoch);
+        epoch
+    }
+}
+
+/// Bumped each time a font is added ([`add_font`]): it can change how pages draw.
+static FONT_GENERATION: AtomicUsize = AtomicUsize::new(0);
+
+fn font_generation() -> usize {
+    FONT_GENERATION.load(Ordering::Relaxed)
+}
+
+fn mix(epoch: u64, value: u64) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::hash::DefaultHasher::new();
+    (epoch, value).hash(&mut hasher);
+    hasher.finish()
 }
 
 impl PdfDocument {
@@ -348,6 +391,7 @@ impl PdfDocument {
             saved_revision: Cell::new(None),
             pasteboard: PASTEBOARD,
             exchange: Default::default(),
+            paints: Default::default(),
         })
     }
 
@@ -394,6 +438,45 @@ impl PdfDocument {
             diagnostics::renderer_created(doc.edit_generation(), invalidated);
         }
         slot.as_mut().map(f)
+    }
+
+    /// One stamp per page of the file as displayed now ([`kition_pdf_engine::stamps`]): equal
+    /// stamps draw the same pixels. Without the engine's stamps (a document that cannot be edited,
+    /// or a graph too large to walk) every display gets stamps of its own.
+    fn stamps(&self) -> Arc<[u64]> {
+        let Some(doc) = self.doc() else { return Arc::from(Vec::new()) };
+        if let Some((display, stamps)) = self.paints.stamps.borrow().as_ref()
+            && Arc::ptr_eq(display, &doc.display)
+        {
+            return stamps.clone();
+        }
+        let stamps: Arc<[u64]> = match doc.page_stamps() {
+            Some(found) => {
+                let mut source = self.paints.source.borrow_mut();
+                let epoch = match source.as_ref() {
+                    Some((known, epoch)) if *known == found.source => *epoch,
+                    _ => {
+                        let epoch = self.paints.next_epoch();
+                        *source = Some((found.source, epoch));
+                        epoch
+                    }
+                };
+                found.pages.iter().map(|page| mix(epoch, *page)).collect()
+            }
+            None => {
+                let epoch = self.paints.next_epoch();
+                (0..doc.info.pages.len() as u64).map(|page| mix(epoch, page.wrapping_add(1 << 63))).collect()
+            }
+        };
+        *self.paints.stamps.borrow_mut() = Some((doc.display.clone(), stamps.clone()));
+        stamps
+    }
+
+    /// The page stamps for the editor, as JSON: `{"revision", "stamps"}`, each stamp 16 hex digits
+    /// in page order. A thumbnail drawn while the revision stayed the same belongs to its stamp.
+    pub fn page_stamps(&self) -> String {
+        let stamps: Vec<String> = self.stamps().iter().map(|stamp| format!("{stamp:016x}")).collect();
+        json!({ "revision": self.revision(), "stamps": stamps }).to_string()
     }
 
     fn tools(&self) -> impl Iterator<Item = &'static ToolDef> {
@@ -772,7 +855,11 @@ impl PdfDocument {
 pub fn add_font(bytes: &[u8]) -> usize {
     let collections = kition_pdf_render::add_cjk_font(bytes.to_vec());
     let faces = kition_pdf_fonts::add_document_font(bytes.to_vec());
-    collections.max(faces)
+    let served = collections.max(faces);
+    if served > 0 {
+        FONT_GENERATION.fetch_add(1, Ordering::Relaxed);
+    }
+    served
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -810,6 +897,13 @@ pub mod web {
         #[wasm_bindgen(js_name = leaseScope)]
         pub fn lease_scope(&self, command: &str) -> String {
             self.0.lease_scope(command)
+        }
+
+        /// The page stamps (`{"revision", "stamps"}` JSON): a page whose stamp is unchanged draws
+        /// as it did, so its thumbnail stays.
+        #[wasm_bindgen(js_name = pageStamps)]
+        pub fn page_stamps(&self) -> String {
+            self.0.page_stamps()
         }
 
         // Kition phase 3g: the collaboration members (engine contract 2). Shapes mirror
@@ -976,6 +1070,9 @@ mod cache_tests;
 
 #[cfg(test)]
 mod rendering_tests;
+
+#[cfg(test)]
+mod paint_tests;
 
 #[cfg(all(test, feature = "cache-diagnostics"))]
 mod diagnostics_tests;

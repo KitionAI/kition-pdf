@@ -24,6 +24,7 @@ pub mod links;
 pub mod ocr;
 pub mod optimizer;
 pub mod signature_image;
+pub mod stamps;
 mod upright_image;
 pub mod xfa;
 
@@ -369,6 +370,13 @@ impl Document {
     pub fn measurement_paths(&self, page: usize) -> Result<measure::snap::Geometry, String> {
         let e = self.editor.as_ref().ok_or("the document can't be read")?;
         measure::snap::geometry(&e.cos, page).map_err(|e| e.to_string())
+    }
+
+    /// One hash per page of everything its picture is drawn from ([`stamps`]), comparable between
+    /// states of the same source: a viewer keeps the pixels of pages whose stamp did not change.
+    /// `None` when the document cannot be read for editing or its object graph is too large.
+    pub fn page_stamps(&self) -> Option<stamps::PageStamps> {
+        self.editor.as_ref().and_then(|e| stamps::page_stamps(&e.cos))
     }
 
     /// A counter that changes with every edit (for caches of derived data).

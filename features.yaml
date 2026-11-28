@@ -312,6 +312,16 @@ features:
     gap: "A new bookmark goes to the top of the current page (the page in the middle of the view), not the place on it, and a bookmark goes to the top of its page: bookmark.add and bookmark.list carry no position or zoom. No drag to reorder and no current bookmark marked (as the reference); no Move up, Move down, Indent, Outdent, Set to current page, style, colour, cut, copy or paste in the menu (bookmark_move and bookmark_set_page exist), no search box, no Expand all. Only the bookmarks panel follows /PageMode (not thumbnails' own, attachments or layers; a document with comments does not open the Comments panel). A landscape page in Fit Width is not refitted page by page. The bookmark tools rest on the whole document for an agent's premises. Measured in dev.html only."
     cases: [regressions/issue-hand-f3-bookmark-rename, regressions/issue-hand-f3-bookmark-tools, regressions/issue-hand-a2-opening-panel]
     since: "2026-11-27"
+  - id: pdf.editor.repaint
+    title: "An edit repaints only what it changed: the engine stamps each page with what it draws, so after a page is turned, a comment added or a field filled only the thumbnails whose stamp changed draw again, each keeping its old picture until the new one arrives, and undo draws back only the page it changes; the page canvas keeps its picture until the new one lands, its zoomed tiles (above 1:1, as at device pixel ratio 2) kept by stamp so scrolling back and repainting after an edit of another page take them from the cache, and a page that fits one renderer call is interpreted once and cut into its tiles"
+    dimension: [function, performance]
+    priority: P1
+    status: has
+    commands: [page.rotate, comment.add, form.fill]
+    paths: [crates/engine/engine/src/stamps.rs, bindings/wasm/src/tile_cache.rs, bindings/wasm/src/rendering.rs, bindings/wasm/src/lib.rs, bindings/wasm/src/paint_tests.rs, web/src/thumbnailQueue.ts, web/src/thumbnailQueue.test.mjs, web/src/Thumbnails.tsx, web/tests/hand/repaint.mjs, web/tests/performance.mjs, web/tests/performance-support.mjs]
+    gap: "A save rebases the document onto its new bytes and every page then counts as changed once: the thumbnails in view draw again (over their old pictures). The 1:1 page cache (100 % at device pixel ratio 1, and every view below it) still empties on any edit, so those views draw their visible pages again (test:cache holds it to that). The page canvas repaints its whole view after an edit, from kept tiles where it can: the SDK's run takes the damaged area before the command runs, and the editor does not name it. 128 MiB of tiles are kept (about three pages at 200 % Fit Width), so a long scroll back draws pages again. Scrolling into pages not yet drawn still waits for them (the SDK holds the view until its frame lands). Measured in dev.html only."
+    cases: [regressions/issue-hand-e10-thumbnails-blank]
+    since: "2026-11-27"
   - id: pdf.view
     title: "Render pages and previews; list and move page objects"
     dimension: [function, fidelity]

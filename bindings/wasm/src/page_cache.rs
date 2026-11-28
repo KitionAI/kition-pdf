@@ -24,6 +24,11 @@ impl PageImage {
         let allocated_bytes = words.capacity().saturating_mul(std::mem::size_of::<u32>());
         Self { pixels: words.into(), width, height, allocated_bytes }
     }
+
+    /// The bytes the pixels hold, spare capacity included.
+    pub fn allocated_bytes(&self) -> usize {
+        self.allocated_bytes
+    }
 }
 
 pub(super) struct PageCache {

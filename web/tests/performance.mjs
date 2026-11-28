@@ -12,7 +12,7 @@ import { createProcessSampler } from './performance-process.mjs'
 
 const options = parsePerformanceOptions(process.argv.slice(2))
 if (options.help) {
-  console.log('node tests/performance.mjs --manifest <cases.json> --out <report.json> [--browser chromium|webkit|firefox] [--cycles 100] [--window-pages 40] [--timeout-ms 120000]')
+  console.log('node tests/performance.mjs --manifest <cases.json> --out <report.json> [--browser chromium|webkit|firefox] [--cycles 100] [--window-pages 40] [--timeout-ms 120000] [--scroll-pages 20]')
   process.exit(0)
 }
 const root = fileURLToPath(new URL('..', import.meta.url))
@@ -21,7 +21,7 @@ const portableError = error => String(error?.message ?? error).replaceAll(root, 
 const report = {
   schema: 1, started: new Date().toISOString(), browser: options.browser,
   environment: { platform: platform(), architecture: arch(), logicalCpuCount: cpus().length, totalRamBytes: totalmem(), loadAverageStart: loadavg() },
-  configuration: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cycles: options.cycles, windowPages: options.windowPages, timeoutMs: options.timeoutMs, sidebar: 'default thumbnails for cold open; bookmarks during navigation', engineProfile: process.env.KITION_ENGINE_PROFILE ?? 'unspecified; no release-performance claim' },
+  configuration: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: options.scrollPages ? 2 : 1, scrollPages: options.scrollPages, cycles: options.cycles, windowPages: options.windowPages, timeoutMs: options.timeoutMs, sidebar: 'default thumbnails for cold open; bookmarks during navigation', engineProfile: process.env.KITION_ENGINE_PROFILE ?? 'unspecified; no release-performance claim' },
   metric: 'Action event to matching completed worker render, bitmap upload, live canvas draw, and two requestAnimationFrame opportunities; not physical screen presentation.',
   engineLatency: 'Worker dispatch to reply includes queue wait, WASM work, and message transfer. Thumbnail work may share the queue.',
   decision: 'Measurement completion does not approve latency targets, certify a memory plateau, or establish regression against an earlier build.',
@@ -59,6 +59,57 @@ async function wasmSnapshot(page, frame) {
   finally { clearTimeout(timeout) }
 }
 
+/**
+ * Installed before the editor when `--scroll-pages` is given: the times of wheel events and of
+ * draws onto the live page canvas (each a repaint the person sees).
+ */
+function installScrollProbe() {
+  const probe = window.__kitionScroll = { wheels: [], draws: [] }
+  window.addEventListener('wheel', () => probe.wheels.push(performance.now()), true)
+  const draw = CanvasRenderingContext2D.prototype.drawImage
+  CanvasRenderingContext2D.prototype.drawImage = function (...args) {
+    if (this.canvas.dataset?.testid === 'kit-canvas-surface') {
+      const now = performance.now()
+      if (!probe.draws.length || now - probe.draws.at(-1) > 3) probe.draws.push(now)
+    }
+    return draw.apply(this, args)
+  }
+}
+
+/**
+ * Stage 3 of the hand plan: at device pixel ratio 2 and Fit Width, a steady wheel scroll (one
+ * 60-pixel event every 16 ms) from page 1 down `pages` pages, then the same back up over pages
+ * already drawn. Records repaints per second, wheel event to next repaint, and the worker render
+ * requests each direction cost. Numbers only: nothing here passes or fails on a duration.
+ */
+async function scrollMeasurement(page, kit, frame, pages) {
+  await kit.getByTestId('pdf-fit-width').click()
+  await page.waitForTimeout(1500)
+  const box = await kit.getByTestId('kit-canvas-surface').boundingBox()
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  const status = () => kit.getByTestId('pdf-status').textContent()
+  const leg = async (delta, done) => {
+    await frame.evaluate(() => { window.__kitionScroll.wheels.length = 0; window.__kitionScroll.draws.length = 0 })
+    const requestsBefore = await frame.evaluate(() => window.__kitionPerf.requestCount)
+    const started = Date.now()
+    let events = 0
+    while (events < 4000 && !done(await status())) {
+      for (let i = 0; i < 10; i++) { await page.mouse.wheel(0, delta); await page.waitForTimeout(16); events++ }
+    }
+    const ms = Date.now() - started
+    const { wheels, draws } = await frame.evaluate(() => ({ wheels: [...window.__kitionScroll.wheels], draws: [...window.__kitionScroll.draws] }))
+    const latency = wheels.map(time => draws.find(draw => draw >= time)).map((draw, index) => draw == null ? null : draw - wheels[index]).filter(value => value != null)
+    const sorted = [...latency].sort((a, b) => a - b)
+    const pick = q => sorted.length ? +sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))].toFixed(1) : null
+    await page.waitForTimeout(1200)
+    const settledRequests = await frame.evaluate(() => window.__kitionPerf.requestCount)
+    return { events, ms, repaints: draws.length, repaintsPerSecond: +(draws.length / (ms / 1000)).toFixed(1), wheelToRepaintMs: { p50: pick(0.5), p95: pick(0.95) }, renderRequests: settledRequests - requestsBefore, endedAt: await status() }
+  }
+  const down = await leg(60, text => Number(/^Page (\d+) of/.exec(text)?.[1] ?? 0) > pages)
+  const up = await leg(-60, text => /^Page 1 of/.test(text))
+  return { deviceScaleFactor: 2, fit: 'width', pages, wheelDelta: 60, wheelIntervalMs: 16, down, up }
+}
+
 try {
   const manifestBytes = await readFile(options.manifest)
   report.manifestSha256 = hash(manifestBytes)
@@ -86,8 +137,9 @@ try {
       await sampler.start()
       result.sha256 = hash(await readFile(item.path))
       if (item.sha256 && item.sha256 !== result.sha256) throw new Error('PDF SHA256 mismatch')
-      context = await browser.newContext({ viewport: report.configuration.viewport, deviceScaleFactor: 1 })
+      context = await browser.newContext({ viewport: report.configuration.viewport, deviceScaleFactor: report.configuration.deviceScaleFactor })
       await context.addInitScript(installPerformanceProbe)
+      if (options.scrollPages) await context.addInitScript(installScrollProbe)
       const page = await context.newPage()
       page.setDefaultTimeout(options.timeoutMs)
       page.on('pageerror', error => result.pageErrors.push(portableError(error)))
@@ -118,6 +170,12 @@ try {
       result.fonts = await frame.evaluate(() => [...document.fonts].map(font => ({ family: font.family, style: font.style, weight: font.weight, status: font.status })))
       await checkpoint('cold-open')
       await kit.getByTestId('pdf-panel-bookmarks').click()
+      if (options.scrollPages) {
+        // Only the cold open and the scroll measurement run; the navigation samples stay untested.
+        result.samples = result.samples.slice(0, 1)
+        result.scroll = await scrollMeasurement(page, kit, frame, Math.min(options.scrollPages, item.pages - 1))
+        await checkpoint('scroll')
+      }
       for (let position = 1; position < result.samples.length; position++) {
         activeSample = result.samples[position]
         await frame.evaluate(sample => window.__kitionPerf.arm(sample), activeSample)

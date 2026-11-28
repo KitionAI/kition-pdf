@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react'
 import { Button, ContextMenu, MenuItem, MenuSeparator, TesseraIcons, useKitEditor, type ContextMenuPoint } from '@kition/sdk/editor'
 import type { PdfInfo } from './pdf'
-import { ThumbnailQueue, THUMB_ROW_HEIGHT, thumbnailWindow, type Thumbnail } from './thumbnailQueue'
+import { parseStamps, ThumbnailQueue, THUMB_ROW_HEIGHT, thumbnailWindow, type PageStamps, type Thumbnail, type ThumbnailSource } from './thumbnailQueue'
 import { dropGap, pageTargets, rangeSelection, toggleSelection } from './organize'
 
 /** What the thumbnails do to pages (0-based): each one command, one undo step (`App.tsx`). */
@@ -90,10 +90,34 @@ export function Thumbnails({ info, current, onPage, selected, onSelect, actions 
     requestAnimationFrame(() => region.current?.querySelector<HTMLButtonElement>(`[data-testid="pdf-thumb-${Math.min(current, count - 1)}"]`)?.focus({ preventScroll: true }))
   })
 
+  // The engine's page stamps (stage 3): after an edit only the pages whose stamp changed draw
+  // again, each showing its old thumbnail until the new one arrives.
+  const source = useMemo<ThumbnailSource | null>(() => doc ? {
+    render: (x, y, scale, width, height) => doc.render(x, y, scale, width, height),
+    stamps: async () => {
+      const stamps = parseStamps(await doc.invoke<string>('pageStamps'))
+      if (!stamps) throw new Error('The engine has no page stamps')
+      return stamps
+    },
+  } : null, [doc])
+  // A failed read (an engine without stamps) is `stamps: null`: every revision then draws anew.
+  const [stamps, setStamps] = useState<{ source: ThumbnailSource; change: number; stamps: PageStamps | null } | null>(null)
   useEffect(() => {
+    if (!source?.stamps) return
+    let live = true
+    const at = change.revision
+    source.stamps().then((found) => found, () => null).then((found) => { if (live) setStamps({ source, change: at, stamps: found }) })
+    return () => { live = false }
+  }, [source, change.revision])
+  // Until this revision's stamps are known the thumbnails stay as they are.
+  const ready = stamps !== null && stamps.source === source && stamps.change === change.revision
+  useEffect(() => {
+    if (!ready) return
     const order = [current, ...Array.from({ length: range.end - range.start }, (_, offset) => range.start + offset)]
-    queue.update(doc, change.revision, order.flatMap((index) => info.pages[index] ? [{ index, area: info.pages[index].area }] : []))
-  }, [queue, doc, change.revision, current, info.pages, range.start, range.end])
+    const known = stamps?.stamps?.stamps.length === info.pages.length ? stamps.stamps.stamps : null
+    // Without stamps (an engine that has none), `stamp` stays out and every revision draws anew.
+    queue.update(source, change.revision, order.flatMap((index) => info.pages[index] ? [{ index, area: info.pages[index].area, ...(known ? { stamp: known[index] } : {}) }] : []))
+  }, [queue, source, ready, stamps, change.revision, current, info.pages, range.start, range.end])
 
   const scrollTo = (index: number) => {
     const element = region.current
@@ -267,12 +291,12 @@ export function Thumbnails({ info, current, onPage, selected, onSelect, actions 
   const many = menuPages.length > 1
   return (
     <div ref={region} className="pdf-thumbs" data-testid="pdf-thumbs" role="list" aria-label={p('Page thumbnails')} aria-multiselectable="true"
-      data-cache-bytes={queue.bytes} data-cache-count={queue.size} data-dragging={drag ? 'true' : undefined}
+      data-cache-bytes={queue.bytes} data-cache-count={queue.size} data-thumb-renders={queue.renders} data-dragging={drag ? 'true' : undefined}
       onScroll={(event) => setView({ top: event.currentTarget.scrollTop, height: event.currentTarget.clientHeight })}>
       <div className="pdf-thumbs-spacer" style={{ height: count * THUMB_ROW_HEIGHT }}>
         {rows.map((page, offset) => {
           const index = range.start + offset
-          const image = queue.get(index, doc, change.revision)
+          const image = queue.get(index, source)
           const error = image && 'error' in image ? image.error : null
           const chosen = isSelected.has(index)
           return (

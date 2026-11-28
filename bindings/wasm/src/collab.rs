@@ -55,6 +55,7 @@ impl PdfDocument {
                 saved_revision: Cell::new(None),
                 pasteboard: PASTEBOARD,
                 exchange: Default::default(),
+                paints: Default::default(),
             }),
             Err(_) if bytes.is_empty() => Err("the stored replica does not open and there is no file".into()),
             Err(_) => Self::open(name, bytes),
@@ -351,6 +352,7 @@ impl kition_kit::session::model::ReplicaPort for PdfDocument {
             saved_revision: Cell::new(None),
             pasteboard: PASTEBOARD,
             exchange: Default::default(),
+            paints: Default::default(),
         })
     }
 }

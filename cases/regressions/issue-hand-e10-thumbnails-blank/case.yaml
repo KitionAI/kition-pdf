@@ -1,0 +1,28 @@
+format: 1
+id: regressions/issue-hand-e10-thumbnails-blank
+feature: pdf.editor.repaint
+intent: >-
+  Every edit (a page turned, a comment added, a field filled) blanked every visible thumbnail and
+  drew them all again one by one, about a second for six. Now the engine gives each page a stamp
+  of what it draws, and an edit draws again only the thumbnails whose stamp changed, each keeping
+  its old picture until the new one arrives; the page canvas never goes white meanwhile. Undo
+  draws only the page it changes back. web/tests/hand/repaint.mjs counts the engine's thumbnail
+  renders, watches every visible thumbnail each animation frame and screenshots the canvas.
+layer: gate
+dimension: function
+source:
+  kind: issue
+  from: Kition PDF hand walkthrough 2026-11-26, findings E10 and M3
+  license: owned
+input: []
+steps:
+  - exec:
+      cmd: [pnpm, --dir, web, exec, node, tests/hand/repaint.mjs, chromium]
+expected:
+  - actual: out:exec
+    compare: exit
+    value: 0
+requires: [chromium]
+tags: [browser]
+timeout_s: 600
+since: "2026-11-27"
